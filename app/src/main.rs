@@ -14,7 +14,8 @@ async fn main() {
 
     // build our application with a route
     let app = Router::new()
-        .route("/", get(fortunes))
+        .route("/", get(index))
+        .route("/joblist", get(joblist))
         .layer(Extension(config))
         .layer(Extension(pool.clone()));
 
@@ -27,17 +28,27 @@ async fn main() {
         .unwrap();
 }
 
-async fn fortunes(Extension(pool): Extension<Pool>) -> Result<Html<&'static str>, CustomError> {
-    let client = pool.get().await?;
+async fn index(Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomError> {
+    //let client = pool.get().await?;
 
-    let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
+    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
 
     Ok(crate::render(|buf| {
-        crate::templates::index_html(buf, "Fortunes", fortunes)
+        crate::templates::index_html(buf, "CZ4R Home")
     }))
 }
 
-pub fn render<F>(f: F) -> Html<&'static str>
+async fn joblist(Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomError> {
+    //let client = pool.get().await?;
+
+    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
+
+    Ok(crate::render(|buf| {
+        crate::templates::joblist_html(buf, "CZ4R Job List")
+    }))
+}
+
+pub fn render<F>(f: F) -> Html<String>
 where
     F: FnOnce(&mut Vec<u8>) -> Result<(), std::io::Error>,
 {
@@ -45,7 +56,7 @@ where
     f(&mut buf).expect("Error rendering template");
     let html: String = String::from_utf8_lossy(&buf).into();
 
-    Html(Box::leak(html.into_boxed_str()))
+    Html(html)
 }
 
 // Include the generated source code

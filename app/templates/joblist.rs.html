@@ -1,0 +1,13 @@
+@use super::card_html; 
+@use super::base_html; 
+
+@(title: &str)
+
+@:base_html(title, {
+    <ul class="list-group list-group-flush">  @for job_num in 0..100 {
+        <li class="list-group-item">
+            @:card_html("worker", &job_num.to_string(), "123 Fake Street", "Today", true)
+        </li>}
+    </ul>
+}
+)
