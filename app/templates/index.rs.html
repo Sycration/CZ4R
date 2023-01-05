@@ -1,0 +1,24 @@
+@use crate::queries::fortunes::Fortunes;
+@use super::base_html; 
+@use super::list_html; 
+@use super::card_html; 
+@use super::home_html; 
+@use super::footer_html; 
+
+
+@(title: &str, fortunes: Vec<Fortunes>)
+  
+@:base_html(title, {
+  @:home_html()
+}
+)
+
+<!--
+    @:list_html(&[
+      ("0", "michael shiff", false, false), 
+      ("1", "raymond wang", true, false), 
+      ("2", "cici mason", false, true),
+      ("3", "arman gharachedaghi", false, true)])
+
+    <a tabindex="0" class="btn btn-lg btn-danger" role="button" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-title="Dismissible popover" data-bs-content="And here's some amazing content. It's very engaging. Right?">Dismissible popover</a>
+-->

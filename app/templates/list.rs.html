@@ -1,0 +1,70 @@
+@(items: &[(&str, &str, bool, bool)])
+
+<ul class="list-group"> @for item in items {
+    <li class="list-group-item d-flex justify-content-between align-items-center row">
+        <div class="col-sm">
+            <h3>
+                @item.1
+
+            </h3>
+        </div>
+        <ul class="list-group list-group-horizontal col-sm justify-content-end">
+            <li class="list-group-item"><input type="checkbox" name="" id="@item.0-assigned" class=" ms-auto form-check-input" @if item.2 {checked}>
+                <label for="@item.0-assigned" class=" form-check-label">assigned</label>    
+            </li>
+            <li class="list-group-item">
+                <input type="checkbox" name="" id="@item.0-flatrate" class=" form-check-input" @if item.3 {checked}>
+                <label for="@item.0-flatrate" class=" form-check-label">overtime</label>
+            </li>
+        </ul>
+    </li>
+}
+
+<script>
+    var assigned = [];
+    var flatrate = [];
+    @for item in items { 
+        @if item.2 {
+            assigned.push("@item.0");
+        }
+        @if item.3 {
+            flatrate.push("@item.0");
+        }
+
+        document.getElementById("@item.0-assigned").addEventListener("change", function(evt)@{
+            var cbAssigned = evt.target;
+            if (!assigned.includes("@item.0")) @{
+                if (cbAssigned.checked) @{
+                    assigned.push("@item.0"); 
+                @}
+            @} else @{
+                if (!cbAssigned.checked) @{
+                    assigned = assigned.filter(x => x !== "@item.0");
+                @}
+            @}
+
+            assigned.sort();
+        @})
+
+        document.getElementById("@item.0-flatrate").addEventListener("change", function(evt)@{
+            var cbFlatrate = evt.target;
+            if (!flatrate.includes("@item.0")) @{
+                if (cbFlatrate.checked) @{
+                    flatrate.push("@item.0"); 
+                @}
+            @} else @{
+                if (!cbFlatrate.checked) @{
+                    flatrate = flatrate.filter(x => x !== "@item.0");
+                @}
+            @}
+
+            flatrate.sort();
+        @})
+    
+    }
+</script>
+
+
+</ul>
+<button type="button" class="btn btn-primary" onclick="console.table(assigned)">Log assigned</button>
+<button type="button" class="btn btn-primary" onclick="console.table(flatrate)">Log flat rate</button>
