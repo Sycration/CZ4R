@@ -34,7 +34,7 @@ async fn index(Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomE
     //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
 
     Ok(crate::render(|buf| {
-        crate::templates::index_html(buf, "CZ4R Home")
+        crate::templates::jobedit_html(buf, "CZ4R Home", Some(2))
     }))
 }
 
