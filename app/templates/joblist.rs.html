@@ -5,12 +5,15 @@
 
 @:base_html(title, {
     
-    <ul class="list-group list-group-flush">  @for job_num in 0..1 {
+    <div class="mt-3 mb-2 input-group d-flex justify-content-center">
+        <a href="/jobedit">
+            <button type="button" class="btn btn-primary">Create new job</button>
+        </a>
+    </div>
+    <ul class="list-group list-group-flush">  @for job_num in 0..10 {
         <li class="list-group-item">
             @:card_html("worker", &job_num.to_string(), "123 Fake Street", "Today", true)
         </li>}
     </ul>
-    
-
 }
 )

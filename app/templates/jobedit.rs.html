@@ -1,73 +1,85 @@
-@use super::base_html; @use super::list_html; @(title: &str, job_id: Option<u64>) 
-  
-  @:base_html(title, {
+@use super::base_html; @use super::list_html; @(title: &str, job_id: Option<u64>) @:base_html(title, {
 
   <div class="mb-3 mt-3 px-6">
     <h1 class="display-4">
-      @match job_id {
-        Some(id) => {
-          Editing job @id
-        }
-        None => {
-          Create a new job
-        }
-      }
+      @match job_id { Some(id) => { Editing job @id } None => { Create a new job
+      } }
     </h1>
   </div>
-<form method="get" >
-
-  <div class="input-group px-3 mb-3">
-    <span class="input-group-text">Site name</span>
-    <label for="SiteNameInput" class="form-label d-none">Site name</label>
-    <input name="sitename" type="text" class="form-control" id="SiteNameInput" />
-  </div>
-
-  <div class="row d-sm-none text-center" style="margin: 0">
-    <div class="col">
-      <label for="ServcodeInput" class="form-label">Service code</label>
+  <form method="get" action="/">
+    <div class="input-group px-3 mb-3">
+      <span class="input-group-text">Site name</span>
+      <label for="SiteNameInput" class="form-label d-none">Site name</label>
+      <input
+        name="sitename"
+        type="text"
+        class="form-control"
+        id="SiteNameInput"
+      />
     </div>
-    <div class="col">
-      <label for="WorkorderInput" class="form-label">Work order</label>
+
+    <div class="row d-sm-none text-center" style="margin: 0">
+      <div class="col">
+        <label for="ServcodeInput" class="form-label">Service code</label>
+      </div>
+      <div class="col">
+        <label for="WorkorderInput" class="form-label">Work order</label>
+      </div>
     </div>
-  </div>
 
-  <div class="input-group px-3 mb-3">
-    <span class="input-group-text d-none d-sm-block">Service code</span>
-    <input name="servcode" type="text" class="form-control" id="ServcodeInput" />
-    <input name="workorder" type="number" class="form-control" id="WorkorderInput" />
-    <span class="input-group-text d-none d-sm-block">Work order</span>
-  </div>
+    <div class="input-group px-3 mb-3">
+      <span class="input-group-text d-none d-sm-block">Service code</span>
+      <input
+        name="servcode"
+        type="text"
+        class="form-control"
+        id="ServcodeInput"
+      />
+      <input
+        name="workorder"
+        type="number"
+        class="form-control"
+        id="WorkorderInput"
+      />
+      <span class="input-group-text d-none d-sm-block">Work order</span>
+    </div>
 
-  <div class="input-group px-3 mb-3">
-    <span class="input-group-text">Address</span>
-    <label for="AddressInput" class="form-label d-none">Address</label>
-    <input name="address" type="text" class="form-control" id="AddressInput" />
-  </div>
+    <div class="input-group px-3 mb-3">
+      <span class="input-group-text">Address</span>
+      <label for="AddressInput" class="form-label d-none">Address</label>
+      <input
+        name="address"
+        type="text"
+        class="form-control"
+        id="AddressInput"
+      />
+    </div>
 
-  <div class="input-group px-3 mb-3">
-    <span class="input-group-text">Date</span>
-    <label for="DateInput" class="form-label d-none">Date</label>
-    <input name="date"  type="date" class="form-control" id="DateInput" />
-  </div>
+    <div class="input-group px-3 mb-3">
+      <span class="input-group-text">Date</span>
+      <label for="DateInput" class="form-label d-none">Date</label>
+      <input name="date" type="date" class="form-control" id="DateInput" />
+    </div>
 
-  <div class="border border-primary-subtle" style="max-height: 15em; overflow-x: hidden; overflow-y: auto">
-    @:list_html(&[ ("0", "michael shiff", false, false), ("1", "raymond wang",
-    true, false), ("1", "raymond wang", true, false), ("1", "raymond wang",
-    true, false), ("2", "cici mason", false, true), ("7", "raymond wang", true,
-    false)])
-  </div>
+    <div
+      class="border border-primary-subtle"
+      style="max-height: 15em; overflow-x: hidden; overflow-y: auto"
+    >
+      @:list_html(&[ 
+      ("0", "michael shiff", false, false), 
+      ("1", "raymond wang", false, false), 
+      ("2", "cici mason", false, false), 
+      ("3", "raymond wang", false, false)])
+    </div>
 
-<div class="text-center">
-  <button type="submit" class="btn btn-primary btn-lg mt-4 mb-4">
-    @if job_id.is_some() {
-      Submit changes
-    } else {
-      Create
-    }
-  </button>
-</div>
+    <div class="text-center">
 
+        <button type="submit" class="btn btn-primary btn-lg mt-4 mb-4">
+          @if job_id.is_some() { Submit changes } else { Create }
+        </button>
 
-</form>
+    </div>
+  </form>
 
   } )
+</u64>

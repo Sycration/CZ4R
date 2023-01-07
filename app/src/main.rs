@@ -16,6 +16,7 @@ async fn main() {
     let app = Router::new()
         .route("/", get(index))
         .route("/joblist", get(joblist))
+        .route("/jobedit", get(jobedit))
         .layer(Extension(config))
         .layer(Extension(pool.clone()));
 
@@ -34,7 +35,7 @@ async fn index(Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomE
     //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
 
     Ok(crate::render(|buf| {
-        crate::templates::jobedit_html(buf, "CZ4R Home", Some(2))
+        crate::templates::index_html(buf, "CZ4R Home")
     }))
 }
 
@@ -45,6 +46,16 @@ async fn joblist(Extension(pool): Extension<Pool>) -> Result<Html<String>, Custo
 
     Ok(crate::render(|buf| {
         crate::templates::joblist_html(buf, "CZ4R Job List")
+    }))
+}
+
+async fn jobedit(Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomError> {
+    //let client = pool.get().await?;
+
+    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
+
+    Ok(crate::render(|buf| {
+        crate::templates::jobedit_html(buf, "CZ4R Job Edit", Some(12345))
     }))
 }
 
