@@ -1,0 +1,20 @@
+@use super::base_html; 
+
+@(title: &str)
+  
+@:base_html(title, {
+  <div class="d-flex flex-column align-items-center">
+    <form class="d-flex flex-column justify-content-center">
+        <div class="mb-3 p-2 flex-fill">
+          <label for="InputUname1" class="form-label">Username</label>
+          <input type="text" class="form-control" id="InputUname1">
+        </div>
+        <div class="mb-3 p-2 flex-fill">
+          <label for="InputPassword1" class="form-label">Password</label>
+          <input type="password" class="form-control" id="InputPassword1">
+        </div>
+        <button type="submit" class="btn btn-primary p-2 flex-fill">Login</button>
+      </form>
+  </div>
+}
+)

@@ -1,12 +1,12 @@
 @use super::base_html; @use super::list_html; @(title: &str, job_id: Option<u64>) @:base_html(title, {
 
-  <div class="mb-3 mt-3 px-6">
-    <h1 class="display-4">
-      @match job_id { Some(id) => { Editing job @id } None => { Create a new job
-      } }
-    </h1>
-  </div>
-  <form method="get" action="/">
+
+  <h1 class="text-center ">
+    @match job_id { Some(id) => { Editing job @id } None => { Create a new job
+    } }
+  </h1>
+
+  <form method="get">
     <div class="input-group px-3 mb-3">
       <span class="input-group-text">Site name</span>
       <label for="SiteNameInput" class="form-label d-none">Site name</label>

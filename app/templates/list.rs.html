@@ -40,6 +40,8 @@
             @} else @{
                 if (!cbAssigned.checked) @{
                     assigned = assigned.filter(x => x !== "@item.0");
+                    flatrate = flatrate.filter(x => x !== "@item.0");
+                    document.getElementById("@item.0-flatrate").checked = false;
                 @}
             @}
 

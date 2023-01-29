@@ -1,0 +1,90 @@
+@use super::base_html;  
+
+@(title: &str, site_name: &str, address: &str, date: &str, notes: &str)
+
+
+@:base_html(title, {
+    <div class="container">
+      <h1 class="text-center ">Time Sheet</h1>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Site Name</th>
+            <th>Address</th>
+            <th>Due Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>@site_name</td>
+            <td>@address</td>
+            <td>@date</td>
+          </tr>
+        </tbody>
+      </table>
+      <form id="checkinoutform">
+
+        <div class="row d-md-none text-center" style="margin: 0">
+          <div class="col">
+            <label for="SigninInput" class="form-label">Sign-in time</label>
+          </div>
+          <div class="col">
+            <label for="SignoutInput" class="form-label">Sign-out time</label>
+          </div>
+        </div>
+    
+        <div class="input-group px-3 mb-3">
+          <span class="input-group-text d-none d-md-block">Sign-in time</span>
+          <input
+            name="Signin"
+            type="time"
+            class="form-control"
+            id="SigninInput"
+          />
+          <input
+            name="Signout"
+            type="time"
+            class="form-control"
+            id="SignoutInput"
+          />
+          <span class="input-group-text d-none d-md-block">Sign-out time</span>
+        </div>
+
+
+        <div class="input-group px-3 mb-3">
+          <span class="input-group-text">Miles driven</span>
+          <label for="MilesDriven" class="form-label d-none">Miles Driven</label>
+          <input
+            name="MilesDriven"
+            type="text"
+            class="form-control"
+            id="MilesDriven"
+          />
+        </div>
+
+        <div class="input-group px-3 mb-3">
+          <span class="input-group-text">Extra expenses</span>
+          <label for="ExtraExpenses" class="form-label d-none">Extra expenses</label>
+          <input
+            name="ExtraExpenses"
+            type="text"
+            class="form-control"
+            id="ExtraExpenses"
+          />
+        </div>
+
+
+        <div class="input-group px-3 mb-3">
+          <span class="input-group-text">Notes</span>
+          <label for="notes" class="form-label d-none">Notes</label>
+          <textarea name="Notes" class="form-control" id="notes" rows="4" style="resize:none;" form="checkinoutform"></textarea>
+        </div>
+
+        <div class="text-center">
+          <button type="submit" class="btn btn-primary btn-lg mt-4 mb-4">Submit</button>
+        </div>
+
+      </form>
+    </div>
+
+})

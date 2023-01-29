@@ -17,6 +17,8 @@ async fn main() {
         .route("/", get(index))
         .route("/joblist", get(joblist))
         .route("/jobedit", get(jobedit))
+        .route("/loginpage", get(loginpage))
+        .route("/checkinout", get(checkinout))
         .layer(Extension(config))
         .layer(Extension(pool.clone()));
 
@@ -56,6 +58,26 @@ async fn jobedit(Extension(pool): Extension<Pool>) -> Result<Html<String>, Custo
 
     Ok(crate::render(|buf| {
         crate::templates::jobedit_html(buf, "CZ4R Job Edit", Some(12345))
+    }))
+}
+
+async fn loginpage(Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomError> {
+    //let client = pool.get().await?;
+
+    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
+
+    Ok(crate::render(|buf| {
+        crate::templates::login_html(buf, "CZ4R login")
+    }))
+}
+
+async fn checkinout(Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomError> {
+    //let client = pool.get().await?;
+
+    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
+
+    Ok(crate::render(|buf| {
+        crate::templates::checkinout_html(buf, "CZ4R time tracking", "Bank 123", "456 Main St.", "12/16/2023", "Do ya job or you dead!")
     }))
 }
 
