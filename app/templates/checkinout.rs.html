@@ -1,9 +1,9 @@
 @use super::base_html;  
 
-@(title: &str, site_name: &str, address: &str, date: &str, notes: &str)
+@(title: &str, admin: bool, site_name: &str, address: &str, date: &str, notes: &str)
 
 
-@:base_html(title, {
+@:base_html(title, admin, {
     <div class="container">
       <h1 class="text-center ">Time Sheet</h1>
       <table class="table">

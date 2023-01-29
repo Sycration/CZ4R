@@ -1,9 +1,9 @@
 @use super::card_html; 
 @use super::base_html; 
 
-@(title: &str)
+@(title: &str, admin: bool)
 
-@:base_html(title, {
+@:base_html(title, admin, {
     
     <div class="mt-3 mb-2 input-group d-flex justify-content-center">
         <a href="/jobedit">

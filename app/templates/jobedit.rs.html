@@ -1,4 +1,4 @@
-@use super::base_html; @use super::list_html; @(title: &str, job_id: Option<u64>) @:base_html(title, {
+@use super::base_html; @use super::list_html; @(title: &str, admin: bool, job_id: Option<u64>) @:base_html(title, admin, {
 
 
   <h1 class="text-center ">

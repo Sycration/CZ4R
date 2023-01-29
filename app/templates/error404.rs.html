@@ -1,8 +1,8 @@
 @use super::base_html; 
 
-@(title: &str)
+@(title: &str, admin: bool)
 
-@:base_html(title, {
+@:base_html(title, admin, {
     
 
 <div class="container">

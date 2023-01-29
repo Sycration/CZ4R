@@ -19,6 +19,7 @@ async fn main() {
         .route("/jobedit", get(jobedit))
         .route("/loginpage", get(loginpage))
         .route("/checkinout", get(checkinout))
+        .route("/admin", get(admin))
         .fallback(error404)
         .layer(Extension(config))
         .layer(Extension(pool.clone()));
@@ -36,9 +37,21 @@ async fn index(Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomE
     //let client = pool.get().await?;
 
     //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
+    let admin = true;
 
     Ok(crate::render(|buf| {
-        crate::templates::index_html(buf, "CZ4R Home")
+        crate::templates::index_html(buf, "CZ4R Home", admin)
+    }))
+}
+
+async fn admin(Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomError> {
+    //let client = pool.get().await?;
+
+    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
+    let admin = true;
+
+    Ok(crate::render(|buf| {
+        crate::templates::admin_html(buf, "CZ4R Admin Page", admin)
     }))
 }
 
@@ -46,9 +59,10 @@ async fn joblist(Extension(pool): Extension<Pool>) -> Result<Html<String>, Custo
     //let client = pool.get().await?;
 
     //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
+    let admin = true;
 
     Ok(crate::render(|buf| {
-        crate::templates::joblist_html(buf, "CZ4R Job List")
+        crate::templates::joblist_html(buf, "CZ4R Job List", admin)
     }))
 }
 
@@ -56,9 +70,10 @@ async fn jobedit(Extension(pool): Extension<Pool>) -> Result<Html<String>, Custo
     //let client = pool.get().await?;
 
     //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
+    let admin = true;
 
     Ok(crate::render(|buf| {
-        crate::templates::jobedit_html(buf, "CZ4R Job Edit", Some(12345))
+        crate::templates::jobedit_html(buf, "CZ4R Job Edit", admin, Some(12345))
     }))
 }
 
@@ -67,8 +82,9 @@ async fn loginpage(Extension(pool): Extension<Pool>) -> Result<Html<String>, Cus
 
     //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
 
+
     Ok(crate::render(|buf| {
-        crate::templates::login_html(buf, "CZ4R login")
+        crate::templates::login_html(buf, "CZ4R Login")
     }))
 }
 
@@ -76,9 +92,17 @@ async fn checkinout(Extension(pool): Extension<Pool>) -> Result<Html<String>, Cu
     //let client = pool.get().await?;
 
     //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
+    let admin = true;
 
     Ok(crate::render(|buf| {
-        crate::templates::checkinout_html(buf, "CZ4R time tracking", "Bank 123", "456 Main St.", "12/16/2023", "Do ya job or you dead!")
+        crate::templates::checkinout_html(
+            buf,
+            "CZ4R Time Tracking", admin,
+            "Bank 123",
+            "456 Main St.",
+            "12/16/2023",
+            "Do ya job or you dead!",
+        )
     }))
 }
 
@@ -86,9 +110,10 @@ async fn error404(Extension(pool): Extension<Pool>) -> Result<Html<String>, Cust
     //let client = pool.get().await?;
 
     //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
+    let admin = true;
 
     Ok(crate::render(|buf| {
-        crate::templates::error404_html(buf, "CZ4R 404")
+        crate::templates::error404_html(buf, "CZ4R 404", admin)
     }))
 }
 
