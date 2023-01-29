@@ -19,6 +19,7 @@ async fn main() {
         .route("/jobedit", get(jobedit))
         .route("/loginpage", get(loginpage))
         .route("/checkinout", get(checkinout))
+        .fallback(error404)
         .layer(Extension(config))
         .layer(Extension(pool.clone()));
 
@@ -78,6 +79,16 @@ async fn checkinout(Extension(pool): Extension<Pool>) -> Result<Html<String>, Cu
 
     Ok(crate::render(|buf| {
         crate::templates::checkinout_html(buf, "CZ4R time tracking", "Bank 123", "456 Main St.", "12/16/2023", "Do ya job or you dead!")
+    }))
+}
+
+async fn error404(Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomError> {
+    //let client = pool.get().await?;
+
+    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
+
+    Ok(crate::render(|buf| {
+        crate::templates::error404_html(buf, "CZ4R 404")
     }))
 }
 
