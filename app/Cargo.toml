@@ -21,4 +21,4 @@ webpki-roots = "0.22.6"
 [build-dependencies]
 cornucopia = "0.9.0"
 postgres = "0.19.4"
-ructe = { version = "0.15.0", features = ["mime03"] }
+ructe = { version = "0.16.1", features = ["mime03"] }

@@ -10,10 +10,67 @@
             console.log("%c🖕", "background: red; color: yellow; font-size: x-large");
         </script>
     } else {
-        <script>
-            window.location.href = "/";
-            console.log("%c🖕", "background: red; color: yellow; font-size: x-large");
-        </script>
+      <div class="row row-cols-lg-3 row-cols-sm-2 row-cols-1 g-4 pb-5 ">
+        <div class="col" >
+          <div class="card text-center">
+            <div class="card-header">
+              <i class="bi bi-people" style="font-size: 2rem"></i>
+            </div>
+              <ul class="list-group list-group-flush">
+                <li class="list-group-item">Create and delete workers</li>
+                <li class="list-group-item">Update information</li>
+                <li class="list-group-item">Reset passwords</li>
+                <li class="list-group-item">
+                  <a href="/admin/worker-edit" class="btn btn-outline-primary">
+                    Go
+                  </a>
+                </li>
+              </ul>
+          </div>
+        </div>
+        
+        <div class="col">
+          <div class="card text-center">
+            <div class="card-header">
+              <i class="bi bi-file-earmark-bar-graph" style="font-size: 2rem"></i>
+            </div>
+              <ul class="list-group list-group-flush">
+                <li class="list-group-item">Generate reports</li>
+                <li class="list-group-item">View historical data</li>
+                <li class="list-group-item">Calculate sums</li>
+              </ul>
+          </div>
+        </div>
+     
+        <div class="col">
+          <div class="card text-center">
+            <div class="card-header">
+              <i class="bi bi-sliders" style="font-size: 2rem"></i>
+            </div>
+              <ul class="list-group list-group-flush">
+                <li class="list-group-item">Customize the site</li>
+                <li class="list-group-item">Modify the server</li>
+                <li class="list-group-item">Force backups</li>
+              </ul>
+          </div>
+        </div>
+
+        <div class="col">
+          <div class="card text-center">
+            <div class="card-header">
+              <i class="bi bi-database" style="font-size: 2rem"></i>
+            </div>
+              <ul class="list-group list-group-flush">
+                <li class="list-group-item">Use the database</li>
+                <li class="list-group-item">Run SQL code</li>
+                <li class="list-group-item">Debug errors</li>
+              </ul>
+          </div>
+        </div>
+
+
+
+      </div>
     }
     
 }

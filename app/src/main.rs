@@ -2,7 +2,7 @@ mod config;
 mod errors;
 
 use crate::errors::CustomError;
-use axum::{extract::Extension, response::Html, routing::get, Router};
+use axum::{extract::{Extension, Path}, response::Html, routing::get, Router};
 use deadpool_postgres::Pool;
 use std::net::SocketAddr;
 
@@ -20,6 +20,9 @@ async fn main() {
         .route("/loginpage", get(loginpage))
         .route("/checkinout", get(checkinout))
         .route("/admin", get(admin))
+        .route("/admin/worker-edit", get(workereditblank))
+        .route("/admin/worker-edit/:id", get(workeredit))
+        .route("/admin/worker-create", get(workercreate))
         .fallback(error404)
         .layer(Extension(config))
         .layer(Extension(pool.clone()));
@@ -52,6 +55,36 @@ async fn admin(Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomE
 
     Ok(crate::render(|buf| {
         crate::templates::admin_html(buf, "CZ4R Admin Page", admin)
+    }))
+}
+
+async fn workeredit(id: Path<u64>, Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomError> {
+    //let client = pool.get().await?;
+
+    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
+    let admin = true;
+    Ok(crate::render(|buf| {
+        crate::templates::workeredit_html(buf, "CZ4R Admin Page", admin, false, Some(id.0))
+    }))
+}
+async fn workereditblank(Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomError> {
+    //let client = pool.get().await?;
+
+    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
+    let admin = true;
+    Ok(crate::render(|buf| {
+        crate::templates::workeredit_html(buf, "CZ4R Admin Page", admin, false, None)
+    }))
+}
+
+async fn workercreate(Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomError> {
+    //let client = pool.get().await?;
+
+    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
+    let admin = true;
+
+    Ok(crate::render(|buf| {
+        crate::templates::workeredit_html(buf, "CZ4R Admin Page", admin, true, None)
     }))
 }
 

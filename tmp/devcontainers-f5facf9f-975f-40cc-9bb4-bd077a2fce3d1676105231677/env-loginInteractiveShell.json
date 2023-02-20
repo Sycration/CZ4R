@@ -1,0 +1,16 @@
+{
+	"DATABASE_URL": "postgresql://postgres:testpassword@db:5432/postgres?sslmode=disable",
+	"HOSTNAME": "1030d213e2ef",
+	"REMOTE_CONTAINERS_IPC": "/tmp/vscode-remote-containers-ipc-72ad5bcd8c4a9ad337dc554fc7ab185082562f8c.sock",
+	"HOME": "/home/vscode",
+	"LS_COLORS": "",
+	"CARGO_HOME": "/usr/local/cargo",
+	"RUSTUP_HOME": "/usr/local/rustup",
+	"REMOTE_CONTAINERS_SOCKETS": "[\"/tmp/vscode-ssh-auth-72ad5bcd8c4a9ad337dc554fc7ab185082562f8c.sock\"]",
+	"SHLVL": "1",
+	"RUST_VERSION": "1.65.0",
+	"PS1": "\\[\\033[32m\\]\\w\\[\\033[33m\\]$(parse_git_branch)\\[\\033[00m\\] \\n$ ",
+	"PATH": "/usr/local/cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/vscode/.pulumi/bin",
+	"DEBIAN_FRONTEND": "noninteractive",
+	"_": "/bin/cat"
+}
