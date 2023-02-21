@@ -21,8 +21,76 @@
               <a class="nav-link" aria-current="page" href="/admin">Admin panel</a>
             </li>
           }
-       
+
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <svg class="bi theme-icon-active" width="0" height="0" fill="currentColor">
+                <use href="bootstrap-icons.svg#shop"/>
+              </svg>
+              <span>Change theme</span>
+            </a>
+            <ul class="dropdown-menu">
+              <li>
+                <button type="button" class="dropdown-item align-items-center" data-bs-theme-value="light">
+                  <svg class="bi" width="0" height="0" fill="currentColor">
+                    <use href="bootstrap-icons.svg#shop"/>
+                  </svg>
+                  <span>Light</span>
+
+                </button>
+              </li>
+              <li>
+                <button type="button" class="dropdown-item align-items-center" data-bs-theme-value="dark">
+                  <svg class="bi" width="0" height="0" fill="currentColor">
+                    <use href="bootstrap-icons.svg#shop"/>
+                  </svg>
+              <span>Dark</span>
+
+                </button>
+              </li>
+              <li>
+                <button type="button" class="dropdown-item align-items-center" data-bs-theme-value="auto">
+                  <svg class="bi" width="0" height="0" fill="currentColor">
+                    <use href="bootstrap-icons.svg#shop"/>
+                  </svg>
+              <span>Auto</span>
+
+                </button>
+              </li>
+            </ul>
+
+
         </ul>
       </div>
+       
+        <!--ul class="dropdown-menu dropdown-menu-end show" aria-labelledby="bd-theme" style="--bs-dropdown-min-width: 8rem;" data-bs-popper="static">
+          <li>
+            <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="light">
+              <svg class="bi me-2 opacity-50 theme-icon"><use href="#sun-fill"></use></svg>
+              Light
+              <svg class="bi ms-auto d-none"><use href="#check2"></use></svg>
+            </button>
+          </li>
+          <li>
+            <button type="button" class="dropdown-item d-flex align-items-center active" data-bs-theme-value="dark">
+              <svg class="bi me-2 opacity-50 theme-icon"><use href="#moon-stars-fill"></use></svg>
+              Dark
+              <svg class="bi ms-auto d-none"><use href="#check2"></use></svg>
+            </button>
+          </li>
+          <li>
+            <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="auto">
+              <svg class="bi me-2 opacity-50 theme-icon"><use href="#circle-half"></use></svg>
+              Auto
+              <svg class="bi ms-auto d-none"><use href="#check2"></use></svg>
+            </button>
+          </li>
+        </ul-->
+
     </div>
   </nav>
+
+  <script>
+    const storedTheme = localStorage.getItem('theme');
+    console.log(storedTheme);
+  </script>
