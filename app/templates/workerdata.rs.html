@@ -1,0 +1,66 @@
+@use super::base_html; @use super::userselect_html; @(title: &str, admin: bool, selected:Option<u64>) @:base_html(title, admin, { @if !admin {
+  <script>
+    window.location.href = "/";
+    console.log("%c🖕", "background: red; color: yellow; font-size: x-large");
+  </script>
+  } else {
+  <div class="row row-cols-1 row-cols-md-2">
+    <div class="col col-md-4 pb-4">
+      @:userselect_html("worker-data", &[(0, "Michael", "Shiff"),(1, "Cici", "Mason"),(2, "Raymond", "Wang")], selected)
+    </div>
+    <div class="col col-md-8">
+      <div class="col-md-9">
+        <div class="card">
+          <div class="card-header">
+            <h3>Tabular Data</h3>
+            <div class="form-inline float-end">
+              <label for="date-range">Date Range:</label>
+              <input type="date" class="form-control mx-2" id="start-date" />
+              <input type="date" class="form-control mx-2" id="end-date" />
+            </div>
+          </div>
+          <div class="card-body">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>User</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr id="user1">
+                  <td>2023-04-01</td>
+                  <td>User 1</td>
+                  <td>$100.00</td>
+                </tr>
+                <tr id="user2">
+                  <td>2023-04-01</td>
+                  <td>User 2</td>
+                  <td>$50.00</td>
+                </tr>
+                <tr id="user1">
+                  <td>2023-04-02</td>
+                  <td>User 1</td>
+                  <td>$150.00</td>
+                </tr>
+                <tr id="user3">
+                  <td>2023-04-03</td>
+                  <td>User 3</td>
+                  <td>$75.00</td>
+                </tr>
+                <!-- add more rows of data as needed -->
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="2" class="text-end">Total:</td>
+                  <td>$375.00</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  } } )

@@ -23,6 +23,8 @@ async fn main() {
         .route("/admin/worker-edit", get(workereditblank))
         .route("/admin/worker-edit/:id", get(workeredit))
         .route("/admin/worker-create", get(workercreate))
+        .route("/admin/worker-data", get(workerdatablank))
+        .route("/admin/worker-data/:id", get(workerdata))
         .fallback(error404)
         .layer(Extension(config))
         .layer(Extension(pool.clone()));
@@ -73,7 +75,7 @@ async fn workereditblank(Extension(pool): Extension<Pool>) -> Result<Html<String
     //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
     let admin = true;
     Ok(crate::render(|buf| {
-        crate::templates::workeredit_html(buf, "CZ4R Admin Page", admin, false, None)
+        crate::templates::workeredit_html(buf, "CZ4R Worker Edit", admin, false, None)
     }))
 }
 
@@ -84,7 +86,29 @@ async fn workercreate(Extension(pool): Extension<Pool>) -> Result<Html<String>, 
     let admin = true;
 
     Ok(crate::render(|buf| {
-        crate::templates::workeredit_html(buf, "CZ4R Admin Page", admin, true, None)
+        crate::templates::workeredit_html(buf, "CZ4R Worker Edit", admin, true, None)
+    }))
+}
+
+async fn workerdata(id: Path<u64>, Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomError> {
+    //let client = pool.get().await?;
+
+    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
+    let admin = true;
+
+    Ok(crate::render(|buf| {
+        crate::templates::workerdata_html(buf, "CZ4R Worker Data", admin, Some(id.0))
+    }))
+}
+
+async fn workerdatablank(Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomError> {
+    //let client = pool.get().await?;
+
+    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
+    let admin = true;
+
+    Ok(crate::render(|buf| {
+        crate::templates::workerdata_html(buf, "CZ4R Worker Data", admin, None)
     }))
 }
 

@@ -1,0 +1,16 @@
+@(target: &str, array: &[(u64, &str, &str)], selected: Option<u64>)
+
+<div class="list-group">
+    @for (id, fname, lname) in array {
+    <a @if let Some(selected)=selected { @if selected==*id {} else { href="/admin/@target/@id" } } else {
+      href="/admin/@target/@id" } class="list-group-item list-group-item-action d-flex justify-content-between align-items-center row
+      @if let Some(selected) = selected {
+        @if selected == *id {
+          active
+        }
+      }
+      " style="margin: 0">
+      <p class="align-middle fs-4">@fname @lname</p>
+    </a>
+    }
+  </div>

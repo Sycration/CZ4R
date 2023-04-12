@@ -1,4 +1,7 @@
-@use super::base_html; @(title: &str, admin: bool, creating: bool, selected:Option<u64>)
+@use super::base_html;
+@use super::userselect_html; 
+
+@(title: &str, admin: bool, creating: bool, selected:Option<u64>)
 
   @:base_html(title, admin, { @if !admin {
   <script>
@@ -48,20 +51,8 @@
       <div class="d-grid gap-2 pb-4">
         <a href="/admin/worker-create" class="btn btn-outline-primary" type="button">Add worker</a>
       </div>
-      <div class="list-group">
-        @for (id, fname, lname) in &[(0, "Michael", "Shiff"),(1, "Cici", "Mason"),(2, "Raymond", "Wang")] {
-        <a @if let Some(selected)=selected { @if selected==*id {} else { href="/admin/worker-edit/@id" } } else {
-          href="/admin/worker-edit/@id" } class="list-group-item list-group-item-action d-flex justify-content-between align-items-center row
-          @if let Some(selected) = selected {
-            @if selected == *id {
-              active
-            }
-          }
-          " style="margin: 0">
-          <p class="align-middle fs-4">@fname @lname</p>
-        </a>
-        }
-      </div>
+      @:userselect_html("worker-edit", &[(0, "Michael", "Shiff"),(1, "Cici", "Mason"),(2, "Raymond", "Wang")], selected)
+
     </div>
     <div class="col col-md-8">
       <!--TODO endpoint based on creating or updating, submit should bring to the edit page of that worker  -->
