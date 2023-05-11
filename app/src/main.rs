@@ -2,15 +2,39 @@ mod config;
 mod errors;
 
 use crate::errors::CustomError;
-use axum::{extract::{Extension, Path}, response::Html, routing::get, Router};
-use deadpool_postgres::Pool;
-use std::net::SocketAddr;
+use axum::{
+    debug_handler,
+    extract::{Extension, Path, State},
+    response::Html,
+    routing::get,
+    Form, Router,
+};
+use axum_login::{memory_store::MemoryStore, axum_sessions::SessionLayer, SqlxStore, PostgresStore};
+use rand::Rng;
+use serde::Deserialize;
+use sqlx::{Pool, Postgres};
+use std::{net::SocketAddr, sync::Arc};
+
+#[derive(Debug, Default, Clone, sqlx::FromRow)]
+struct Worker {
+    name: String,
+    id: u64,
+    admin: bool,
+}
+
+
 
 #[tokio::main]
 async fn main() {
     let config = config::Config::new();
 
-    let pool = config.create_pool();
+    let pool = config.create_pool().await;
+
+    let mut secret = [0; 64];
+    rand::thread_rng().fill(&mut secret);
+
+    let session_store = MemoryStore::new();
+    let session_layer = SessionLayer::new(session_store, &secret).with_secure(false);
 
     // build our application with a route
     let app = Router::new()
@@ -20,14 +44,14 @@ async fn main() {
         .route("/loginpage", get(loginpage))
         .route("/checkinout", get(checkinout))
         .route("/admin", get(admin))
-        .route("/admin/worker-edit", get(workereditblank))
-        .route("/admin/worker-edit/:id", get(workeredit))
+        .route("/admin/worker-edit", get(workeredit))
         .route("/admin/worker-create", get(workercreate))
-        .route("/admin/worker-data", get(workerdatablank))
-        .route("/admin/worker-data/:id", get(workerdata))
+        .route("/admin/worker-data", get(workerdata))
+        .route("/admin/deactivated-workers", get(deactivatedworkers))
         .fallback(error404)
         .layer(Extension(config))
-        .layer(Extension(pool.clone()));
+        .layer(session_layer)
+        .with_state(pool);
 
     // run it
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
@@ -38,7 +62,7 @@ async fn main() {
         .unwrap();
 }
 
-async fn index(Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomError> {
+async fn index(State(pool): State<Pool<Postgres>>) -> Result<Html<String>, CustomError> {
     //let client = pool.get().await?;
 
     //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
@@ -49,7 +73,20 @@ async fn index(Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomE
     }))
 }
 
-async fn admin(Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomError> {
+async fn deactivatedworkers(
+    State(pool): State<Pool<Postgres>>,
+) -> Result<Html<String>, CustomError> {
+    //let client = pool.get().await?;
+
+    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
+    let admin = true;
+
+    Ok(crate::render(|buf| {
+        crate::templates::deactivatedworkers_html(buf, "CZ4R Deleted Workers", admin)
+    }))
+}
+
+async fn admin(State(pool): State<Pool<Postgres>>) -> Result<Html<String>, CustomError> {
     //let client = pool.get().await?;
 
     //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
@@ -60,26 +97,25 @@ async fn admin(Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomE
     }))
 }
 
-async fn workeredit(id: Path<u64>, Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomError> {
+#[derive(Deserialize)]
+struct WorkerEditForm {
+    worker: Option<u64>,
+}
+
+async fn workeredit(
+    State(pool): State<Pool<Postgres>>,
+    Form(worker): Form<WorkerEditForm>,
+) -> Result<Html<String>, CustomError> {
     //let client = pool.get().await?;
 
     //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
     let admin = true;
     Ok(crate::render(|buf| {
-        crate::templates::workeredit_html(buf, "CZ4R Admin Page", admin, false, Some(id.0))
-    }))
-}
-async fn workereditblank(Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomError> {
-    //let client = pool.get().await?;
-
-    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
-    let admin = true;
-    Ok(crate::render(|buf| {
-        crate::templates::workeredit_html(buf, "CZ4R Worker Edit", admin, false, None)
+        crate::templates::workeredit_html(buf, "CZ4R Worker Edit", admin, false, worker.worker)
     }))
 }
 
-async fn workercreate(Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomError> {
+async fn workercreate(State(pool): State<Pool<Postgres>>) -> Result<Html<String>, CustomError> {
     //let client = pool.get().await?;
 
     //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
@@ -90,29 +126,26 @@ async fn workercreate(Extension(pool): Extension<Pool>) -> Result<Html<String>, 
     }))
 }
 
-async fn workerdata(id: Path<u64>, Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomError> {
+#[derive(Deserialize)]
+struct WorkerDataForm {
+    worker: Option<u64>,
+}
+
+async fn workerdata(
+    State(pool): State<Pool<Postgres>>,
+    Form(worker): Form<WorkerDataForm>,
+) -> Result<Html<String>, CustomError> {
     //let client = pool.get().await?;
 
     //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
     let admin = true;
 
     Ok(crate::render(|buf| {
-        crate::templates::workerdata_html(buf, "CZ4R Worker Data", admin, Some(id.0))
+        crate::templates::workerdata_html(buf, "CZ4R Worker Data", admin, worker.worker)
     }))
 }
 
-async fn workerdatablank(Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomError> {
-    //let client = pool.get().await?;
-
-    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
-    let admin = true;
-
-    Ok(crate::render(|buf| {
-        crate::templates::workerdata_html(buf, "CZ4R Worker Data", admin, None)
-    }))
-}
-
-async fn joblist(Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomError> {
+async fn joblist(State(pool): State<Pool<Postgres>>) -> Result<Html<String>, CustomError> {
     //let client = pool.get().await?;
 
     //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
@@ -123,7 +156,7 @@ async fn joblist(Extension(pool): Extension<Pool>) -> Result<Html<String>, Custo
     }))
 }
 
-async fn jobedit(Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomError> {
+async fn jobedit(State(pool): State<Pool<Postgres>>) -> Result<Html<String>, CustomError> {
     //let client = pool.get().await?;
 
     //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
@@ -134,18 +167,17 @@ async fn jobedit(Extension(pool): Extension<Pool>) -> Result<Html<String>, Custo
     }))
 }
 
-async fn loginpage(Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomError> {
+async fn loginpage(State(pool): State<Pool<Postgres>>) -> Result<Html<String>, CustomError> {
     //let client = pool.get().await?;
 
     //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
-
 
     Ok(crate::render(|buf| {
         crate::templates::login_html(buf, "CZ4R Login")
     }))
 }
 
-async fn checkinout(Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomError> {
+async fn checkinout(State(pool): State<Pool<Postgres>>) -> Result<Html<String>, CustomError> {
     //let client = pool.get().await?;
 
     //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
@@ -154,7 +186,8 @@ async fn checkinout(Extension(pool): Extension<Pool>) -> Result<Html<String>, Cu
     Ok(crate::render(|buf| {
         crate::templates::checkinout_html(
             buf,
-            "CZ4R Time Tracking", admin,
+            "CZ4R Time Tracking",
+            admin,
             "Bank 123",
             "456 Main St.",
             "12/16/2023",
@@ -163,7 +196,7 @@ async fn checkinout(Extension(pool): Extension<Pool>) -> Result<Html<String>, Cu
     }))
 }
 
-async fn error404(Extension(pool): Extension<Pool>) -> Result<Html<String>, CustomError> {
+async fn error404(State(pool): State<Pool<Postgres>>) -> Result<Html<String>, CustomError> {
     //let client = pool.get().await?;
 
     //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
@@ -186,5 +219,4 @@ where
 }
 
 // Include the generated source code
-include!(concat!(env!("OUT_DIR"), "/cornucopia.rs"));
 include!(concat!(env!("OUT_DIR"), "/templates.rs"));

@@ -1,0 +1,32 @@
+@use super::base_html; @use super::userselect_html; @(title: &str, admin: bool) @:base_html(title, admin, { @if !admin {
+    <script>
+      window.location.href = "/";
+      console.log("%c🖕", "background: red; color: yellow; font-size: x-large");
+    </script>
+    } else {
+     <h1 class="text-center ">
+            Deactivated workers
+    </h1>
+    <table class="table table-dark  table-striped">
+        <thead>
+            <tr>
+                <th>Worker</th>
+                <th>ID</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @for i in (1..=10) {
+                <tr>
+                    <td>Deactivated Worker</td>
+                    <td>@i</td>
+                    <td>
+                        <button type="button" class="btn btn-primary btn-sm">Restore</button>
+                    </td>
+    
+                </tr>
+            }
+        </tbody>
+    </table>
+    } } )
+  

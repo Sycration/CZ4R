@@ -41,14 +41,4 @@ impl From<axum::http::uri::InvalidUri> for CustomError {
     }
 }
 
-impl From<tokio_postgres::Error> for CustomError {
-    fn from(err: tokio_postgres::Error) -> CustomError {
-        CustomError::Database(err.to_string())
-    }
-}
 
-impl From<deadpool_postgres::PoolError> for CustomError {
-    fn from(err: deadpool_postgres::PoolError) -> CustomError {
-        CustomError::Database(err.to_string())
-    }
-}
