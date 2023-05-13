@@ -5,10 +5,10 @@
 @use super::footer_html; 
 
 
-@(title: &str, admin: bool)
+@(title: &str, admin: bool, logged_in: bool)
   
-@:base_html(title, admin, {
-  @:home_html()
+@:base_html(title, admin, logged_in, {
+  @:home_html(logged_in)
 }
 )
 

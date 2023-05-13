@@ -1,7 +1,7 @@
 @use super::footer_html;
 @use super::header_html;
 
-@(title: &str, admin: bool, body: Content)
+@(title: &str, admin: bool, logged_in: bool, body: Content)
 
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="dark" style="margin:0;
@@ -25,7 +25,7 @@
               position:relative;">
 
 
-      @:header_html(admin)
+      @:header_html(admin, logged_in)
 
     <div class="container mt-5 ">
       

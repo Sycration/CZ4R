@@ -1,4 +1,4 @@
-@(admin: bool)
+@(admin: bool, logged_in: bool)
 
 <nav class="navbar navbar-expand-lg bg-body-tertiary  sticky-top">
     <div class="container-fluid">
@@ -11,7 +11,7 @@
           <li class="nav-item">
             <a class="nav-link" aria-current="page" href="/">Home</a>
           </li>
-
+          @if logged_in {
           <li class="nav-item">
             <a class="nav-link" aria-current="page" href="/joblist">Job list</a>
           </li>
@@ -59,7 +59,7 @@
               </li>
             </ul>
 
-
+          }
         </ul>
       </div>
        

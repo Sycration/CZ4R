@@ -1,17 +1,17 @@
 @use super::base_html; 
 
-@(title: &str)
+@(title: &str, logged_in: bool)
   
-@:base_html(title, false, {
+@:base_html(title, false, logged_in, {
   <div class="d-flex flex-column align-items-center">
-    <form class="d-flex flex-column justify-content-center">
+    <form class="d-flex flex-column justify-content-center" action="/login">
         <div class="mb-3 p-2 flex-fill">
           <label for="InputUname1" class="form-label">Username</label>
-          <input type="text" class="form-control" id="InputUname1">
+          <input type="text" class="form-control" id="InputUname1" name="username">
         </div>
         <div class="mb-3 p-2 flex-fill">
           <label for="InputPassword1" class="form-label">Password</label>
-          <input type="password" class="form-control" id="InputPassword1">
+          <input type="password" class="form-control" id="InputPassword1" name="password">
         </div>
         <button type="submit" class="btn btn-primary p-2 flex-fill">Login</button>
       </form>

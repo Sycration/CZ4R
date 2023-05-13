@@ -8,6 +8,9 @@ COPY .bash_aliases /home/vscode/.bash_aliases
 # Enable our git hooks and set the permisisons on docker sock.
 RUN echo 'git config core.hooksPath /vscode/.devcontainer/.githooks' >> ~/.bashrc
 
+# install sqlx tools
+RUN cargo install sqlx-cli --no-default-features --features rustls,postgres
+
 # all the volumes configured in the docker-compose.yml
 ARG USERNAME=vscode
 RUN sudo mkdir -p /workspace/target && sudo chown $USERNAME:$USERNAME /workspace/target
