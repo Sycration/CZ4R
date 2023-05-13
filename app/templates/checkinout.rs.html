@@ -3,7 +3,7 @@
 @(title: &str, admin: bool, site_name: &str, address: &str, date: &str, notes: &str)
 
 
-@:base_html(title, admin, {
+@:base_html(title, admin, true, {
     <div class="container">
       <h1 class="text-center ">Time Sheet</h1>
       <table class="table">

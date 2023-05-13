@@ -4,8 +4,8 @@ services:
   db:
     image: postgres:14-alpine
     environment:
-      POSTGRES_PASSWORD: testpassword
-      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U vscode"]
       interval: 10s
@@ -28,7 +28,11 @@ services:
       #- node_modules:/vscode/node_modules 
 
     environment:
-      DATABASE_URL: postgresql://postgres:testpassword@db:5432/postgres?sslmode=disable
+      DATABASE_URL:   ${DATABASE_URL}
+      LOGIN_SECRET:   ${LOGIN_SECRET}
+
+      ADMIN_USER:     ${ADMIN_USER}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
 
     # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity

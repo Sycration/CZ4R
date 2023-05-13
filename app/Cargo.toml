@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 axum = {version = "0.6", features = ["form", "macros"]}
+tower-http = {version = "0.4", features = ["trace"]}
 axum-login ={ version = "0.5.0", features = ["sqlx", "postgres"]}
 sqlx = { version = "0.6", features = [ "runtime-tokio-rustls" , "postgres"] }
 futures = "0.3.25"
@@ -14,9 +15,12 @@ rand = "0.8"
 rustls = "0.20.7"
 serde = { version = "1.0.152", features = ["derive"] }
 tokio = { version = "1.23.0", features = ["macros", "rt-multi-thread"] }
-
+base64 = "0.21"
 webpki-roots = "0.22.6"
-
+tracing-subscriber = { version = "0.3"}
+tracing = "0.1"
+scrypt = "0.11.0"
+password-hash = {version = "0.5.0", features = ["rand_core"]}
 [build-dependencies]
 
 ructe = { version = "0.16.1", features = ["mime03"] }

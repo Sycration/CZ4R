@@ -1,4 +1,4 @@
-@use super::base_html; @use super::userselect_html; @(title: &str, admin: bool, selected:Option<u64>) @:base_html(title, admin, { @if !admin {
+@use super::base_html; @use super::userselect_html; @(title: &str, admin: bool, selected:Option<u64>) @:base_html(title, admin,  true, { @if !admin {
   <script>
     window.location.href = "/";
     console.log("%c🖕", "background: red; color: yellow; font-size: x-large");

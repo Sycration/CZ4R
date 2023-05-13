@@ -2,7 +2,7 @@
 
 @(title: &str, admin: bool)
 
-@:base_html(title, admin, {
+@:base_html(title, admin, true, {
     
     @if !admin {
         <script>

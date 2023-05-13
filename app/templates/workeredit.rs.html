@@ -3,7 +3,7 @@
 
 @(title: &str, admin: bool, creating: bool, selected:Option<u64>)
 
-  @:base_html(title, admin, { @if !admin {
+  @:base_html(title, admin, true,  { @if !admin {
   <script>
     window.location.href = "/";
     console.log("%c🖕", "background: red; color: yellow; font-size: x-large");

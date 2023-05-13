@@ -1,4 +1,4 @@
-@()
+@(logged_in: bool)
 
 <div class="container col-xxl-8 px-4 py-5">
   <div class="row flex-lg-row-reverse align-items-center g-5 py-5">
@@ -20,15 +20,27 @@
         Built using the wonderful <a href="https://rust-on-nails.com/">Rust on Nails</a> framework
       </p>
       <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+
+       @if logged_in {
         <a href="/joblist">
-            <button type="button" class="btn btn-primary btn-lg px-4 me-md-2">
-                Go to job list
-              </button>
-        </a>
-       
-        <button type="button" class="btn btn-outline-secondary btn-lg px-4">
-          Logout
-        </button>
+          <button type="button" class="btn btn-primary btn-lg px-4 me-md-2">
+              Go to job list
+            </button>
+      </a>
+         <form action="/logout">
+          <button type="submit" class="btn btn-outline-secondary btn-lg px-4">
+            Logout
+          </button>
+        </form>
+       } else {
+
+        <form action="/loginpage">
+          <button type="submit" class="btn btn-outline-primary btn-lg px-4">
+            Login
+          </button>
+        </form>
+       }
+        
       </div>
     </div>
   </div>
