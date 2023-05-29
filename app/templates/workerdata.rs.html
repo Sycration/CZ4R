@@ -1,4 +1,4 @@
-@use super::base_html; @use super::userselect_html; @(title: &str, admin: bool, selected:Option<u64>) @:base_html(title, admin,  true, { @if !admin {
+@use super::base_html; @use super::userselect_html; @(title: &str, admin: bool, selected:Option<i64>) @:base_html(title, admin,  true, { @if !admin {
   <script>
     window.location.href = "/";
     console.log("%c🖕", "background: red; color: yellow; font-size: x-large");
@@ -6,7 +6,7 @@
   } else {
   <div class="row row-cols-1 row-cols-md-2">
     <div class="col col-md-4 pb-4">
-      @:userselect_html("worker-data", &[(0, "Michael", "Shiff"),(1, "Cici", "Mason"),(2, "Raymond", "Wang")], selected)
+      @:userselect_html("worker-data", &[(0, "Michael Shiff"),(1, "Cici Mason"),(2, "Raymond Wang")], selected)
     </div>
     <div class="col col-md-8">
       

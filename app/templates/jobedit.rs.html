@@ -1,4 +1,4 @@
-@use super::base_html; @use super::list_html; @(title: &str, admin: bool, job_id: Option<u64>) @:base_html(title, admin, true,  {
+@use super::base_html; @use super::list_html; @(title: &str, admin: bool, job_id: Option<i64>) @:base_html(title, admin, true,  {
 
 
   <h1 class="text-center ">
@@ -82,4 +82,4 @@
   </form>
 
   } )
-</u64>
+
