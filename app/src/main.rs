@@ -29,6 +29,9 @@ mod login;
 mod config;
 mod errors;
 mod workeredit;
+mod create_worker;
+mod change_worker;
+mod change_pw;
 #[derive(Debug, Default, Clone, sqlx::FromRow)]
 pub struct Worker {
     id: i64,
@@ -42,6 +45,8 @@ pub struct Worker {
     rate_hourly_cents: i32,
     rate_mileage_cents: i32,
     rate_drive_hourly_cents: i32,
+    flat_rate_cents: i32,
+    must_change_pw: bool,
 }
 
 type Auth = AuthContext<i64, Worker, PostgresStore<Worker, ()>, ()>;
@@ -116,11 +121,15 @@ async fn main() {
         .route("/login", get(login::login))
         .route("/logout", get(login::logout))
         .route("/checkinout", get(checkinout))
+        .route("/change-pw", get(change_pw::change_pw_page))
+        .route("/api/v1/change-pw/:id", get(change_pw::change_pw))
         .route("/admin", get(admin))
         .route("/admin/worker-edit", get(workeredit::workeredit))
         //.route("/admin/worker-create", get(workercreate))
         .route("/admin/worker-data", get(workerdata))
         .route("/admin/deactivated-workers", get(deactivatedworkers))
+        .route("/admin/api/v1/create-worker", get(create_worker::create_worker))
+        .route("/admin/api/v1/change-worker/:id", get(change_worker::change_worker))
         .fallback(error404)
         .layer(Extension(config))
         .layer(auth_layer)
@@ -135,6 +144,8 @@ async fn main() {
         .await
         .unwrap();
 }
+
+
 
 async fn index(State(pool): State<Pool<Postgres>>, mut auth: Auth ) -> Result<Html<String>, CustomError> {
     //let client = pool.get().await?;
@@ -174,25 +185,6 @@ async fn admin(State(pool): State<Pool<Postgres>>, mut auth: Auth) -> Result<Htm
     }))
 }
 
-#[derive(Deserialize)]
-struct WorkerEditForm {
-    worker: Option<i64>,
-    creating: Option<bool>,
-}
-
-
-
-async fn workercreate(State(pool): State<Pool<Postgres>>, mut auth: Auth) -> Result<Html<String>, CustomError> {
-    //let client = pool.get().await?;
-
-    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
-     let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
-    let logged_in = auth.current_user.is_some();
-
-    Ok(crate::render(|buf| {
-        crate::templates::workeredit_html(buf, "CZ4R Worker Edit", admin, true, None, &[],&[])
-    }))
-}
 
 #[derive(Deserialize)]
 struct WorkerDataForm {
@@ -238,13 +230,20 @@ async fn jobedit(State(pool): State<Pool<Postgres>>, mut auth: Auth) -> Result<H
     }))
 }
 
-async fn loginpage(State(pool): State<Pool<Postgres>>, mut auth: Auth) -> Result<Html<String>, CustomError> {
+#[derive(Deserialize)]
+pub struct LoginPageForm {
+    failure: Option<bool>
+}
+
+async fn loginpage(State(pool): State<Pool<Postgres>>, mut auth: Auth, Form(form): Form<LoginPageForm>) -> Result<Html<String>, CustomError> {
     //let client = pool.get().await?;
     
     let logged_in = auth.current_user.is_some();
 
+
+
     Ok(crate::render(|buf| {
-        crate::templates::login_html(buf, "CZ4R Login", logged_in)
+        crate::templates::login_html(buf, "CZ4R Login", logged_in, form.failure == Some(true))
     }))
 }
 

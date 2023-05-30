@@ -2,7 +2,7 @@
 @use super::userselect_html; 
 @use crate::Worker; 
 
-@(title: &str, admin: bool, creating: bool, selected:Option<i64>, workerlist: &[Worker], selectlist: &[(i64, &str)])
+@(title: &str, admin: bool, creating: bool, selected:Option<i64>, workerlist: &[Worker], selectlist: &[(i64, &str)], own_id: i64)
 
   @:base_html(title, admin, true,  { @if !admin {
   <script>
@@ -102,48 +102,58 @@
                   placeholder="0.00" id="Mileage" name="Mileage" class="form-control" value="@(format!("{:.2}", (w.rate_mileage_cents as f64 / 100.)))">
               </div>
     
-              <div class="input-group ">
+              <div class="input-group pb-3">
                 <span class="input-group-text">Drive time $</span>
                 <input form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01" aria-label="Drivetime"
                   placeholder="0.00" id="Drivetime" name="Drivetime" class="form-control" value="@(format!("{:.2}", (w.rate_drive_hourly_cents as f64 / 100.)))">
               </div>
+
+              <div class="input-group ">
+                <span class="input-group-text">Flat Rate $</span>
+                <input form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01" aria-label="Flatrate"
+                  placeholder="0.00" id="Flatrate" name="Flatrate" class="form-control" value="@(format!("{:.2}", (w.flat_rate_cents as f64 / 100.)))">
+              </div>
             </div>
 
+            <div class="form-check">
+              <input form="edit" class="form-check-input" type="checkbox" id="Admin" name="Admin" @if w.admin {checked="checked"} else {} @if w.id == own_id {class="special" onclick="event.preventDefault();"}>
+              <label class="form-check-label" for="Admin">Admin</label>
+            </div>
 
+          </div>
+
+
+          <div class="row pt-3">
+            <div class="col  ">
+              <div class="d-grid gap-2 ">
+  
+                <button type="submit" class="btn btn-primary" formaction="api/v1/change-worker/@w.id">
+                  Submit
+                </button>
+              </div>
+  
+            </div>
+            <div class="col">
+              <div class="gap-2 pb-4 text-end">
+                <div class="pb-2">
+                  <a class="btn btn-outline-danger" type="button" data-bs-toggle="modal"
+                  data-bs-target="#ResetModal"> Reset password</a>
+                </div>
+                <div>
+                  <a class="btn btn-outline-danger" type="button" data-bs-toggle="modal"
+                    data-bs-target="#DeactivateModal">Deactivate</a>
+                </div>
+              </div>
+              
+            </div>
+          </div>
           }
 
           }
           } else {
 
           }
-        </div>
-
-
-        <div class="row pt-3">
-          <div class="col  ">
-            <div class="d-grid gap-2 ">
-
-              <button type="submit" class="btn btn-primary" formaction="api/v1/create_or_change_worker">
-                Submit
-              </button>
-            </div>
-
-          </div>
-          <div class="col">
-            @if selected.is_some() {
-            <div class="gap-2 pb-4 text-end">
-              <div class="pb-2">
-                <a class="btn btn-outline-danger" type="button" data-bs-toggle="modal"
-                data-bs-target="#ResetModal"> Reset password</a>
-              </div>
-              <div>
-                <a class="btn btn-outline-danger" type="button" data-bs-toggle="modal"
-                  data-bs-target="#DeactivateModal">Deactivate</a>
-              </div>
-            </div>
-            }
-          </div>
-        </div>
+       
 
       </form>
       } else if creating {
@@ -185,13 +195,23 @@
                     placeholder="0.00" id="Mileage" name="Mileage" class="form-control">
                 </div>
       
-                <div class="input-group ">
+                <div class="input-group pb-3">
                   <span class="input-group-text">Drive time $</span>
                   <input form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01" aria-label="Drivetime"
                     placeholder="0.00" id="Drivetime" name="Drivetime" class="form-control">
                 </div>
+
+                <div class="input-group ">
+                  <span class="input-group-text">Flat Rate $</span>
+                  <input form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01" aria-label="Flatrate"
+                    placeholder="0.00" id="Flatrate" name="Flatrate" class="form-control">
+                </div>
               </div>
-  
+              
+              <div class="form-check">
+                <input form="edit" class="form-check-input" type="checkbox" id="Admin" name="Admin">
+                <label class="form-check-label" for="Admin">Admin</label>
+              </div>
   
 
           </div>
@@ -201,7 +221,7 @@
             <div class="col  ">
               <div class="d-grid gap-2 ">
   
-                <button type="submit" class="btn btn-primary" formaction="api/v1/create_or_change_worker">
+                <button type="submit" class="btn btn-primary" formaction="api/v1/create-worker">
                   Create
                 </button>
               </div>

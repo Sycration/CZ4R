@@ -1,0 +1,25 @@
+@use super::base_html; 
+
+@(title: &str, logged_in: bool, failure: bool, chg_id: i64)
+  
+@:base_html(title, false, logged_in, {
+  <div class="d-flex flex-column align-items-center">
+    <form class="d-flex flex-column justify-content-center" action="/api/v1/change-pw/@chg_id">
+        <div class="mb-3 p-2 flex-fill">
+          <label for="password1" class="form-label">Password</label>
+          <input type="password" class="form-control" id="password1" name="password1">
+        </div>
+        <div class="mb-3 p-2 flex-fill">
+          <label for="password2" class="form-label">Repeat password</label>
+          <input type="password" class="form-control" id="password2" name="password2">
+        </div>
+        <button type="submit" class="btn btn-primary p-2 flex-fill">Change Password</button>
+      </form>
+      @if failure {
+        <div class="alert alert-warning" role="alert">
+          Passwords do not match
+        </div>
+      }
+  </div>
+}
+)

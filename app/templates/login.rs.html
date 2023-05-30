@@ -1,6 +1,6 @@
 @use super::base_html; 
 
-@(title: &str, logged_in: bool)
+@(title: &str, logged_in: bool, failure: bool)
   
 @:base_html(title, false, logged_in, {
   <div class="d-flex flex-column align-items-center">
@@ -15,6 +15,11 @@
         </div>
         <button type="submit" class="btn btn-primary p-2 flex-fill">Login</button>
       </form>
+      @if failure {
+        <div class="alert alert-warning" role="alert">
+          Incorrect username or password
+        </div>
+      }
   </div>
 }
 )

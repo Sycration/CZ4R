@@ -1,13 +1,21 @@
-use super::render;
+
 use crate::errors::CustomError;
 use axum::response::Html;
-use super::WorkerEditForm;
 use axum::Form;
+use serde::Deserialize;
 use super::Auth;
 use super::Worker;
 use sqlx::Postgres;
 use sqlx::Pool;
 use axum::extract::State;
+
+
+#[derive(Deserialize)]
+pub(crate) struct WorkerEditForm {
+    worker: Option<i64>,
+    creating: Option<bool>,
+}
+
 
 pub(crate) async fn workeredit(
     State(pool): State<Pool<Postgres>>, mut auth: Auth,
@@ -25,7 +33,7 @@ pub(crate) async fn workeredit(
 
 
         Ok(crate::render(|buf| {
-            crate::templates::workeredit_html(buf, "CZ4R Worker Edit", admin, (worker.creating==Some(true)), worker.worker,users.as_slice(), selectlist.as_slice())
+            crate::templates::workeredit_html(buf, "CZ4R Worker Edit", admin, (worker.creating==Some(true)), worker.worker,users.as_slice(), selectlist.as_slice(), auth.current_user.unwrap().id)
         }))
     } else if logged_in {
         Err(CustomError::Auth("Not Admin".to_string()))

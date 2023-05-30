@@ -12,7 +12,7 @@
     </div>
     <ul class="list-group list-group-flush">  @for job_num in 0..10 {
         <li class="list-group-item">
-            @:card_html("worker", &job_num.to_string(), "123 Fake Street", "Today", true)
+            @:card_html("worker", &job_num.to_string(), "123 Fake Street", "Today", admin)
         </li>}
     </ul>
 }

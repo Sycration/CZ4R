@@ -36,11 +36,18 @@ pub(crate) async fn login(
     let worker = if let Ok(w) = worker {
         w
     } else {
-        return Redirect::to("/?failure=true");
+        return Redirect::to("/loginpage?failure=true");
     };
 
+    if worker.must_change_pw && worker.hash.is_empty() && worker.salt.is_empty() {
+        return Redirect::to(format!("/change-pw?id={}", worker.id).as_str());
+    }
+
     let salt = &worker.salt;
-    let saltstr = SaltString::from_b64(salt.as_str()).unwrap();
+    let saltstr = SaltString::from_b64(salt.as_str());
+    let saltstr = if let Ok(s) = saltstr {s} else {
+        return Redirect::to("/loginpage?failure=true");
+    };
 
     let hash = Scrypt
         .hash_password(password.as_bytes(), saltstr.as_salt())
@@ -50,6 +57,10 @@ pub(crate) async fn login(
     let mut failure = false;
 
     if worker.hash == hash {
+        if worker.must_change_pw {
+            //do not log in
+            return Redirect::to(format!("/change-pw?id={}", worker.id).as_str());
+        }
         auth.login(&worker).await.unwrap();
     } else {
         failure = true;
