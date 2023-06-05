@@ -45,7 +45,9 @@ pub(crate) async fn login(
 
     let salt = &worker.salt;
     let saltstr = SaltString::from_b64(salt.as_str());
-    let saltstr = if let Ok(s) = saltstr {s} else {
+    let saltstr = if let Ok(s) = saltstr {
+        s
+    } else {
         return Redirect::to("/loginpage?failure=true");
     };
 
@@ -73,10 +75,7 @@ pub(crate) async fn login(
     }
 }
 
-pub(crate) async fn logout(
-    mut auth: Auth,
-    State(pool): State<Pool<Postgres>>,
-) -> Redirect {
+pub(crate) async fn logout(mut auth: Auth, State(pool): State<Pool<Postgres>>) -> Redirect {
     auth.logout().await;
     Redirect::to("/")
 }

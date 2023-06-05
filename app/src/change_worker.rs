@@ -8,15 +8,15 @@ use axum::extract::Path;
 use axum::extract::State;
 use axum::response::Redirect;
 use axum::Form;
+use rust_decimal::prelude::*;
 use serde::Deserialize;
 use sqlx::query;
+use sqlx::query_as;
 use sqlx::Pool;
 use sqlx::Postgres;
-use sqlx::query_as;
-use rust_decimal::prelude::*;
 
 #[derive(Deserialize)]
-pub(crate)  struct WorkerChangeForm {
+pub(crate) struct WorkerChangeForm {
     Name: String,
     Address: String,
     Phone: String,
@@ -39,14 +39,14 @@ pub(crate) async fn change_worker(
         let hourly = if let Ok(v) = hourly {
             v * Decimal::ONE_HUNDRED
         } else {
-            return Err(CustomError::Database(format!(
-                "Nonsense data: {} is not a number",
+            return Err(CustomError::ClientData(format!(
+                "{} is not a number",
                 workerdata.Hourly
             )));
         };
         let mileage = Decimal::from_str_exact(&workerdata.Mileage);
         let mileage = if let Ok(v) = mileage {
-            v * Decimal::ONE_HUNDRED 
+            v * Decimal::ONE_HUNDRED
         } else {
             return Err(CustomError::Database(format!(
                 "Nonsense data: {} is not a number",
@@ -55,7 +55,7 @@ pub(crate) async fn change_worker(
         };
         let drivetime = Decimal::from_str_exact(&workerdata.Drivetime);
         let drivetime = if let Ok(v) = drivetime {
-            v * Decimal::ONE_HUNDRED 
+            v * Decimal::ONE_HUNDRED
         } else {
             return Err(CustomError::Database(format!(
                 "Nonsense data: {} is not a number",
@@ -64,7 +64,7 @@ pub(crate) async fn change_worker(
         };
         let flatrate = Decimal::from_str_exact(&workerdata.Flatrate);
         let flatrate = if let Ok(v) = flatrate {
-            v * Decimal::ONE_HUNDRED 
+            v * Decimal::ONE_HUNDRED
         } else {
             return Err(CustomError::Database(format!(
                 "Nonsense data: {} is not a number",
@@ -75,7 +75,7 @@ pub(crate) async fn change_worker(
         let admin = match workerdata.Admin.as_deref() {
             Some("on" | "true" | "yes") => true,
             Some("off" | "false" | "no") | None => false,
-            _ => return Err(CustomError::Database("Not a boolean".to_string()))
+            _ => return Err(CustomError::Database("Not a boolean".to_string())),
         };
         let res = query!(
             r#"update users 
@@ -101,12 +101,16 @@ pub(crate) async fn change_worker(
             drivetime.to_i32().unwrap(),
             flatrate.to_i32().unwrap(),
             id
-        ).execute(&pool).await;
+        )
+        .execute(&pool)
+        .await;
 
         if let Err(e) = res {
             return Err(CustomError::Database(e.to_string()));
         }
-        Ok(Redirect::to(format!("/admin/worker-edit?worker={}", id).as_str()))
+        Ok(Redirect::to(
+            format!("/admin/worker-edit?worker={}", id).as_str(),
+        ))
     } else {
         Err(CustomError::Auth("Not logged in as admin".to_string()))
     }

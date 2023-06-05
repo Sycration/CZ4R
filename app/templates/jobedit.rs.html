@@ -1,12 +1,12 @@
-@use super::base_html; @use super::list_html; @(title: &str, admin: bool, job_id: Option<i64>) @:base_html(title, admin, true,  {
+@use super::base_html; @use crate::Job; @use super::list_html; @(title: &str, admin: bool, job: Option<Job>, list_data: &[(i64, String, bool, bool)]) @:base_html(title, admin, true,  {
 
 
   <h1 class="text-center ">
-    @match job_id { Some(id) => { Editing job @id } None => { Create a new job
+    @match &job { Some(ref job) => { Editing job @job.id } None => { Create a new job
     } }
   </h1>
 
-  <form method="get">
+  <form method="get" action="/admin/api/v1/edit-job">
     <div class="input-group px-3 mb-3">
       <span class="input-group-text">Site name</span>
       <label for="SiteNameInput" class="form-label d-none">Site name</label>
@@ -15,6 +15,7 @@
         type="text"
         class="form-control"
         id="SiteNameInput"
+        @if let Some(ref job) = job {value = "@job.sitename"}
       />
     </div>
 
@@ -34,12 +35,15 @@
         type="text"
         class="form-control"
         id="ServcodeInput"
+        @if let Some(ref job) = job {value = "@job.servicecode"}
       />
       <input
         name="workorder"
-        type="number"
+        type="text"
         class="form-control"
         id="WorkorderInput"
+        @if let Some(ref job) = job {value = "@job.workorder"}
+
       />
       <span class="input-group-text d-none d-sm-block">Work order</span>
     </div>
@@ -52,30 +56,38 @@
         type="text"
         class="form-control"
         id="AddressInput"
+        @if let Some(ref job) = job {value = "@job.address"}
+
       />
     </div>
 
     <div class="input-group px-3 mb-3">
       <span class="input-group-text">Date</span>
       <label for="DateInput" class="form-label d-none">Date</label>
-      <input name="date" type="date" class="form-control" id="DateInput" />
+      <input name="date" type="date" class="form-control" id="DateInput" 
+          @if let Some(ref job) = job {value = "@job.date"}
+
+      />
     </div>
 
     <div
       class="border border-primary-subtle"
       style="max-height: 15em; overflow-x: hidden; overflow-y: auto"
     >
-      @:list_html(&[ 
-      ("0", "michael shiff", false, false), 
-      ("1", "raymond wang", false, false), 
-      ("2", "cici mason", false, false), 
-      ("3", "raymond wang", false, false)])
+      @:list_html(list_data)
     </div>
+
+    <input type="hidden" id="assigned" name="assigned" value="">
+    <input type="hidden" id="flatrate" name="flatrate" value="">
+    @if let Some(ref job) = job {
+    <input type="hidden" id="jobid" name="jobid" value="@job.id">
+
+    }
 
     <div class="text-center">
 
         <button type="submit" class="btn btn-primary btn-lg mt-4 mb-4">
-          @if job_id.is_some() { Submit changes } else { Create }
+          @if job.is_some() { Submit changes } else { Create }
         </button>
 
     </div>

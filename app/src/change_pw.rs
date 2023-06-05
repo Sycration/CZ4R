@@ -29,16 +29,24 @@ pub(crate) async fn change_pw_page(
 ) -> Result<Html<String>, CustomError> {
     let logged_in = auth.current_user.is_some();
 
-    let id = if let Some(id) = auth.current_user.map(|u|u.id) {
+    let id = if let Some(id) = auth.current_user.map(|u| u.id) {
         id
     } else if let Some(id) = form.id {
         id
     } else {
-        return Err(CustomError::Auth("Not logged in and no ID selected.".to_string()));
+        return Err(CustomError::Auth(
+            "Not logged in and no ID selected.".to_string(),
+        ));
     };
 
     Ok(crate::render(|buf| {
-        crate::templates::changepw_html(buf, "CZ4R Login", logged_in, form.no_match == Some(true), id)
+        crate::templates::changepw_html(
+            buf,
+            "CZ4R Login",
+            logged_in,
+            form.no_match == Some(true),
+            id,
+        )
     }))
 }
 
@@ -101,9 +109,11 @@ pub(crate) async fn change_pw(
         hash,
         salt.as_str(),
         id
-    ).execute(&pool).await;
+    )
+    .execute(&pool)
+    .await;
     if res.is_err() {
-        return Err(CustomError::Database(res.unwrap_err().to_string()))
+        return Err(CustomError::Database(res.unwrap_err().to_string()));
     }
 
     Ok(Redirect::to("/loginpage"))

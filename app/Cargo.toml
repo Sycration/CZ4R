@@ -9,7 +9,8 @@ edition = "2021"
 axum = {version = "0.6", features = ["form", "macros"]}
 tower-http = {version = "0.4", features = ["trace"]}
 axum-login ={ version = "0.5.0", features = ["sqlx", "postgres"]}
-sqlx = { version = "0.6", features = [ "runtime-tokio-rustls" , "postgres", "decimal"] }
+sqlx = { version = "0.6", features = [ "runtime-tokio-rustls" , "postgres", "decimal", "time"] }
+time = {version = "*", features = ["serde"]}
 futures = "0.3.25"
 rand = "0.8"
 rustls = "0.20.7"

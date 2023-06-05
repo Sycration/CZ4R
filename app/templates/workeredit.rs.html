@@ -11,6 +11,7 @@
   </script>
   } else {
 
+@if let Some(id) = selected {
   <div class="modal fade" id="DeactivateModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -40,13 +41,16 @@
           Are you sure you want to reset this worker's password? They will have to set a new one on their next login.
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-danger">Reset</button>
+          <form action="/admin/api/v1/reset-pw" method="get">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-danger">Reset</button>
+            <input type="hidden" id="hidden-id" name="id" value="@id">
+          </form>          
         </div>
       </div>
     </div>
   </div>
-
+}
   <div class="row row-cols-1 row-cols-md-2">
     <div class="col col-md-4 pb-4">
       <div class="d-grid gap-2 pb-4">

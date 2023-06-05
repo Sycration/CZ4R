@@ -8,15 +8,15 @@ use axum::extract::Path;
 use axum::extract::State;
 use axum::response::Redirect;
 use axum::Form;
+use rust_decimal::prelude::*;
 use serde::Deserialize;
 use sqlx::query;
+use sqlx::query_as;
 use sqlx::Pool;
 use sqlx::Postgres;
-use sqlx::query_as;
-use rust_decimal::prelude::*;
 
 #[derive(Deserialize)]
-pub(crate)  struct WorkerCreateForm {
+pub(crate) struct WorkerCreateForm {
     Name: String,
     Address: String,
     Phone: String,
@@ -46,7 +46,7 @@ pub(crate) async fn create_worker(
         };
         let mileage = Decimal::from_str_exact(&workerdata.Mileage);
         let mileage = if let Ok(v) = mileage {
-            v * Decimal::ONE_HUNDRED 
+            v * Decimal::ONE_HUNDRED
         } else {
             return Err(CustomError::Database(format!(
                 "Nonsense data: {} is not a number",
@@ -55,7 +55,7 @@ pub(crate) async fn create_worker(
         };
         let drivetime = Decimal::from_str_exact(&workerdata.Drivetime);
         let drivetime = if let Ok(v) = drivetime {
-            v * Decimal::ONE_HUNDRED 
+            v * Decimal::ONE_HUNDRED
         } else {
             return Err(CustomError::Database(format!(
                 "Nonsense data: {} is not a number",
@@ -64,7 +64,7 @@ pub(crate) async fn create_worker(
         };
         let flatrate = Decimal::from_str_exact(&workerdata.Flatrate);
         let flatrate = if let Ok(v) = flatrate {
-            v * Decimal::ONE_HUNDRED 
+            v * Decimal::ONE_HUNDRED
         } else {
             return Err(CustomError::Database(format!(
                 "Nonsense data: {} is not a number",
@@ -75,7 +75,7 @@ pub(crate) async fn create_worker(
         let admin = match workerdata.Admin.as_deref() {
             Some("on" | "true" | "yes") => true,
             Some("off" | "false" | "no") | None => false,
-            _ => return Err(CustomError::Database("Not a boolean".to_string()))
+            _ => return Err(CustomError::Database("Not a boolean".to_string())),
         };
         let id = query!(
             r#"insert into users (name, hash, salt, admin, address, phone, email, rate_hourly_cents, rate_mileage_cents, rate_drive_hourly_cents, flat_rate_cents, must_change_pw)
@@ -99,10 +99,15 @@ pub(crate) async fn create_worker(
         let id = if let Ok(id) = id {
             id.id
         } else {
-            return Err(CustomError::Database(format!("Nonsense data returned from database: {} is not a valid ID", id.unwrap_err())));
+            return Err(CustomError::Database(format!(
+                "Nonsense data returned from database: {} is not a valid ID",
+                id.unwrap_err()
+            )));
         };
 
-        Ok(Redirect::to(format!("/admin/worker-edit?worker={}", id).as_str()))
+        Ok(Redirect::to(
+            format!("/admin/worker-edit?worker={}", id).as_str(),
+        ))
     } else {
         Err(CustomError::Auth("Not logged in as admin".to_string()))
     }

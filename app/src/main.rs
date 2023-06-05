@@ -1,4 +1,3 @@
-
 use axum::{
     debug_handler,
     extract::{Extension, Path, State},
@@ -13,26 +12,44 @@ use axum_login::{
     secrecy::SecretVec,
     AuthLayer, AuthUser, PostgresStore, RequireAuthorizationLayer,
 };
+use sqlx::types::time::Date;
 use errors::CustomError;
 use password_hash::{PasswordHasher, Salt, SaltString};
 use rand::{thread_rng, Rng};
 use scrypt::Scrypt;
 use serde::Deserialize;
 use sqlx::{query, query_as, Pool, Postgres};
+use time::Time;
 use std::{collections::HashMap, default, env, net::SocketAddr, sync::Arc};
 use tokio::sync::RwLock;
 use tower_http::trace::{self, TraceLayer};
 use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-mod login;
-mod config;
-mod errors;
-mod workeredit;
-mod create_worker;
-mod change_worker;
 mod change_pw;
+mod change_worker;
+mod config;
+mod create_worker;
+mod errors;
+mod jobedit;
+mod joblist;
+mod checkinout;
+mod login;
+mod reset_pw;
+mod workeredit;
+
+#[derive(Debug, Clone, sqlx::FromRow)]
+pub struct Job {
+    id: i64,
+    sitename: String,
+    workorder: String,
+    servicecode: String,
+    address: String,
+    date: Date,
+}
+
 #[derive(Debug, Default, Clone, sqlx::FromRow)]
+
 pub struct Worker {
     id: i64,
     name: String,
@@ -47,6 +64,20 @@ pub struct Worker {
     rate_drive_hourly_cents: i32,
     flat_rate_cents: i32,
     must_change_pw: bool,
+}
+
+#[derive(Debug, Default, Clone, sqlx::FromRow)]
+
+pub struct JobWorker {
+    job: i64,
+    worker: i64,
+    signin: Option<Time>,
+    signout: Option<Time>,
+    miles_driven: i32,
+    hours_driven: i32,
+    extraexpcents: i32,
+    notes: String,
+    using_flat_rate: bool
 }
 
 type Auth = AuthContext<i64, Worker, PostgresStore<Worker, ()>, ()>;
@@ -115,21 +146,31 @@ async fn main() {
     // build our application with a route
     let app = Router::new()
         .route("/", get(index))
-        .route("/joblist", get(joblist))
-        .route("/jobedit", get(jobedit))
+        .route("/joblist", get(joblist::joblistpage))
+        .route("/jobedit", get(jobedit::jobeditpage))
         .route("/loginpage", get(loginpage))
         .route("/login", get(login::login))
         .route("/logout", get(login::logout))
-        .route("/checkinout", get(checkinout))
+        .route("/checkinout", get(checkinout::checkinoutpage))
         .route("/change-pw", get(change_pw::change_pw_page))
         .route("/api/v1/change-pw/:id", get(change_pw::change_pw))
+        .route("/api/v1/checkinout", get(checkinout::checkinout))
         .route("/admin", get(admin))
         .route("/admin/worker-edit", get(workeredit::workeredit))
         //.route("/admin/worker-create", get(workercreate))
         .route("/admin/worker-data", get(workerdata))
         .route("/admin/deactivated-workers", get(deactivatedworkers))
-        .route("/admin/api/v1/create-worker", get(create_worker::create_worker))
-        .route("/admin/api/v1/change-worker/:id", get(change_worker::change_worker))
+        .route(
+            "/admin/api/v1/create-worker",
+            get(create_worker::create_worker),
+        )
+        .route("/admin/api/v1/edit-job", get(jobedit::jobedit))
+        .route(
+            "/admin/api/v1/change-worker/:id",
+            get(change_worker::change_worker),
+        )
+ 
+        .route("/admin/api/v1/reset-pw", get(reset_pw::reset_pw))
         .fallback(error404)
         .layer(Extension(config))
         .layer(auth_layer)
@@ -145,9 +186,10 @@ async fn main() {
         .unwrap();
 }
 
-
-
-async fn index(State(pool): State<Pool<Postgres>>, mut auth: Auth ) -> Result<Html<String>, CustomError> {
+async fn index(
+    State(pool): State<Pool<Postgres>>,
+    mut auth: Auth,
+) -> Result<Html<String>, CustomError> {
     //let client = pool.get().await?;
 
     //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
@@ -160,12 +202,13 @@ async fn index(State(pool): State<Pool<Postgres>>, mut auth: Auth ) -> Result<Ht
 }
 
 async fn deactivatedworkers(
-    State(pool): State<Pool<Postgres>>, mut auth: Auth,
+    State(pool): State<Pool<Postgres>>,
+    mut auth: Auth,
 ) -> Result<Html<String>, CustomError> {
     //let client = pool.get().await?;
 
     //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
-     let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
+    let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
     let logged_in = auth.current_user.is_some();
 
     Ok(crate::render(|buf| {
@@ -173,11 +216,14 @@ async fn deactivatedworkers(
     }))
 }
 
-async fn admin(State(pool): State<Pool<Postgres>>, mut auth: Auth) -> Result<Html<String>, CustomError> {
+async fn admin(
+    State(pool): State<Pool<Postgres>>,
+    mut auth: Auth,
+) -> Result<Html<String>, CustomError> {
     //let client = pool.get().await?;
 
     //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
-     let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
+    let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
     let logged_in = auth.current_user.is_some();
 
     Ok(crate::render(|buf| {
@@ -185,20 +231,20 @@ async fn admin(State(pool): State<Pool<Postgres>>, mut auth: Auth) -> Result<Htm
     }))
 }
 
-
 #[derive(Deserialize)]
 struct WorkerDataForm {
     worker: Option<i64>,
 }
 
 async fn workerdata(
-    State(pool): State<Pool<Postgres>>, mut auth: Auth,
+    State(pool): State<Pool<Postgres>>,
+    mut auth: Auth,
     Form(worker): Form<WorkerDataForm>,
 ) -> Result<Html<String>, CustomError> {
     //let client = pool.get().await?;
 
     //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
-     let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
+    let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
     let logged_in = auth.current_user.is_some();
 
     Ok(crate::render(|buf| {
@@ -206,72 +252,35 @@ async fn workerdata(
     }))
 }
 
-async fn joblist(State(pool): State<Pool<Postgres>>, mut auth: Auth) -> Result<Html<String>, CustomError> {
-    //let client = pool.get().await?;
-
-    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
-     let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
-    let logged_in = auth.current_user.is_some();
-
-    Ok(crate::render(|buf| {
-        crate::templates::joblist_html(buf, "CZ4R Job List", admin)
-    }))
-}
-
-async fn jobedit(State(pool): State<Pool<Postgres>>, mut auth: Auth) -> Result<Html<String>, CustomError> {
-    //let client = pool.get().await?;
-
-    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
-     let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
-    let logged_in = auth.current_user.is_some();
-
-    Ok(crate::render(|buf| {
-        crate::templates::jobedit_html(buf, "CZ4R Job Edit", admin, Some(12345))
-    }))
-}
-
 #[derive(Deserialize)]
 pub struct LoginPageForm {
-    failure: Option<bool>
+    failure: Option<bool>,
 }
 
-async fn loginpage(State(pool): State<Pool<Postgres>>, mut auth: Auth, Form(form): Form<LoginPageForm>) -> Result<Html<String>, CustomError> {
+async fn loginpage(
+    State(pool): State<Pool<Postgres>>,
+    mut auth: Auth,
+    Form(form): Form<LoginPageForm>,
+) -> Result<Html<String>, CustomError> {
     //let client = pool.get().await?;
-    
+
     let logged_in = auth.current_user.is_some();
-
-
 
     Ok(crate::render(|buf| {
         crate::templates::login_html(buf, "CZ4R Login", logged_in, form.failure == Some(true))
     }))
 }
 
-async fn checkinout(State(pool): State<Pool<Postgres>>, mut auth: Auth) -> Result<Html<String>, CustomError> {
+
+
+async fn error404(
+    State(pool): State<Pool<Postgres>>,
+    mut auth: Auth,
+) -> Result<Html<String>, CustomError> {
     //let client = pool.get().await?;
 
     //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
-     let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
-    let logged_in = auth.current_user.is_some();
-
-    Ok(crate::render(|buf| {
-        crate::templates::checkinout_html(
-            buf,
-            "CZ4R Time Tracking",
-            admin,
-            "Bank 123",
-            "456 Main St.",
-            "12/16/2023",
-            "Do ya job or you dead!",
-        )
-    }))
-}
-
-async fn error404(State(pool): State<Pool<Postgres>>, mut auth: Auth) -> Result<Html<String>, CustomError> {
-    //let client = pool.get().await?;
-
-    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
-     let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
+    let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
     let logged_in = auth.current_user.is_some();
 
     Ok(crate::render(|buf| {

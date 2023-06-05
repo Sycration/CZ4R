@@ -1,6 +1,6 @@
 @use super::base_html;  
 
-@(title: &str, admin: bool, site_name: &str, address: &str, date: &str, notes: &str)
+@(title: &str, admin: bool, job_id: i64, site_name: &str, address: &str, date: &str, signin: &str, signout: &str, miles: i32, extra_exp_ct: i32, notes: &str)
 
 
 @:base_html(title, admin, true, {
@@ -22,7 +22,7 @@
           </tr>
         </tbody>
       </table>
-      <form id="checkinoutform">
+      <form id="checkinoutform" action="/api/v1/checkinout">
 
         <div class="row d-md-none text-center" style="margin: 0">
           <div class="col">
@@ -40,12 +40,15 @@
             type="time"
             class="form-control"
             id="SigninInput"
+            value="@signin"
           />
           <input
             name="Signout"
             type="time"
             class="form-control"
             id="SignoutInput"
+            value="@signout"
+
           />
           <span class="input-group-text d-none d-md-block">Sign-out time</span>
         </div>
@@ -56,9 +59,15 @@
           <label for="MilesDriven" class="form-label d-none">Miles Driven</label>
           <input
             name="MilesDriven"
-            type="text"
+            type="number"
             class="form-control"
             id="MilesDriven"
+            placeholder="0"
+            value="@miles"
+
+
+            onchange="setTwoNumberDecimal()"
+
           />
         </div>
 
@@ -67,9 +76,13 @@
           <label for="ExtraExpenses" class="form-label d-none">Extra expenses</label>
           <input
             name="ExtraExpenses"
-            type="text"
+            type="number"
             class="form-control"
             id="ExtraExpenses"
+            min="0" step="0.01"
+            placeholder="0.00"
+            value="@(format!("{:.2}", (extra_exp_ct as f64 / 100.)))"
+            onchange="setTwoNumberDecimal()"
           />
         </div>
 
@@ -77,14 +90,25 @@
         <div class="input-group px-3 mb-3">
           <span class="input-group-text">Notes</span>
           <label for="notes" class="form-label d-none">Notes</label>
-          <textarea name="Notes" class="form-control" id="notes" rows="4" style="resize:none;" form="checkinoutform"></textarea>
+          <textarea name="Notes" class="form-control" id="notes" rows="4" style="resize:none;" form="checkinoutform">@notes</textarea>
         </div>
+
+        <input type="hidden" id="JobId" name="JobId" value="@job_id">
+
 
         <div class="text-center">
           <button type="submit" class="btn btn-primary btn-lg mt-4 mb-4">Submit</button>
         </div>
 
       </form>
+        <script>
+    function setTwoNumberDecimal(event) @{
+      var extraexpct = document.getElementById("ExtraExpenses");
+      extraexpct.value = parseFloat(parseFloat(extraexpct.value).toFixed(2));
+      var milesdriven = document.getElementById("MilesDriven");
+      milesdriven.value = parseFloat(parseFloat(milesdriven.value).toFixed(0));
+  @}
+  </script>
     </div>
 
 })
