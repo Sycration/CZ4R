@@ -5,10 +5,23 @@
 
 @:base_html(title, admin,  logged_in, {
     
-    <div class="mt-3 mb-2 input-group d-flex justify-content-center">
+    <div class="mt-1 mb-2 input-group d-flex justify-content-center">
         <a href="/jobedit">
             <button type="button" class="btn btn-primary">Create new job</button>
         </a>
+    </div>
+
+    <div class="mb-2 justify-content-center">
+        <form id="range" method="get" class="form-inline row">
+            <div class="col">
+              From
+              <input form="range" type="date" class="form-control mx-2" id="start-date" name="start-date" onchange="this.form.submit()"/>
+            </div>
+            <div class="col">
+              To
+              <input form="range" type="date" class="form-control mx-2" id="end-date" name="start-date" onchange="this.form.submit()"/>
+            </div>
+        </form>
     </div>
     <ul class="list-group list-group-flush">  @for (job_id, worker_name, job_name, address, date) in job_datas.iter() {
         <li class="list-group-item">

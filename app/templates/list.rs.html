@@ -31,6 +31,19 @@
             flatrate.push("@item.0");
         }
 
+        if (assigned.length > 0) @{
+            document.getElementById("assigned").value = assigned.join("-");
+        @} else @{
+            document.getElementById("assigned").value = "";
+        @}
+
+        if (flatrate.length > 0) @{
+            document.getElementById("flatrate").value = flatrate.join("-");
+        @} else @{
+            document.getElementById("flatrate").value = "";
+        @}
+
+
         document.getElementById("@item.0-assigned").addEventListener("change", function(evt)@{
             var cbAssigned = evt.target;
             if (!assigned.includes("@item.0")) @{
@@ -46,7 +59,11 @@
             @}
 
             assigned.sort();
-            document.getElementById("assigned").value = assigned.join("-");
+            if (assigned.length > 0) @{
+                document.getElementById("assigned").value = assigned.join("-");
+            @} else @{
+                document.getElementById("assigned").value = "";
+            @}
         @})
 
         document.getElementById("@item.0-flatrate").addEventListener("change", function(evt)@{
@@ -65,7 +82,11 @@
             @}
 
             flatrate.sort();
-            document.getElementById("flatrate").value = flatrate.join("-");
+            if (flatrate.length > 0) @{
+                document.getElementById("flatrate").value = flatrate.join("-");
+            @} else @{
+            document.getElementById("flatrate").value = "";
+            @}
             @}
 
         @})
