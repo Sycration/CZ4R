@@ -12,15 +12,21 @@ use axum_login::{
     secrecy::SecretVec,
     AuthLayer, AuthUser, PostgresStore, RequireAuthorizationLayer,
 };
-use sqlx::types::time::Date;
 use errors::CustomError;
 use password_hash::{PasswordHasher, Salt, SaltString};
 use rand::{thread_rng, Rng};
 use scrypt::Scrypt;
 use serde::Deserialize;
+use sqlx::types::time::Date;
 use sqlx::{query, query_as, Pool, Postgres};
-use time::Time;
-use std::{collections::HashMap, default, env, net::SocketAddr, sync::Arc};
+use std::{
+    collections::HashMap,
+    default, env,
+    net::SocketAddr,
+    sync::{Arc, OnceLock},
+};
+use time::{OffsetDateTime, Time, UtcOffset};
+use tokio::runtime::Builder;
 use tokio::sync::RwLock;
 use tower_http::trace::{self, TraceLayer};
 use tracing::Level;
@@ -28,14 +34,15 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod change_pw;
 mod change_worker;
+mod checkinout;
 mod config;
 mod create_worker;
 mod errors;
 mod jobedit;
 mod joblist;
-mod checkinout;
 mod login;
 mod reset_pw;
+mod workerdata;
 mod workeredit;
 
 #[derive(Debug, Clone, sqlx::FromRow)]
@@ -73,11 +80,11 @@ pub struct JobWorker {
     worker: i64,
     signin: Option<Time>,
     signout: Option<Time>,
-    miles_driven: i32,
-    hours_driven: i32,
+    miles_driven: f32,
+    hours_driven: f32,
     extraexpcents: i32,
     notes: String,
-    using_flat_rate: bool
+    using_flat_rate: bool,
 }
 
 type Auth = AuthContext<i64, Worker, PostgresStore<Worker, ()>, ()>;
@@ -92,8 +99,22 @@ impl AuthUser<i64> for Worker {
     }
 }
 
-#[tokio::main]
-async fn main() {
+pub static TZ_OFFSET: OnceLock<UtcOffset> = OnceLock::new();
+
+fn main() {
+    eprintln!(
+        "The timezone offset is {}",
+        TZ_OFFSET.get_or_init(|| { OffsetDateTime::now_local().unwrap().offset() })
+    );
+
+    let rt = Builder::new_multi_thread().enable_all().build().unwrap();
+
+    rt.block_on(app());
+}
+
+async fn app() {
+    dbg!(now());
+
     tracing_subscriber::registry()
         .with(tracing_subscriber::fmt::layer().compact())
         .init();
@@ -158,7 +179,7 @@ async fn main() {
         .route("/admin", get(admin))
         .route("/admin/worker-edit", get(workeredit::workeredit))
         //.route("/admin/worker-create", get(workercreate))
-        .route("/admin/worker-data", get(workerdata))
+        .route("/admin/worker-data", get(workerdata::workerdatapage))
         .route("/admin/deactivated-workers", get(deactivatedworkers))
         .route(
             "/admin/api/v1/create-worker",
@@ -169,7 +190,6 @@ async fn main() {
             "/admin/api/v1/change-worker/:id",
             get(change_worker::change_worker),
         )
- 
         .route("/admin/api/v1/reset-pw", get(reset_pw::reset_pw))
         .fallback(error404)
         .layer(Extension(config))
@@ -232,27 +252,6 @@ async fn admin(
 }
 
 #[derive(Deserialize)]
-struct WorkerDataForm {
-    worker: Option<i64>,
-}
-
-async fn workerdata(
-    State(pool): State<Pool<Postgres>>,
-    mut auth: Auth,
-    Form(worker): Form<WorkerDataForm>,
-) -> Result<Html<String>, CustomError> {
-    //let client = pool.get().await?;
-
-    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
-    let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
-    let logged_in = auth.current_user.is_some();
-
-    Ok(crate::render(|buf| {
-        crate::templates::workerdata_html(buf, "CZ4R Worker Data", admin, worker.worker)
-    }))
-}
-
-#[derive(Deserialize)]
 pub struct LoginPageForm {
     failure: Option<bool>,
 }
@@ -270,8 +269,6 @@ async fn loginpage(
         crate::templates::login_html(buf, "CZ4R Login", logged_in, form.failure == Some(true))
     }))
 }
-
-
 
 async fn error404(
     State(pool): State<Pool<Postgres>>,
@@ -297,6 +294,10 @@ where
     let html: String = String::from_utf8_lossy(&buf).into();
 
     Html(html)
+}
+
+pub fn now() -> OffsetDateTime {
+    OffsetDateTime::now_utc().to_offset(*TZ_OFFSET.get().unwrap())
 }
 
 // Include the generated source code

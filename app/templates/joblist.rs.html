@@ -1,7 +1,7 @@
 @use super::card_html; 
 @use super::base_html; 
-
-@(title: &str, admin: bool, logged_in: bool, job_datas: &[(i64, String, String, String, String)])
+@use crate::joblist::JobListPage;
+@(title: &str, admin: bool, logged_in: bool, job_datas: &[(i64, i64, String, String, String, String)], start: String, end: String)
 
 @:base_html(title, admin,  logged_in, {
     
@@ -15,17 +15,17 @@
         <form id="range" method="get" class="form-inline row">
             <div class="col">
               From
-              <input form="range" type="date" class="form-control mx-2" id="start-date" name="start-date" onchange="this.form.submit()"/>
+              <input form="range" type="date" class="form-control mx-2" id="start_date" name="start_date" onchange="this.form.submit()" value="@start"/>
             </div>
             <div class="col">
               To
-              <input form="range" type="date" class="form-control mx-2" id="end-date" name="start-date" onchange="this.form.submit()"/>
+              <input form="range" type="date" class="form-control mx-2" id="end_date" name="end_date" onchange="this.form.submit()" value="@end"/>
             </div>
         </form>
     </div>
-    <ul class="list-group list-group-flush">  @for (job_id, worker_name, job_name, address, date) in job_datas.iter() {
+    <ul class="list-group list-group-flush">  @for (job_id, worker_id, worker_name, job_name, address, date) in job_datas.iter() {
         <li class="list-group-item">
-            @:card_html(*job_id, worker_name, job_name, address, date, admin)
+            @:card_html(*job_id, *worker_id, worker_name, job_name, address, date, admin)
         </li>}
     </ul>
 }

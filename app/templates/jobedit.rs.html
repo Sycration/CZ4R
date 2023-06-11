@@ -77,8 +77,8 @@
       @:list_html(list_data)
     </div>
 
-    <input type="hidden" id="assigned" name="assigned" value="">
-    <input type="hidden" id="flatrate" name="flatrate" value="">
+    <input type="hidden" id="assigned" name="assigned" value=" ">
+    <input type="hidden" id="flatrate" name="flatrate" value=" ">
     @if let Some(ref job) = job {
     <input type="hidden" id="jobid" name="jobid" value="@job.id">
 
@@ -93,5 +93,80 @@
     </div>
   </form>
 
+  <script>
+    var assigned = [];
+    var flatrate = [];
+    @for item in list_data { 
+        @if item.2 {
+            assigned.push("@item.0");
+        }
+        @if item.3 {
+            flatrate.push("@item.0");
+        }
+
+        if (assigned.length > 0) @{
+            document.getElementById("assigned").value = assigned.join("-");
+        @} else @{
+            document.getElementById("assigned").value = "";
+        @}
+
+        if (flatrate.length > 0) @{
+            document.getElementById("flatrate").value = flatrate.join("-");
+        @} else @{
+            document.getElementById("flatrate").value = "";
+        @}
+
+
+        document.getElementById("@item.0-assigned").addEventListener("change", function(evt)@{
+            var cbAssigned = evt.target;
+            if (!assigned.includes("@item.0")) @{
+                if (cbAssigned.checked) @{
+                    assigned.push("@item.0"); 
+                @}
+            @} else @{
+                if (!cbAssigned.checked) @{
+                    assigned = assigned.filter(x => x !== "@item.0");
+                    flatrate = flatrate.filter(x => x !== "@item.0");
+                    document.getElementById("@item.0-flatrate").checked = false;
+                @}
+            @}
+
+            assigned.sort();
+            if (assigned.length > 0) @{
+                document.getElementById("assigned").value = assigned.join("-");
+            @} else @{
+                document.getElementById("assigned").value = "";
+            @}
+        @})
+
+        document.getElementById("@item.0-flatrate").addEventListener("change", function(evt)@{
+            var cbFlatrate = evt.target;
+            if (!assigned.includes("@item.0")) @{
+                cbFlatrate.checked = false;
+            @} else @{
+            if (!flatrate.includes("@item.0")) @{
+                if (cbFlatrate.checked) @{
+                    flatrate.push("@item.0"); 
+                @}
+            @} else @{
+                if (!cbFlatrate.checked) @{
+                    flatrate = flatrate.filter(x => x !== "@item.0");
+                @}
+            @}
+
+            flatrate.sort();
+            if (flatrate.length > 0) @{
+                document.getElementById("flatrate").value = flatrate.join("-");
+            @} else @{
+            document.getElementById("flatrate").value = "";
+            @}
+            @}
+
+        @})
+    
+    }
+</script>
+
+  
   } )
 

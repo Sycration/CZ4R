@@ -34,6 +34,8 @@ services:
       ADMIN_USER:     ${ADMIN_USER}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
 
+      TZ: ${TZ}
+
     # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity
 

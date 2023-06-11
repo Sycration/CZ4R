@@ -7,7 +7,9 @@ use axum::{
     Form,
 };
 use serde::Deserialize;
-use sqlx::{query, query_as, types::time::Date, Pool, Postgres, query_builder, QueryBuilder, Execute};
+use sqlx::{
+    query, query_as, query_builder, types::time::Date, Execute, Pool, Postgres, QueryBuilder,
+};
 
 use crate::{errors::CustomError, Auth, Job};
 
@@ -108,9 +110,6 @@ pub(crate) async fn jobedit(
         return Err(CustomError::Auth("Not logged in as admin".to_string()));
     }
 
-
-
-
     let to_assign = form
         .assigned
         .split('-')
@@ -127,25 +126,33 @@ pub(crate) async fn jobedit(
         .collect::<Vec<_>>();
 
     if let Some(job_id) = form.jobid {
-
-
         let mut tx = match pool.begin().await {
             Ok(tx) => tx,
             Err(e) => return Err(CustomError::Database(e.to_string())),
         };
 
-            //update job itself
-        let query = query!(r#"
+        //update job itself
+        let query = query!(
+            r#"
         update jobs set 
             sitename = $2,
             workorder = $3,
             servicecode = $4,
             address = $5,
             date = $6
-        where id = $1;"#, job_id, form.sitename, form.workorder, form.servcode, form.address, form.date)
-        .execute(&mut tx).await;
-        if let Err(e) = query {return Err(CustomError::Database(e.to_string()));}
-
+        where id = $1;"#,
+            job_id,
+            form.sitename,
+            form.workorder,
+            form.servcode,
+            form.address,
+            form.date
+        )
+        .execute(&mut tx)
+        .await;
+        if let Err(e) = query {
+            return Err(CustomError::Database(e.to_string()));
+        }
 
         let currently_assigned = query!(
             r#"
@@ -169,97 +176,120 @@ pub(crate) async fn jobedit(
         let flatrates_to_remove = currently_assigned
             .iter()
             .filter(|x| x.1)
-            .filter(|x|
-                to_assign.contains(&(x.0, false))
-            ).map(|x|x.0).collect::<Vec<_>>();
-        
+            .filter(|x| to_assign.contains(&(x.0, false)))
+            .map(|x| x.0)
+            .collect::<Vec<_>>();
+
         let assignments_to_remove = currently_assigned
-        .iter()
-        .filter(|x|
-            !to_assign.contains(&(x.0, false)) || !to_assign.contains(&(x.0, true)) 
-        ).map(|x|x.0).collect::<Vec<_>>();
+            .iter()
+            .filter(|x| !to_assign.contains(&(x.0, false)) || !to_assign.contains(&(x.0, true)))
+            .map(|x| x.0)
+            .collect::<Vec<_>>();
 
         let assignments_to_add = to_assign
-        .iter()
-        .filter(|x|
-            !currently_assigned.contains(&(x.0, false)) || !currently_assigned.contains(&(x.0, true)) 
-        ).collect::<Vec<_>>();
-
+            .iter()
+            .filter(|x| {
+                !currently_assigned.contains(&(x.0, false))
+                    || !currently_assigned.contains(&(x.0, true))
+            })
+            .collect::<Vec<_>>();
 
         //remove flatrates
         if !flatrates_to_remove.is_empty() {
             let query = query!("update jobworkers set using_flat_rate = false where job = $1 and worker = any($2);",job_id, flatrates_to_remove.as_slice()).execute(&mut tx).await;
-            if let Err(e) = query {return Err(CustomError::Database(e.to_string()));}
+            if let Err(e) = query {
+                return Err(CustomError::Database(e.to_string()));
+            }
         }
 
         //remove assignments
         if !assignments_to_remove.is_empty() {
-            let query = query!("delete from jobworkers where job = $1 and worker = any($2);",job_id, assignments_to_remove.as_slice()).execute(&mut tx).await;
-            if let Err(e) = query {return Err(CustomError::Database(e.to_string()));}
+            let query = query!(
+                "delete from jobworkers where job = $1 and worker = any($2);",
+                job_id,
+                assignments_to_remove.as_slice()
+            )
+            .execute(&mut tx)
+            .await;
+            if let Err(e) = query {
+                return Err(CustomError::Database(e.to_string()));
+            }
         }
 
         //create assignments w/ flatrates
         if !assignments_to_add.is_empty() {
-            let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new("insert into jobworkers (job, worker, using_flat_rate) ");
+            let mut query_builder: QueryBuilder<Postgres> =
+                QueryBuilder::new("insert into jobworkers (job, worker, using_flat_rate) ");
             query_builder.push_values(assignments_to_add.iter().take(250), |mut b, assignment| {
                 b.push_bind(job_id)
-                .push_bind(assignment.0)
-                .push_bind(assignment.1);
+                    .push_bind(assignment.0)
+                    .push_bind(assignment.1);
             });
-            
+
             let query = query_builder.build();
             println!("{}", query.sql());
             let query = query.execute(&mut tx).await;
-            if let Err(e) = query {return Err(CustomError::Database(e.to_string()));}
+            if let Err(e) = query {
+                return Err(CustomError::Database(e.to_string()));
+            }
         }
-        
 
         let res = tx.commit().await;
-        if let Err(e) = res {return Err(CustomError::Database(e.to_string()));}
+        if let Err(e) = res {
+            return Err(CustomError::Database(e.to_string()));
+        }
 
         return Ok(Redirect::to(format!("/jobedit?id={}", job_id).as_str()));
     } else {
-
-
         let mut tx = match pool.begin().await {
             Ok(tx) => tx,
             Err(e) => return Err(CustomError::Database(e.to_string())),
         };
 
-            //update job itself
-        let query = query!(r#"
+        //update job itself
+        let query = query!(
+            r#"
         insert into jobs (sitename, workorder, servicecode, address, date) values
                 ($1, $2, $3, $4, $5)
-            returning id;"#, 
-                form.sitename, form.workorder, form.servcode, form.address, form.date)
-        .fetch_one(&mut tx).await;
+            returning id;"#,
+            form.sitename,
+            form.workorder,
+            form.servcode,
+            form.address,
+            form.date
+        )
+        .fetch_one(&mut tx)
+        .await;
         let job_id = match query {
             Ok(v) => v.id,
-            Err(e) => {return Err(CustomError::Database(e.to_string()));},
+            Err(e) => {
+                return Err(CustomError::Database(e.to_string()));
+            }
         };
-
-
 
         //create assignments w/ flatrates
         if !to_assign.is_empty() {
-            let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new("insert into jobworkers (job, worker, using_flat_rate) ");
+            let mut query_builder: QueryBuilder<Postgres> =
+                QueryBuilder::new("insert into jobworkers (job, worker, using_flat_rate) ");
             query_builder.push_values(to_assign.iter().take(250), |mut b, assignment| {
                 b.push_bind(job_id)
-                .push_bind(assignment.0)
-                .push_bind(assignment.1);
+                    .push_bind(assignment.0)
+                    .push_bind(assignment.1);
             });
-            
+
             let query = query_builder.build();
             println!("{}", query.sql());
             let query = query.execute(&mut tx).await;
-            if let Err(e) = query {return Err(CustomError::Database(e.to_string()));}
+            if let Err(e) = query {
+                return Err(CustomError::Database(e.to_string()));
+            }
         }
-        
 
         let res = tx.commit().await;
-        if let Err(e) = res {return Err(CustomError::Database(e.to_string()));}
+        if let Err(e) = res {
+            return Err(CustomError::Database(e.to_string()));
+        }
 
         return Ok(Redirect::to(format!("/jobedit?id={}", job_id).as_str()));
     }
-
 }

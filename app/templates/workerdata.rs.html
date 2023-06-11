@@ -1,4 +1,7 @@
-@use super::base_html; @use super::userselect_html; @(title: &str, admin: bool, selected:Option<i64>) @:base_html(title, admin,  true, { @if !admin {
+@use super::base_html;
+@use crate::workerdata::WDEntry;
+@use crate::Worker;
+@use super::userselect_html; @(title: &str, admin: bool, logged_in: bool, selected:Option<i64>, workerlist: &[Worker], selectlist: &[(i64, &str)], entries: Option<Vec<WDEntry>>, totals: WDEntry, from: String, to: String) @:base_html(title, admin,  true, { @if !admin {
   <script>
     window.location.href = "/";
     console.log("%c🖕", "background: red; color: yellow; font-size: x-large");
@@ -6,70 +9,68 @@
   } else {
   <div class="row row-cols-1 row-cols-md-2">
     <div class="col col-md-4 pb-4">
-      @:userselect_html("worker-data", &[(0, "Michael Shiff"),(1, "Cici Mason"),(2, "Raymond Wang")], selected)
+      @:userselect_html("worker-data", selectlist, selected)
     </div>
     <div class="col col-md-8">
-      
-        <div class="card">
-          <div class="card-header">
-            <h3>Tabular Data - </h3>
-            <div class="form-inline row">
-              <div class="col">
-                From
-                <input type="date" class="form-control mx-2" id="start-date" />
-              </div>
-              <div class="col">
-                To
-                <input type="date" class="form-control mx-2" id="end-date" />
-              </div>
+      @if let Some(selected) = selected {
+        @if let Some(entries) = entries {
+          <div class="card">
+            <div class="card-header">
+              <form id="RangeForm" action="/admin/worker-data" class="form-inline row">
+                <div class="col">
+                  From
+                  <input form="RangeForm" type="date" class="form-control mx-2" id="start_date" name="start_date" onchange="this.form.submit()" value="@from"/>
+                </div>
+                <div class="col">
+                  To
+                  <input form="RangeForm" type="date" class="form-control mx-2" id="end_date" name="end_date"  onchange="this.form.submit()" value="@to" />
+                </div>
 
+                  <input form="RangeForm" type="hidden" name="worker" id="worker" value="@selected">
+  
+              </form>
+            </div>
+            <div class="card-body">
+              <table class="table table-dark  table-striped">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Location</th>
+                    <th>Flat rate?</th>
+                    <th>Hours worked</th>
+                    <th>Hours driven</th>
+                    <th>Extra expenses</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for entry in entries {
+                    <tr>
+                      <td>@entry.Date</td>
+                      <td>@entry.Location</td>
+                      <td>@if entry.FlatRate {✅}</td>
+                      <td>@(format!("{:.2}", entry.HoursWorked))</td>
+                      <td>@(format!("{:.2}", entry.HoursDriven))</td>
+                      <td>$@(format!("{:.2}", (entry.ExtraExpCents as f64 / 100.)))</td>
+                    </tr>
+                  }
+
+
+                  
+                </tbody>
+                <tfoot>
+                  <tr class="table-group-divider" >
+                    <td colspan="3"><b> Totals </b></td>
+                    <td>@(format!("{:.2}", totals.HoursWorked))</td>
+                    <td>@(format!("{:.2}", totals.HoursDriven))</td>
+                    <td>$@(format!("{:.2}", (totals.ExtraExpCents as f64 / 100.)))</td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
           </div>
-          <div class="card-body">
-            <table class="table table-dark  table-striped">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Location</th>
-                  <th>Time pay</th>
-                  <th>Drive pay</th>
-                  <th>Extra expenses</th>
-                  <th>Job total</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>2023-04-01</td>
-                  <td>123 Fake St.</td>
-                  <td>$100.00</td>
-                  <td>$20.00</td>
-                  <td>$5.00</td>
-                  <td>$125.00</td>
-                </tr>
-
-                <tr>
-                  <td>2023-04-02</td>
-                  <td>999 Code Ave.</td>
-                  <td>$150.00</td>
-                  <td>$10.00</td>
-                  <td>$35.00</td>
-                  <td>$195.00</td>
-                </tr>
-                
-                <!-- add more rows of data as needed -->
-              </tbody>
-              <tfoot>
-                <tr class="table-group-divider" >
-                  <td colspan="2"><b> Totals </b></td>
-                  <td>$250.00</td>
-                  <td>$30.00</td>
-                  <td>$40.00</td>
-                  <td>$320.00</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
+        }
+      }
+        
       
     </div>
   </div>

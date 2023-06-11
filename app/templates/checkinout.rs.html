@@ -1,6 +1,6 @@
 @use super::base_html;  
 
-@(title: &str, admin: bool, job_id: i64, site_name: &str, address: &str, date: &str, signin: &str, signout: &str, miles: i32, extra_exp_ct: i32, notes: &str)
+@(title: &str, admin: bool, job_id: i64, worker_id: i64, site_name: &str, address: &str, date: &str, signin: &str, signout: &str, miles: f32, hours: f32, minutes: f32, extra_exp_ct: i32, notes: &str)
 
 
 @:base_html(title, admin, true, {
@@ -54,26 +54,65 @@
         </div>
 
 
+        <div class="row d-md-none text-center" style="margin: 0">
+          <div class="col">
+            <label for="HoursDriven" class="form-label">Hours Driven</label>
+          </div>
+          <div class="col">
+            <label for="MinutesDriven" class="form-label">Minutes Driven</label>
+          </div>
+        </div>
+    
         <div class="input-group px-3 mb-3">
-          <span class="input-group-text">Miles driven</span>
-          <label for="MilesDriven" class="form-label d-none">Miles Driven</label>
+          <span class="input-group-text d-none d-md-block">Hours Driven</span>
           <input
-            name="MilesDriven"
+            name="HoursDriven"
             type="number"
             class="form-control"
-            id="MilesDriven"
+            id="HoursDriven"
             placeholder="0"
-            value="@miles"
-
-
-            onchange="setTwoNumberDecimal()"
+            value="@hours"
+            step="0.01"
+            min="0"
 
           />
+          <input
+            name="MinutesDriven"
+            type="number"
+            class="form-control"
+            id="MinutesDriven"
+            placeholder="0"
+            value="@minutes"
+            step="0.01"
+            min="0"
+
+          />
+          <span class="input-group-text d-none d-md-block">Minutes Driven</span>
         </div>
 
+
+
+
+
+
+      <div class="input-group px-3 mb-3">
+        <span class="input-group-text">Miles Driven</span>
+        <label for="MilesDriven" class="form-label d-none">Miles Driven</label>
+        <input
+        name="MilesDriven"
+        type="number"
+        class="form-control"
+        id="MilesDriven"
+        placeholder="0"
+        value="@miles"
+        step="0.01"
+        min="0"
+      />
+      </div>
+
         <div class="input-group px-3 mb-3">
-          <span class="input-group-text">Extra expenses</span>
-          <label for="ExtraExpenses" class="form-label d-none">Extra expenses</label>
+          <span class="input-group-text">Extra expenses $</span>
+          <label for="ExtraExpenses" class="form-label d-none">Extra expenses $</label>
           <input
             name="ExtraExpenses"
             type="number"
@@ -95,6 +134,11 @@
 
         <input type="hidden" id="JobId" name="JobId" value="@job_id">
 
+        @if admin {
+        <input type="hidden" id="WorkerId" name="WorkerId" value="@worker_id">
+
+        }
+
 
         <div class="text-center">
           <button type="submit" class="btn btn-primary btn-lg mt-4 mb-4">Submit</button>
@@ -102,11 +146,35 @@
 
       </form>
         <script>
+
+      var extraexpct = document.getElementById("ExtraExpenses");
+      extraexpct.value = parseFloat(parseFloat(extraexpct.value).toFixed(2));
+      
+
+      var HoursDriven = document.getElementById("HoursDriven");
+      HoursDriven.value = parseFloat(parseFloat(HoursDriven.value).toFixed(2));
+
+      var MinutesDriven = document.getElementById("MinutesDriven");
+      MinutesDriven.value = parseFloat(parseFloat(MinutesDriven.value).toFixed(2));
+
+      var MilesDriven = document.getElementById("MilesDriven");
+      MilesDriven.value = parseFloat(parseFloat(MilesDriven.value).toFixed(2));
+
+      
     function setTwoNumberDecimal(event) @{
       var extraexpct = document.getElementById("ExtraExpenses");
       extraexpct.value = parseFloat(parseFloat(extraexpct.value).toFixed(2));
-      var milesdriven = document.getElementById("MilesDriven");
-      milesdriven.value = parseFloat(parseFloat(milesdriven.value).toFixed(0));
+      
+
+      var HoursDriven = document.getElementById("HoursDriven");
+      HoursDriven.value = parseFloat(parseFloat(HoursDriven.value).toFixed(2));
+
+      var MinutesDriven = document.getElementById("MinutesDriven");
+      MinutesDriven.value = parseFloat(parseFloat(MinutesDriven.value).toFixed(2));
+
+      var MilesDriven = document.getElementById("MilesDriven");
+      MilesDriven.value = parseFloat(parseFloat(MilesDriven.value).toFixed(2));
+
   @}
   </script>
     </div>

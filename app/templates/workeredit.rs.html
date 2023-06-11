@@ -101,7 +101,7 @@
               </div>
     
               <div class="input-group pb-3">
-                <span class="input-group-text">Mileage $</span>
+                <span class="input-group-text">Mileage Rate $</span>
                 <input form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01" aria-label="Mileage"
                   placeholder="0.00" id="Mileage" name="Mileage" class="form-control" value="@(format!("{:.2}", (w.rate_mileage_cents as f64 / 100.)))">
               </div>
