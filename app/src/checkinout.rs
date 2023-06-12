@@ -13,7 +13,7 @@ use time::{format_description, macros::format_description, Time};
 #[derive(Deserialize)]
 pub(crate) struct CheckInOutPage {
     id: i64,
-    worker: Option<i64>,
+    worker: i64,
 }
 
 pub(crate) async fn checkinoutpage(
@@ -28,15 +28,7 @@ pub(crate) async fn checkinoutpage(
         return Err(CustomError::Auth("Not logged in".to_string()));
     }
 
-    let worker = if let Some(worker) = form.worker {
-        if admin {
-            worker
-        } else {
-            auth.current_user.as_ref().unwrap().id
-        }
-    } else {
-        auth.current_user.as_ref().unwrap().id
-    };
+    let worker = form.worker;
 
     if !admin && worker != auth.current_user.as_ref().unwrap().id {
         return Err(CustomError::Auth("Attempted to check in for other worker".to_string()));
@@ -118,7 +110,7 @@ pub(crate) struct CheckInOutForm {
     ExtraExpenses: String,
     Notes: String,
     JobId: i64,
-    WorkerId: Option<i64>
+    WorkerId: i64
 }
 
 pub(crate) async fn checkinout(
@@ -131,15 +123,7 @@ pub(crate) async fn checkinout(
     }
     let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
 
-    let worker = if let Some(worker) = form.WorkerId {
-        if admin {
-            worker
-        } else {
-            auth.current_user.as_ref().unwrap().id
-        }
-    } else {
-        auth.current_user.as_ref().unwrap().id
-    };
+    let worker = form.WorkerId;
 
     if !admin && worker != auth.current_user.as_ref().unwrap().id {
         return Err(CustomError::Auth("Attempted to check in for other worker".to_string()));
@@ -212,6 +196,6 @@ pub(crate) async fn checkinout(
     }
 
     Ok(Redirect::to(
-        format!("/checkinout?id={}&worker={}", form.JobId, form.WorkerId.unwrap_or(auth.current_user.unwrap().id)).as_str(),
+        format!("/checkinout?id={}&worker={}", form.JobId, worker).as_str(),
     ))
 }

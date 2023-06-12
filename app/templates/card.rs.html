@@ -6,7 +6,7 @@
     <h5 class="card-title">@job_name</h5>
     <p class="card-text">@address</p>
     <p class="card-text">@date</p>
-    <a href=" @if is_admin { /checkinout?id=@job_id&worker=@worker_id } else { /checkinout?id=@job_id }" class="btn btn-outline-primary">Open</a>
+    <a href="/checkinout?id=@job_id&worker=@worker_id" class="btn btn-outline-primary">Open</a>
     @if is_admin {
     <a href="/jobedit?id=@job_id" class="btn btn-outline-secondary">Edit</a>
     <a href="" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">Delete</a>
