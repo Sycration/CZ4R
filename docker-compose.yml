@@ -1,0 +1,32 @@
+version: '3.4'
+services:
+
+  db:
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: testpassword
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vscode"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+  development:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    
+  
+
+    # Overrides default command so things don't shut down after the process ends.
+    command: sleep infinity
+
+    working_dir: /workspace
+    
+    depends_on:
+      - db
+
+volumes:
+  pgdata:

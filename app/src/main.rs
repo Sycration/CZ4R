@@ -123,6 +123,10 @@ async fn app() {
 
     let pool = config.create_pool().await;
 
+    sqlx::migrate!("./../migrations")
+    .run(&pool)
+    .await.unwrap();
+
     let secret = config.login_secret.clone();
 
     let session_store = SessionMemoryStore::new();
