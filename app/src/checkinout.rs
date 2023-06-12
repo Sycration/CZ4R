@@ -212,6 +212,6 @@ pub(crate) async fn checkinout(
     }
 
     Ok(Redirect::to(
-        format!("/checkinout?id={}", form.JobId).as_str(),
+        format!("/checkinout?id={}&worker={}", form.JobId, form.WorkerId.unwrap_or(auth.current_user.unwrap().id)).as_str(),
     ))
 }
