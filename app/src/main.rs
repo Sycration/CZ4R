@@ -32,6 +32,8 @@ use tower_http::trace::{self, TraceLayer};
 use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+use crate::config::Config;
+
 mod change_pw;
 mod change_worker;
 mod checkinout;
@@ -123,11 +125,15 @@ async fn app() {
 
     let pool = config.create_pool().await;
 
-    sqlx::migrate!("./../migrations")
-    .run(&pool)
-    .await.unwrap();
+    let Config {
+        database_url,
+        login_secret,
+        port,
+    } = config;
 
-    let secret = config.login_secret.clone();
+    sqlx::migrate!("./../migrations").run(&pool).await.unwrap();
+
+    let secret = login_secret;
 
     let session_store = SessionMemoryStore::new();
     let session_layer = SessionLayer::new(session_store, &secret).with_secure(false);
@@ -196,13 +202,12 @@ async fn app() {
         )
         .route("/admin/api/v1/reset-pw", get(reset_pw::reset_pw))
         .fallback(error404)
-        .layer(Extension(config))
         .layer(auth_layer)
         .layer(session_layer)
         .with_state(pool);
 
     // run it
-    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
+    let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
     println!("listening on {}", addr);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
