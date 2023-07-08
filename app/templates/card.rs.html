@@ -1,15 +1,28 @@
-@(job_id: i64, worker_id: i64, worker_name: &str, job_name: &str, address: &str, date: &str, is_admin: bool)
+@(job_id: i64, worker_id: Option<i64>, worker_name: &str, job_name: &str, address: &str, date: &str, is_admin: bool)
 
 <div class="card">
-  <div class="card-header">Assigned to: @worker_name</div>
+  @if worker_id.is_some() {
+    <div class="card-header">Assigned to: @worker_name</div>
+  } else {
+    <div class="card-header text-danger">WARNING: THIS JOB (@job_name) IS NOT ASSIGNED TO ANY WORKER</div>
+    
+  }
   <div class="card-body">
     <h5 class="card-title">@job_name</h5>
     <p class="card-text">@address</p>
     <p class="card-text">@date</p>
-    <a href="/checkinout?id=@job_id&worker=@worker_id" class="btn btn-outline-primary">Open</a>
-    @if is_admin {
-    <a href="/jobedit?id=@job_id" class="btn btn-outline-secondary">Edit</a>
-    <a href="" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">Delete</a>
+    @if let Some(worker) = worker_id {
+      <a href="/checkinout?id=@job_id&worker=@worker" class="btn btn-outline-primary">Open</a>
+      @if is_admin {
+      <a href="/jobedit?id=@job_id" class="btn btn-outline-secondary">Edit</a>
+      <a href="" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">Delete</a>
+    } 
+    
+  } else {
+    @if is_admin { 
+      <a href="/jobedit?id=@job_id" class="btn btn-outline-warning">Edit</a>
+      <a href="" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">Delete</a>
+    }
   }
   <!--TODO template the links when the server is ready-->
     <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">

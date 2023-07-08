@@ -9,10 +9,11 @@ use crate::{errors::CustomError, now, Auth, TZ_OFFSET};
 struct JobCard {
     name: String,
     id: i64,
-    worker: i64,
+    worker: Option<i64>,
     sitename: String,
     address: String,
     date: time::Date,
+
 }
 
 #[derive(Deserialize)]
@@ -50,7 +51,7 @@ pub(crate) async fn joblistpage(
     let jobs = match admin {
         true => {
             let query=query_as!(JobCard, r#"
-        select users.name, jobs.id, jobworkers.worker, jobs.sitename, jobs.address, jobs.date from jobs inner join jobworkers
+        select users.name, jobs.id, jobworkers.worker as "worker?", jobs.sitename, jobs.address, jobs.date from jobs inner join jobworkers
         on jobs.id = jobworkers.job
         inner join users
         on jobworkers.worker = users.id
@@ -58,14 +59,32 @@ pub(crate) async fn joblistpage(
         order by date desc;
         "#, start_date, end_date).fetch_all(&pool).await;
             match query {
-                Ok(r) => r,
+                Ok(mut r) => {
+                    let query =query_as!(JobCard, r#"
+                    select '' as "name!", NULL::bigint as worker, jobs.id, jobs.sitename, jobs.address, jobs.date from jobs
+                    where not exists (
+                        select *
+                        from jobworkers
+                        where jobworkers.job = jobs.id
+                    )
+                    and date >= $1 and date <= $2
+                    order by date desc;
+                    "#, start_date, end_date).fetch_all(&pool).await;
+                    if let Ok(mut orphans) = query {
+                        r = {
+                            orphans.append(&mut r);
+                            orphans
+                        }
+                    }
+                    r
+                },
                 Err(e) => return Err(CustomError::Database(e.to_string())),
             }
         }
 
         false => {
             let query=query_as!(JobCard, r#"
-        select users.name, jobs.id, jobworkers.worker, jobs.sitename, jobs.address, jobs.date from jobs inner join jobworkers
+        select users.name, jobs.id,  jobworkers.worker as "worker?", jobs.sitename, jobs.address, jobs.date from jobs inner join jobworkers
         on jobs.id = jobworkers.job
         inner join users
         on jobworkers.worker = users.id
