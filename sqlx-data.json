@@ -1,5 +1,23 @@
 {
   "db": "PostgreSQL",
+  "03d4d6b584ed5ae5364f1773a480b413c4c3ce402f650775ce64118a09b2ce28": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Varchar",
+          "Varchar",
+          "Varchar",
+          "Varchar",
+          "Date",
+          "Varchar"
+        ]
+      }
+    },
+    "query": "\n        update jobs set \n            sitename = $2,\n            workorder = $3,\n            servicecode = $4,\n            address = $5,\n            date = $6,\n            notes = $7\n        where id = $1;"
+  },
   "040e2654c4eb152d1832d2259aed71f0b3eaf57ecc7b3a50c26e84f46df40260": {
     "describe": {
       "columns": [],
@@ -60,6 +78,31 @@
     },
     "query": "\n    update jobworkers\n    set\n        signin = $1,\n        signout = $2,\n        miles_driven = $3,\n        hours_driven = $4,\n        extraexpcents = $5,\n        notes = $6\n    where worker = $7\n    and job = $8;\n    "
   },
+  "1898025743601ea8ecbcda017979a1cf15ab6d6de23309385308b404169acb8a": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Varchar",
+          "Varchar",
+          "Varchar",
+          "Varchar",
+          "Date",
+          "Varchar"
+        ]
+      }
+    },
+    "query": "\n        insert into jobs (sitename, workorder, servicecode, address, date, notes) values\n                ($1, $2, $3, $4, $5, $6)\n            returning id;"
+  },
   "290bed8259ae9b0c3883c50ceaf8b9c0480aef6f7592978c02b78287618bfa60": {
     "describe": {
       "columns": [
@@ -92,9 +135,15 @@
           "name": "servicecode",
           "ordinal": 5,
           "type_info": "Varchar"
+        },
+        {
+          "name": "notes",
+          "ordinal": 6,
+          "type_info": "Varchar"
         }
       ],
       "nullable": [
+        false,
         false,
         false,
         false,
@@ -127,30 +176,6 @@
       }
     },
     "query": "select count(*) from users"
-  },
-  "53dd47e48bf1c4869d346d265180a8d9bed8dc896b929433e2c19efa615e4fb7": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Int8"
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Varchar",
-          "Varchar",
-          "Varchar",
-          "Varchar",
-          "Date"
-        ]
-      }
-    },
-    "query": "\n        insert into jobs (sitename, workorder, servicecode, address, date) values\n                ($1, $2, $3, $4, $5)\n            returning id;"
   },
   "6b1b358b19615fc5ba50b7dcf0eeb5b9f453b071b7273a335d6b98840bd32b2a": {
     "describe": {
@@ -234,23 +259,6 @@
       }
     },
     "query": "\n        select users.name, jobs.id,  jobworkers.worker as \"worker?\", jobs.sitename, jobs.address, jobs.date from jobs inner join jobworkers\n        on jobs.id = jobworkers.job\n        inner join users\n        on jobworkers.worker = users.id\n        where date >= $2 and date <= $3\n        and jobworkers.worker = $1\n        order by date desc;\n        "
-  },
-  "78ce5d7a05507c36883bea92aee75837f72ef93ce5c3814140d8db728cdc5f0a": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Varchar",
-          "Varchar",
-          "Varchar",
-          "Varchar",
-          "Date"
-        ]
-      }
-    },
-    "query": "\n        update jobs set \n            sitename = $2,\n            workorder = $3,\n            servicecode = $4,\n            address = $5,\n            date = $6\n        where id = $1;"
   },
   "7b5eca8fb6b48dc8b5779f0eb9c6efd01a550e88eaab91179be800048a527381": {
     "describe": {
@@ -888,9 +896,15 @@
           "name": "servicecode",
           "ordinal": 5,
           "type_info": "Varchar"
+        },
+        {
+          "name": "notes",
+          "ordinal": 6,
+          "type_info": "Varchar"
         }
       ],
       "nullable": [
+        false,
         false,
         false,
         false,
