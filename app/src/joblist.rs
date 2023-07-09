@@ -108,7 +108,7 @@ pub(crate) async fn joblistpage(
                 j.name,
                 j.sitename,
                 j.address,
-                j.date.to_string(),
+                format!("{} {}, {}", j.date.month(), j.date.day(), j.date.year()),
             )
         })
         .collect::<Vec<_>>();

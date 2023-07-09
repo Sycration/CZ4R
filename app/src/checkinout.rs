@@ -88,7 +88,7 @@ pub(crate) async fn checkinoutpage(
             job.workorder.as_str(),
             job.sitename.as_str(),
             job.address.as_str(),
-            job.date.to_string().as_str(),
+            format!("{} {}, {}", job.date.month(), job.date.day(), job.date.year()),
             signin.unwrap_or_default().as_str(),
             signout.unwrap_or_default().as_str(),
             jw.miles_driven,

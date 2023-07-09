@@ -1,6 +1,6 @@
 @use super::base_html;  
 
-@(title: &str, admin: bool, job_id: i64, worker_id: i64, work_order: &str, site_name: &str, address: &str, date: &str, signin: &str, signout: &str, miles: f32, hours: f32, minutes: f32, extra_exp_ct: i32, notes: &str, jobnotes: &str)
+@(title: &str, admin: bool, job_id: i64, worker_id: i64, work_order: &str, site_name: &str, address: &str, date: String, signin: &str, signout: &str, miles: f32, hours: f32, minutes: f32, extra_exp_ct: i32, notes: &str, jobnotes: &str)
 
 
 @:base_html(title, admin, true, {
