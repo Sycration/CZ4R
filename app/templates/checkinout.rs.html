@@ -1,6 +1,6 @@
 @use super::base_html;  
 
-@(title: &str, admin: bool, job_id: i64, worker_id: i64, site_name: &str, address: &str, date: &str, signin: &str, signout: &str, miles: f32, hours: f32, minutes: f32, extra_exp_ct: i32, notes: &str)
+@(title: &str, admin: bool, job_id: i64, worker_id: i64, work_order: &str, site_name: &str, address: &str, date: &str, signin: &str, signout: &str, miles: f32, hours: f32, minutes: f32, extra_exp_ct: i32, notes: &str, jobnotes: &str)
 
 
 @:base_html(title, admin, true, {
@@ -9,13 +9,15 @@
       <table class="table">
         <thead>
           <tr>
+            <th>Work Order</th>
             <th>Site Name</th>
             <th>Address</th>
-            <th>Due Date</th>
+            <th>Job Date</th>
           </tr>
         </thead>
         <tbody>
           <tr>
+            <td>@work_order</td>
             <td>@site_name</td>
             <td>@address</td>
             <td>@date</td>
@@ -35,14 +37,14 @@
     
         <div class="input-group px-3 mb-3">
           <span class="input-group-text d-none d-md-block">Sign-in time</span>
-          <input
+          <input 
             name="Signin"
             type="time"
             class="form-control"
             id="SigninInput"
             value="@signin"
           />
-          <input
+          <input 
             name="Signout"
             type="time"
             class="form-control"
@@ -65,7 +67,7 @@
     
         <div class="input-group px-3 mb-3">
           <span class="input-group-text d-none d-md-block">Hours Driven</span>
-          <input
+          <input required
             name="HoursDriven"
             type="number"
             class="form-control"
@@ -76,7 +78,7 @@
             min="0"
 
           />
-          <input
+          <input required
             name="MinutesDriven"
             type="number"
             class="form-control"
@@ -90,15 +92,10 @@
           <span class="input-group-text d-none d-md-block">Minutes Driven</span>
         </div>
 
-
-
-
-
-
       <div class="input-group px-3 mb-3">
         <span class="input-group-text">Miles Driven</span>
         <label for="MilesDriven" class="form-label d-none">Miles Driven</label>
-        <input
+        <input required
         name="MilesDriven"
         type="number"
         class="form-control"
@@ -113,7 +110,7 @@
         <div class="input-group px-3 mb-3">
           <span class="input-group-text">Extra expenses $</span>
           <label for="ExtraExpenses" class="form-label d-none">Extra expenses $</label>
-          <input
+          <input required
             name="ExtraExpenses"
             type="number"
             class="form-control"
@@ -127,17 +124,24 @@
 
 
         <div class="input-group px-3 mb-3">
-          <span class="input-group-text">Notes</span>
-          <label for="notes" class="form-label d-none">Notes</label>
+          <span class="input-group-text">Field Notes</span>
+          <label for="notes" class="form-label d-none">Field Notes</label>
           <textarea name="Notes" class="form-control" id="notes" rows="4" style="resize:none;" form="checkinoutform">@notes</textarea>
         </div>
 
+        <div class="input-group px-3 mb-3">
+          <span class="input-group-text">Job Notes</span>
+          <label for="jobnotes" class="form-label d-none">Job Notes</label>
+          <textarea disabled="disabled" class="form-control" id="jobnotes" rows="4" style="resize:none;">@jobnotes</textarea>
+        </div>
+
+        
+
         <input type="hidden" id="JobId" name="JobId" value="@job_id">
 
-        @if admin {
+
         <input type="hidden" id="WorkerId" name="WorkerId" value="@worker_id">
 
-        }
 
 
         <div class="text-center">

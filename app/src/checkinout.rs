@@ -84,7 +84,8 @@ pub(crate) async fn checkinoutpage(
             "CZ4R Time Tracking",
             admin,
             form.id,
-            worker,
+            form.worker,
+            job.workorder.as_str(),
             job.sitename.as_str(),
             job.address.as_str(),
             job.date.to_string().as_str(),
@@ -95,6 +96,7 @@ pub(crate) async fn checkinoutpage(
             60. * (jw.hours_driven - jw.hours_driven.floor()),
             jw.extraexpcents,
             jw.notes.as_str(),
+            job.notes.as_str()
         )
     }))
 }
@@ -102,13 +104,13 @@ pub(crate) async fn checkinoutpage(
 //?Signin=&Signout=&MilesDriven=2&ExtraExpenses=&Notes=
 #[derive(Deserialize)]
 pub(crate) struct CheckInOutForm {
-    Signin: String,
-    Signout: String,
-    MilesDriven: f32,
-    HoursDriven: f32,
-    MinutesDriven: f32,
-    ExtraExpenses: String,
-    Notes: String,
+    Signin: Option<String>,
+    Signout: Option<String>,
+    MilesDriven: Option<f32>,
+    HoursDriven: Option<f32>,
+    MinutesDriven: Option<f32>,
+    ExtraExpenses: Option<String>,
+    Notes: Option<String>,
     JobId: i64,
     WorkerId: i64
 }
@@ -129,39 +131,46 @@ pub(crate) async fn checkinout(
         return Err(CustomError::Auth("Attempted to check in for other worker".to_string()));
     }
 
-    let extraexp = Decimal::from_str_exact(&form.ExtraExpenses);
+    let signin = form.Signin.unwrap_or_default();
+    let signout = form.Signout.unwrap_or_default();
+    let milesdriven = form.MilesDriven.unwrap_or_default();
+    let hoursdriven = form.HoursDriven.unwrap_or_default();
+    let minutesdriven = form.MinutesDriven.unwrap_or_default();
+    let extraexpenses = form.ExtraExpenses.unwrap_or_default();
+
+    let extraexp = Decimal::from_str_exact(&extraexpenses);
     let extraexp = if let Ok(v) = extraexp {
         v * Decimal::ONE_HUNDRED
     } else {
         return Err(CustomError::ClientData(format!(
             "{} is not a number",
-            form.ExtraExpenses
+            extraexpenses
         )));
     };
 
-    let signin = if form.Signin.is_empty() {
+    let signin = if signin.is_empty() {
         None
     } else {
-        match Time::parse(&form.Signin, format_description!("[hour]:[minute]")) {
+        match Time::parse(&signin, format_description!("[hour]:[minute]")) {
             Ok(t) => Some(t),
             Err(_) => {
                 return Err(CustomError::ClientData(format!(
                     "{} is not a valid time in the format [hour]:[minute]",
-                    form.Signin
+                    signin
                 )));
             }
         }
     };
 
-    let signout = if form.Signout.is_empty() {
+    let signout = if signout.is_empty() {
         None
     } else {
-        match Time::parse(&form.Signout, format_description!("[hour]:[minute]")) {
+        match Time::parse(&signout, format_description!("[hour]:[minute]")) {
             Ok(t) => Some(t),
             Err(_) => {
                 return Err(CustomError::ClientData(format!(
                     "{} is not a valid time in the format [hour]:[minute]",
-                    form.Signin
+                    signout
                 )));
             }
         }
@@ -182,8 +191,8 @@ pub(crate) async fn checkinout(
     "#,
         signin,
         signout,
-        form.MilesDriven,
-        (form.HoursDriven + (form.MinutesDriven / 60.)),
+        milesdriven,
+        (hoursdriven + (minutesdriven / 60.)),
         extraexp.to_i32().unwrap(),
         form.Notes,
         worker,

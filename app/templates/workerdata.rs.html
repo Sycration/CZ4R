@@ -39,6 +39,7 @@
                     <th>Flat rate?</th>
                     <th>Hours worked</th>
                     <th>Hours driven</th>
+                    <th>Miles driven</th>
                     <th>Extra expenses</th>
                   </tr>
                 </thead>
@@ -50,6 +51,7 @@
                       <td>@if entry.FlatRate {✅}</td>
                       <td>@(format!("{:.2}", entry.HoursWorked))</td>
                       <td>@(format!("{:.2}", entry.HoursDriven))</td>
+                      <td>@(format!("{:.2}", entry.MilesDriven))</td>
                       <td>$@(format!("{:.2}", (entry.ExtraExpCents as f64 / 100.)))</td>
                     </tr>
                   }
@@ -62,6 +64,7 @@
                     <td colspan="3"><b> Totals </b></td>
                     <td>@(format!("{:.2}", totals.HoursWorked))</td>
                     <td>@(format!("{:.2}", totals.HoursDriven))</td>
+                    <td>@(format!("{:.2}", totals.MilesDriven))</td>
                     <td>$@(format!("{:.2}", (totals.ExtraExpCents as f64 / 100.)))</td>
                   </tr>
                 </tfoot>

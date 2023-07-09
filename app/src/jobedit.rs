@@ -44,6 +44,7 @@ pub(crate) async fn jobeditpage(
         None => None,
     };
 
+
     let workers = match query!("select id, name from users;").fetch_all(&pool).await {
         Ok(r) => r.into_iter().map(|r| (r.id, r.name)).collect::<Vec<_>>(),
         Err(e) => return Err(CustomError::Database(e.to_string())),
@@ -83,7 +84,7 @@ pub(crate) async fn jobeditpage(
         .collect::<Vec<_>>();
 
     Ok(crate::render(|buf| {
-        crate::templates::jobedit_html(buf, "CZ4R Job Edit", admin, this_job, &list_data)
+        crate::templates::jobedit_html(buf, "CZ4R Job Edit", admin, this_job, &list_data )
     }))
 }
 
@@ -97,6 +98,7 @@ pub(crate) struct JobEditForm {
     assigned: String,
     flatrate: String,
     jobid: Option<i64>,
+    notes: String,
 }
 
 pub(crate) async fn jobedit(
@@ -139,14 +141,16 @@ pub(crate) async fn jobedit(
             workorder = $3,
             servicecode = $4,
             address = $5,
-            date = $6
+            date = $6,
+            notes = $7
         where id = $1;"#,
             job_id,
             form.sitename,
             form.workorder,
             form.servcode,
             form.address,
-            form.date
+            form.date,
+            form.notes
         )
         .execute(&mut tx)
         .await;
@@ -249,14 +253,15 @@ pub(crate) async fn jobedit(
         //update job itself
         let query = query!(
             r#"
-        insert into jobs (sitename, workorder, servicecode, address, date) values
-                ($1, $2, $3, $4, $5)
+        insert into jobs (sitename, workorder, servicecode, address, date, notes) values
+                ($1, $2, $3, $4, $5, $6)
             returning id;"#,
             form.sitename,
             form.workorder,
             form.servcode,
             form.address,
-            form.date
+            form.date,
+            form.notes
         )
         .fetch_one(&mut tx)
         .await;

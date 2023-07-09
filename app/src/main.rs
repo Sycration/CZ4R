@@ -1,3 +1,7 @@
+#![allow(unused_mut)]
+#![allow(unused_imports)]
+#![allow(non_snake_case)]
+
 use axum::{
     debug_handler,
     extract::{Extension, Path, State},
@@ -55,6 +59,7 @@ pub struct Job {
     servicecode: String,
     address: String,
     date: Date,
+    notes: String
 }
 
 #[derive(Debug, Default, Clone, sqlx::FromRow)]
@@ -117,9 +122,7 @@ fn main() {
 async fn app() {
     dbg!(now());
 
-    tracing_subscriber::registry()
-        .with(tracing_subscriber::fmt::layer().compact())
-        .init();
+    tracing_subscriber::fmt().pretty().init();
 
     let config = config::Config::new();
 

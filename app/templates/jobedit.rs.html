@@ -71,11 +71,18 @@
     </div>
 
     <div
-      class="border border-primary-subtle"
+      class="px-3 mb-3"
       style="max-height: 15em; overflow-x: hidden; overflow-y: auto"
     >
       @:list_html(list_data)
     </div>
+
+    <div class="input-group px-3 mb-3">
+      <span class="input-group-text">Job Notes</span>
+      <label for="notes" class="form-label d-none">Job Notes</label>
+      <textarea name="notes" class="form-control" id="notes" rows="4" style="resize:none;">@if let Some(ref job) = job {@job.notes} else {""} </textarea>
+    </div>
+
 
     <input type="hidden" id="assigned" name="assigned" value=" ">
     <input type="hidden" id="flatrate" name="flatrate" value=" ">

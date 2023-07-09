@@ -28,6 +28,7 @@ pub struct WDEntry {
     pub FlatRate: bool,
     pub HoursWorked: f32,
     pub HoursDriven: f32,
+    pub MilesDriven: f32,
     pub ExtraExpCents: i32,
 }
 
@@ -113,6 +114,7 @@ pub(crate) async fn workerdatapage(
                     FlatRate: d.using_flat_rate,
                     HoursWorked: (d.signout.unwrap() - d.signin.unwrap()).as_seconds_f32() / 3600.,
                     HoursDriven: d.hours_driven,
+                    MilesDriven: d.miles_driven,
                     ExtraExpCents: d.extraexpcents,
                 })
                 .collect::<Vec<_>>(),
@@ -129,6 +131,10 @@ pub(crate) async fn workerdatapage(
         .as_ref()
         .map(|e| e.iter().fold(0.0, |acc, x| acc + x.HoursDriven))
         .unwrap_or_default();
+    let miles_driven_total = entries
+        .as_ref()
+        .map(|e| e.iter().fold(0.0, |acc, x| acc + x.MilesDriven))
+        .unwrap_or_default();
     let extra_exp_total = entries
         .as_ref()
         .map(|e| e.iter().fold(0, |acc, x| acc + x.ExtraExpCents))
@@ -140,6 +146,7 @@ pub(crate) async fn workerdatapage(
         FlatRate: false,
         HoursWorked: hours_worked_total,
         HoursDriven: hours_driven_total,
+        MilesDriven: miles_driven_total,
         ExtraExpCents: extra_exp_total,
     };
 

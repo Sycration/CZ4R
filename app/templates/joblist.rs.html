@@ -5,11 +5,13 @@
 
 @:base_html(title, admin,  logged_in, {
     
-    <div class="mt-1 mb-2 input-group d-flex justify-content-center">
-        <a href="/jobedit">
-            <button type="button" class="btn btn-primary">Create new job</button>
-        </a>
-    </div>
+    @if admin {
+        <div class="mt-1 mb-2 input-group d-flex justify-content-center">
+            <a href="/jobedit">
+                <button type="button" class="btn btn-primary">Create new job</button>
+            </a>
+        </div>
+    }
 
     <div class="mb-2 justify-content-center">
         <form id="range" method="get" class="form-inline row">
