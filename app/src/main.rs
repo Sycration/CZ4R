@@ -199,6 +199,8 @@ async fn app() {
             get(create_worker::create_worker),
         )
         .route("/admin/api/v1/edit-job", get(jobedit::jobedit))
+        .route("/admin/api/v1/delete-job", get(jobedit::jobdelete))
+
         .route(
             "/admin/api/v1/change-worker/:id",
             get(change_worker::change_worker),

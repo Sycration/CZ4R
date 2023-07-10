@@ -298,3 +298,44 @@ pub(crate) async fn jobedit(
         return Ok(Redirect::to(format!("/jobedit?id={}", job_id).as_str()));
     }
 }
+
+#[derive(Deserialize)]
+pub(crate) struct JobDeleteForm {
+    jobid: i64
+}
+
+pub(crate) async fn jobdelete(
+    State(pool): State<Pool<Postgres>>,
+    mut auth: Auth,
+    Form(form): Form<JobDeleteForm>,
+) -> Result<Redirect, CustomError> {
+    let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
+
+    if !admin {
+        return Err(CustomError::Auth("Not logged in as admin".to_string()));
+    }
+
+    //if let Err(e) =
+    query!(r#"
+    delete from jobworkers
+        where 
+        job = $1;
+    "#, form.jobid).execute(&pool).await.unwrap();
+    //  {
+    //     return Err(CustomError::Database(e.to_string()));
+    // }
+
+    // if let Err(e) =
+    query!(r#"
+    delete from jobs
+        where 
+        id = $1;
+    "#, form.jobid).execute(&pool).await.unwrap();
+    //  {
+    //     return Err(CustomError::Database(e.to_string()));
+    // }
+
+    return Ok(Redirect::to("/joblist"));
+}
+
+

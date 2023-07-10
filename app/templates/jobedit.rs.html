@@ -1,5 +1,27 @@
 @use super::base_html; @use crate::Job; @use super::list_html; @(title: &str, admin: bool, job: Option<Job>, list_data: &[(i64, String, bool, bool)]) @:base_html(title, admin, true,  {
+  
+@if let Some(ref job) = job {
 
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="deleteModalLabel">Deleting job</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to delete this job? <br>
+        No data related to this job will appear in the generated reports.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <a type="button" class="btn btn-danger" href="/admin/api/v1/delete-job?jobid=@job.id">Delete</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+}
 
   <h1 class="text-center ">
     @match &job { Some(ref job) => { Editing job @job.id } None => { Create a new job
@@ -80,7 +102,7 @@
     <div class="input-group px-3 mb-3">
       <span class="input-group-text">Job Notes</span>
       <label for="notes" class="form-label d-none">Job Notes</label>
-      <textarea name="notes" class="form-control" id="notes" rows="4" style="resize:none;">@if let Some(ref job) = job {@job.notes} else {""} </textarea>
+      <textarea name="notes" class="form-control" id="notes" rows="4" style="resize:none;">@if let Some(ref job) = job {@job.notes} else {} </textarea>
     </div>
 
 
@@ -96,6 +118,9 @@
         <button type="submit" class="btn btn-primary btn-lg mt-4 mb-4">
           @if job.is_some() { Submit changes } else { Create }
         </button>
+        @if let Some(ref job) = job {
+          <a href="" class="btn btn-outline-danger btn-lg mt-4 mb-4" data-bs-toggle="modal" data-bs-target="#deleteModal">Delete</a>
+        }
 
     </div>
   </form>
