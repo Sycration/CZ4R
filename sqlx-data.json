@@ -177,6 +177,18 @@
     },
     "query": "select count(*) from users"
   },
+  "65363999957f702e02bf8229c94e0a5fec7f4ffa2131004d40b21105224f0f94": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      }
+    },
+    "query": "\n    delete from jobs\n        where \n        id = $1;\n    "
+  },
   "6b1b358b19615fc5ba50b7dcf0eeb5b9f453b071b7273a335d6b98840bd32b2a": {
     "describe": {
       "columns": [
@@ -734,6 +746,18 @@
       }
     },
     "query": "delete from jobworkers where job = $1 and worker = any($2);"
+  },
+  "b48c93d50e49e0e5a63bc44b466419ea249a8cc132c2f80bcf520b7ab00cc4cf": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      }
+    },
+    "query": "\n    delete from jobworkers\n        where \n        job = $1;\n    "
   },
   "b4d9e32b4f286a3242f4916d9b61fca998dbd4e21627c0b16716e17bf74c9912": {
     "describe": {
