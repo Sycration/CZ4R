@@ -31,7 +31,7 @@
               </form>
             </div>
             <div class="card-body">
-              <table class="table table-dark  table-striped">
+              <table class="table  table-striped">
                 <thead>
                   <tr>
                     <th>Date</th>
@@ -49,13 +49,7 @@
                       <td>@entry.Date</td>
                       <td>@entry.Location</td>
                       <td>@if entry.FlatRate {✅}</td>
-                      <td>
-                        @if entry.HoursWorked > entry.TrueHoursWorked {
-                         @(format!("{:.2}", entry.HoursWorked)) <span class="text-body-secondary"><s>@(format!("{:.2}", entry.TrueHoursWorked))</s></span>
-                         } else {
-                           @(format!("{:.2}", entry.HoursWorked))
-                        }
-                      </td>
+                      <td>@(format!("{:.2}", entry.HoursWorked))</td>
                       <td>@(format!("{:.2}", entry.HoursDriven))</td>
                       <td>@(format!("{:.2}", entry.MilesDriven))</td>
                       <td>$@(format!("{:.2}", (entry.ExtraExpCents as f64 / 100.)))</td>
