@@ -1,7 +1,7 @@
 @use super::card_html; 
 @use super::base_html; 
 @use crate::joblist::JobListPage;
-@(title: &str, admin: bool, logged_in: bool, job_datas: &[(i64, Option<i64>, String, String, String, String)], start: String, end: String)
+@(title: &str, admin: bool, logged_in: bool, job_datas: &[(i64, Option<i64>, String, String, String, String, String)], start: String, end: String)
 
 @:base_html(title, admin,  logged_in, {
     
@@ -25,9 +25,9 @@
             </div>
         </form>
     </div>
-    <ul class="list-group list-group-flush">  @for (job_id, worker_id, worker_name, job_name, address, date) in job_datas.iter() {
+    <ul class="list-group list-group-flush">  @for (job_id, worker_id, worker_name, job_name, address, date, notes) in job_datas.iter() {
         <li class="list-group-item">
-            @:card_html(*job_id, *worker_id, worker_name, job_name, address, date, admin)
+            @:card_html(*job_id, *worker_id, worker_name, job_name, address, date, notes, admin)
         </li>}
     </ul>
 }

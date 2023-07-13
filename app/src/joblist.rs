@@ -13,6 +13,7 @@ struct JobCard {
     sitename: String,
     address: String,
     date: time::Date,
+    notes: String,
 
 }
 
@@ -51,7 +52,7 @@ pub(crate) async fn joblistpage(
     let jobs = match admin {
         true => {
             let query=query_as!(JobCard, r#"
-        select users.name, jobs.id, jobworkers.worker as "worker?", jobs.sitename, jobs.address, jobs.date from jobs inner join jobworkers
+        select users.name, jobs.id, jobworkers.worker as "worker?", jobs.sitename, jobs.address, jobs.date, jobs.notes from jobs inner join jobworkers
         on jobs.id = jobworkers.job
         inner join users
         on jobworkers.worker = users.id
@@ -61,7 +62,7 @@ pub(crate) async fn joblistpage(
             match query {
                 Ok(mut r) => {
                     let query =query_as!(JobCard, r#"
-                    select '' as "name!", NULL::bigint as worker, jobs.id, jobs.sitename, jobs.address, jobs.date from jobs
+                    select '' as "name!", NULL::bigint as worker, jobs.id, jobs.sitename, jobs.address, jobs.date, jobs.notes from jobs
                     where not exists (
                         select *
                         from jobworkers
@@ -84,7 +85,7 @@ pub(crate) async fn joblistpage(
 
         false => {
             let query=query_as!(JobCard, r#"
-        select users.name, jobs.id,  jobworkers.worker as "worker?", jobs.sitename, jobs.address, jobs.date from jobs inner join jobworkers
+        select users.name, jobs.id,  jobworkers.worker as "worker?", jobs.sitename, jobs.address, jobs.date, jobs.notes from jobs inner join jobworkers
         on jobs.id = jobworkers.job
         inner join users
         on jobworkers.worker = users.id
@@ -109,6 +110,7 @@ pub(crate) async fn joblistpage(
                 j.sitename,
                 j.address,
                 format!("{} {}, {}", j.date.month(), j.date.day(), j.date.year()),
+                j.notes
             )
         })
         .collect::<Vec<_>>();

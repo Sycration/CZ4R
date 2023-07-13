@@ -1,4 +1,4 @@
-@(job_id: i64, worker_id: Option<i64>, worker_name: &str, job_name: &str, address: &str, date: &str, is_admin: bool)
+@(job_id: i64, worker_id: Option<i64>, worker_name: &str, job_name: &str, address: &str, date: &str, notes: &str, is_admin: bool)
 
 <div class="card">
   @if worker_id.is_some() {
@@ -8,19 +8,51 @@
     
   }
   <div class="card-body">
-    <h5 class="card-title">@job_name</h5>
-    <p class="card-text">@address</p>
-    <p class="card-text">@date</p>
-    @if let Some(worker) = worker_id {
-      <a href="/checkinout?id=@job_id&worker=@worker" class="btn btn-outline-primary">Open</a>
-      @if is_admin {
-      <a href="/jobedit?id=@job_id" class="btn btn-outline-secondary">Edit</a>
-    } 
+
+    <div class="row">
+      <div class="col-12 col-sm-6">
+        <h5 class="card-title">@job_name</h5>
+        <p class="card-text  mb-3">@address <br> @date</p>
+
+          <div class="d-none d-sm-block ">
+            @if let Some(worker) = worker_id {
+              <a href="/checkinout?id=@job_id&worker=@worker" class="btn btn-outline-primary">Open</a>
+              @if is_admin {
+              <a href="/jobedit?id=@job_id" class="btn btn-outline-secondary">Edit</a>
+            } 
+
+          } else {
+            @if is_admin { 
+              <a href="/jobedit?id=@job_id" class="btn btn-outline-warning">Edit</a>
+            }
+          }
+        </div>
+
+      </div>
+      <div class="col-12 col-sm-6">
+        <div class="card mb-3">
+          <div class="card-header">Notes</div>
+          <div class="card-body">
+            <p class="card-text">@notes</p>
+          </div>
+        </div>
+        <div class="d-sm-none">
+          @if let Some(worker) = worker_id {
+            <a href="/checkinout?id=@job_id&worker=@worker" class="btn btn-outline-primary">Open</a>
+            @if is_admin {
+            <a href="/jobedit?id=@job_id" class="btn btn-outline-secondary">Edit</a>
+          } 
     
-  } else {
-    @if is_admin { 
-      <a href="/jobedit?id=@job_id" class="btn btn-outline-warning">Edit</a>
-    }
-  }
+        } else {
+          @if is_admin { 
+            <a href="/jobedit?id=@job_id" class="btn btn-outline-warning">Edit</a>
+          }
+        }
+      </div>
+      </div>
+    </div>
+
+
+
   </div>
 </div>
