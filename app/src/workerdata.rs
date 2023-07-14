@@ -23,6 +23,8 @@ pub(crate) struct WorkerDataForm {
 }
 
 pub struct WDEntry {
+    pub JobId: i64,
+    pub WorkerId: i64,
     pub Date: String,
     pub Location: String,
     pub FlatRate: bool,
@@ -118,6 +120,8 @@ pub(crate) async fn workerdatapage(
                     HoursDriven: d.hours_driven,
                     MilesDriven: d.miles_driven,
                     ExtraExpCents: d.extraexpcents,
+                    WorkerId: d.worker,
+                    JobId: d.job,
                 })
                 .collect::<Vec<_>>(),
         )
@@ -151,6 +155,8 @@ pub(crate) async fn workerdatapage(
         HoursDriven: hours_driven_total,
         MilesDriven: miles_driven_total,
         ExtraExpCents: extra_exp_total,
+        JobId: -1,
+        WorkerId: -1,
     };
 
     Ok(crate::render(|buf| {
