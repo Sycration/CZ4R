@@ -1,4 +1,4 @@
-@(job_id: i64, worker_id: Option<i64>, worker_name: &str, job_name: &str, address: &str, date: &str, notes: &str, is_admin: bool)
+@(job_id: i64, worker_id: Option<i64>, worker_name: &str, job_name: &str, address: &str, date: &str, notes: &str, work_order: &str, is_admin: bool)
 
 <div class="card">
   @if worker_id.is_some() {
@@ -11,7 +11,14 @@
 
     <div class="row">
       <div class="col-12 col-sm-6">
-        <h5 class="card-title">@job_name</h5>
+        <div class="row">
+          <div class="col-auto">
+            <h5 class="card-title">@job_name</h5>
+          </div>
+          <div class="col">
+            <p class="text-end">@work_order</p>
+          </div>
+        </div>
         <p class="card-text  mb-3">@address <br> @date</p>
 
           <div class="d-none d-sm-block ">
