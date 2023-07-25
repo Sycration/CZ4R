@@ -1,11 +1,11 @@
 use axum::{extract::State, response::Html, Form};
 use serde::Deserialize;
-use sqlx::{query, query_as, types::time::Date, Pool, Postgres};
+use sqlx::{query, query_as, types::time::Date, Pool, Postgres, query_builder, QueryBuilder, Execute, FromRow};
 use time::{Duration, OffsetDateTime};
 
 use crate::{errors::CustomError, now, Auth, TZ_OFFSET, empty_string_as_none};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, FromRow)]
 struct JobQueryOutput {
     name: String,
     id: i64,
@@ -58,7 +58,7 @@ pub(crate) struct JobListPage {
     #[serde(default, deserialize_with = "empty_string_as_none")]
     pub address: Option<String>,
     #[serde(default, deserialize_with = "empty_string_as_none")]
-    pub fieldnotes: Option<String>,
+    pub notes: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -76,9 +76,7 @@ pub(crate) async fn joblistpage(
     mut auth: Auth,
     Form(form): Form<JobListPage>,
 ) -> Result<Html<String>, CustomError> {
-    //let client = pool.get().await?;
 
-    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
     let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
     let logged_in = auth.current_user.is_some();
 
@@ -97,56 +95,83 @@ pub(crate) async fn joblistpage(
         (now() + Duration::days(15)).date()
     };
 
-    let jobs = match admin {
-        true => {
-            let query=query_as!(JobQueryOutput, r#"
-                select users.name, jobs.id, jobworkers.worker as "worker?", jobs.sitename, jobs.address, jobs.date, jobs.notes, jobs.workorder from jobs inner join jobworkers
+    let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new(
+        r#"select users.name, jobs.id, jobworkers.worker, jobs.sitename, jobs.address, jobs.date, jobs.notes, jobs.workorder from jobs inner join jobworkers
                 on jobs.id = jobworkers.job
                 inner join users
                 on jobworkers.worker = users.id
-                where date >= $1 and date <= $2
-                order by date desc;
-        "#, start_date, end_date).fetch_all(&pool).await;
-            match query {
-                Ok(mut r) => {
-                    let query =query_as!(JobQueryOutput, r#"
-                    select '' as "name!", NULL::bigint as worker, jobs.id, jobs.sitename, jobs.address, jobs.date, jobs.notes, jobs.workorder from jobs
-                    where not exists (
-                        select *
-                        from jobworkers
-                        where jobworkers.job = jobs.id
-                    )
-                    and date >= $1 and date <= $2
-                    order by date desc;
-                    "#, start_date, end_date).fetch_all(&pool).await;
-                    if let Ok(mut orphans) = query {
-                        r = {
-                            orphans.append(&mut r);
-                            orphans
-                        }
-                    }
-                    r
-                }
-                Err(e) => return Err(CustomError::Database(e.to_string())),
-            }
-        }
+                 "#
+    );
 
-        false => {
-            let query=query_as!(JobQueryOutput, r#"
-        select users.name, jobs.id,  jobworkers.worker as "worker?", jobs.sitename, jobs.address, jobs.date, jobs.notes, jobs.workorder from jobs inner join jobworkers
-        on jobs.id = jobworkers.job
-        inner join users
-        on jobworkers.worker = users.id
-        where date >= $2 and date <= $3
-        and jobworkers.worker = $1
-        order by date desc;
-        "#, auth.current_user.unwrap().id,  start_date, end_date).fetch_all(&pool).await;
-            match query {
-                Ok(r) => r,
-                Err(e) => return Err(CustomError::Database(e.to_string())),
+    query_builder.push("where date >= ");
+    query_builder.push_bind(start_date);
+    query_builder.push(" and date <= ");
+    query_builder.push_bind(end_date);
+
+    if !admin {
+        query_builder.push(" and jobworkers.worker = ");
+        query_builder.push_bind(auth.current_user.as_ref().unwrap().id);
+    }
+
+    if let Some(site_name) = &form.site_name {
+        query_builder.push(" and jobs.sitename ilike concat('%', ");
+        query_builder.push_bind(site_name);
+        query_builder.push(", '%') ");
+    }
+
+    if let Some(work_order) = &form.work_order {
+        query_builder.push("and jobs.workorder ilike concat('%', ");
+        query_builder.push_bind(work_order);
+        query_builder.push(", '%') ");
+
+    }
+
+    if let Some(address) = &form.address {
+        query_builder.push("and jobs.address ilike concat('%', ");
+        query_builder.push_bind(address);
+        query_builder.push(", '%') ");
+
+    }
+
+    if let Some(notes) = &form.notes {
+        query_builder.push("and jobworkers.notes ilike concat('%', ");
+        query_builder.push_bind(notes);
+        query_builder.push(", '%') ");
+
+    }
+
+    query_builder.push(" order by date desc;");
+
+
+
+    let query = query_builder.build_query_as();
+
+    let query = query.fetch_all(&pool).await;
+
+    let jobs = match query {
+        Ok(mut r) => {
+            let query =query_as!(JobQueryOutput, r#"
+            select '' as "name!", NULL::bigint as worker, jobs.id, jobs.sitename, jobs.address, jobs.date, jobs.notes, jobs.workorder from jobs
+            where not exists (
+                select *
+                from jobworkers
+                where jobworkers.job = jobs.id
+            )
+            and date >= $1 and date <= $2
+            order by date desc;
+            "#, start_date, end_date).fetch_all(&pool).await;
+            if let Ok(mut orphans) = query {
+                r = {
+                    orphans.append(&mut r);
+                    orphans
+                }
             }
+            r
         }
+        Err(e) => return Err(CustomError::Database(e.to_string())),
     };
+
+
 
 
     Ok(crate::render(|buf| {
@@ -162,7 +187,7 @@ pub(crate) async fn joblistpage(
                 site_name: form.site_name.unwrap_or_default(),
                 work_order: form.work_order.unwrap_or_default(),
                 address: form.address.unwrap_or_default(),
-                fieldnotes: form.fieldnotes.unwrap_or_default(),
+                fieldnotes: form.notes.unwrap_or_default(),
             }
         )
     }))

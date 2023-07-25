@@ -191,19 +191,12 @@ async fn app() {
         .route("/api/v1/checkinout", get(checkinout::checkinout))
         .route("/admin", get(admin))
         .route("/admin/worker-edit", get(workeredit::workeredit))
-        //.route("/admin/worker-create", get(workercreate))
         .route("/admin/worker-data", get(workerdata::workerdatapage))
         .route("/admin/deactivated-workers", get(deactivatedworkers))
-        .route(
-            "/admin/api/v1/create-worker",
-            get(create_worker::create_worker),
-        )
+        .route("/admin/api/v1/create-worker", get(create_worker::create_worker))
         .route("/admin/api/v1/edit-job", get(jobedit::jobedit))
         .route("/admin/api/v1/delete-job", get(jobedit::jobdelete))
-        .route(
-            "/admin/api/v1/change-worker/:id",
-            get(change_worker::change_worker),
-        )
+        .route("/admin/api/v1/change-worker/:id",get(change_worker::change_worker))
         .route("/admin/api/v1/reset-pw", get(reset_pw::reset_pw))
         .fallback(error404)
         .layer(auth_layer)
@@ -320,8 +313,9 @@ where
     T::Err: fmt::Display,
 {
     let opt = Option::<String>::deserialize(de)?;
-    match opt.as_deref() {
+    match opt.as_deref().map(|s|s.trim()) {
         None | Some("") => Ok(None),
+        
         Some(s) => FromStr::from_str(s).map_err(de::Error::custom).map(Some),
     }
 }

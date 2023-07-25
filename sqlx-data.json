@@ -103,69 +103,6 @@
     },
     "query": "\n        insert into jobs (sitename, workorder, servicecode, address, date, notes) values\n                ($1, $2, $3, $4, $5, $6)\n            returning id;"
   },
-  "24523efc330f82eae552c4b6221f6884847ebaf2030607685124e945b37a12e2": {
-    "describe": {
-      "columns": [
-        {
-          "name": "name!",
-          "ordinal": 0,
-          "type_info": "Text"
-        },
-        {
-          "name": "worker",
-          "ordinal": 1,
-          "type_info": "Int8"
-        },
-        {
-          "name": "id",
-          "ordinal": 2,
-          "type_info": "Int8"
-        },
-        {
-          "name": "sitename",
-          "ordinal": 3,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "address",
-          "ordinal": 4,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "date",
-          "ordinal": 5,
-          "type_info": "Date"
-        },
-        {
-          "name": "notes",
-          "ordinal": 6,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "workorder",
-          "ordinal": 7,
-          "type_info": "Varchar"
-        }
-      ],
-      "nullable": [
-        null,
-        null,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Date",
-          "Date"
-        ]
-      }
-    },
-    "query": "\n                    select '' as \"name!\", NULL::bigint as worker, jobs.id, jobs.sitename, jobs.address, jobs.date, jobs.notes, jobs.workorder from jobs\n                    where not exists (\n                        select *\n                        from jobworkers\n                        where jobworkers.job = jobs.id\n                    )\n                    and date >= $1 and date <= $2\n                    order by date desc;\n                    "
-  },
   "290bed8259ae9b0c3883c50ceaf8b9c0480aef6f7592978c02b78287618bfa60": {
     "describe": {
       "columns": [
@@ -251,6 +188,69 @@
       }
     },
     "query": "\n    delete from jobs\n        where \n        id = $1;\n    "
+  },
+  "68b9c3d9fa4f3b49d388b829b639ecaaff30990e112fb4eaffe54a9afcaf2855": {
+    "describe": {
+      "columns": [
+        {
+          "name": "name!",
+          "ordinal": 0,
+          "type_info": "Text"
+        },
+        {
+          "name": "worker",
+          "ordinal": 1,
+          "type_info": "Int8"
+        },
+        {
+          "name": "id",
+          "ordinal": 2,
+          "type_info": "Int8"
+        },
+        {
+          "name": "sitename",
+          "ordinal": 3,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "address",
+          "ordinal": 4,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "date",
+          "ordinal": 5,
+          "type_info": "Date"
+        },
+        {
+          "name": "notes",
+          "ordinal": 6,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "workorder",
+          "ordinal": 7,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        null,
+        null,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Date",
+          "Date"
+        ]
+      }
+    },
+    "query": "\n            select '' as \"name!\", NULL::bigint as worker, jobs.id, jobs.sitename, jobs.address, jobs.date, jobs.notes, jobs.workorder from jobs\n            where not exists (\n                select *\n                from jobworkers\n                where jobworkers.job = jobs.id\n            )\n            and date >= $1 and date <= $2\n            order by date desc;\n            "
   },
   "6b1b358b19615fc5ba50b7dcf0eeb5b9f453b071b7273a335d6b98840bd32b2a": {
     "describe": {
@@ -396,69 +396,6 @@
       }
     },
     "query": "\n    select * from users\n    "
-  },
-  "85d13128395245a7bcda910db25775c3357c3f070fa2d75104134cc6468345f2": {
-    "describe": {
-      "columns": [
-        {
-          "name": "name",
-          "ordinal": 0,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "id",
-          "ordinal": 1,
-          "type_info": "Int8"
-        },
-        {
-          "name": "worker?",
-          "ordinal": 2,
-          "type_info": "Int8"
-        },
-        {
-          "name": "sitename",
-          "ordinal": 3,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "address",
-          "ordinal": 4,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "date",
-          "ordinal": 5,
-          "type_info": "Date"
-        },
-        {
-          "name": "notes",
-          "ordinal": 6,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "workorder",
-          "ordinal": 7,
-          "type_info": "Varchar"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Date",
-          "Date"
-        ]
-      }
-    },
-    "query": "\n        select users.name, jobs.id, jobworkers.worker as \"worker?\", jobs.sitename, jobs.address, jobs.date, jobs.notes, jobs.workorder from jobs inner join jobworkers\n        on jobs.id = jobworkers.job\n        inner join users\n        on jobworkers.worker = users.id\n        where date >= $1 and date <= $2\n        order by date desc;\n        "
   },
   "88daa2cc4300c1b17640c6c3dbcdb8f82803b9ace2c7e04d41ed3d12ca09d0f8": {
     "describe": {
@@ -979,69 +916,5 @@
       }
     },
     "query": "update jobworkers set using_flat_rate = false where job = $1 and worker = any($2);"
-  },
-  "d5f4d753840449d79d7508ee2db16d494900f5452dd4b52fd8916771bcb01d8e": {
-    "describe": {
-      "columns": [
-        {
-          "name": "name",
-          "ordinal": 0,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "id",
-          "ordinal": 1,
-          "type_info": "Int8"
-        },
-        {
-          "name": "worker?",
-          "ordinal": 2,
-          "type_info": "Int8"
-        },
-        {
-          "name": "sitename",
-          "ordinal": 3,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "address",
-          "ordinal": 4,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "date",
-          "ordinal": 5,
-          "type_info": "Date"
-        },
-        {
-          "name": "notes",
-          "ordinal": 6,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "workorder",
-          "ordinal": 7,
-          "type_info": "Varchar"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Date",
-          "Date"
-        ]
-      }
-    },
-    "query": "\n        select users.name, jobs.id,  jobworkers.worker as \"worker?\", jobs.sitename, jobs.address, jobs.date, jobs.notes, jobs.workorder from jobs inner join jobworkers\n        on jobs.id = jobworkers.job\n        inner join users\n        on jobworkers.worker = users.id\n        where date >= $2 and date <= $3\n        and jobworkers.worker = $1\n        order by date desc;\n        "
   }
 }

@@ -86,7 +86,7 @@
     <div class="input-group px-3 mb-3">
       <span class="input-group-text">Date</span>
       <label for="DateInput" class="form-label d-none">Date</label>
-      <input name="date" type="date" class="form-control" id="DateInput" 
+      <input required name="date" type="date" class="form-control" id="DateInput" 
           @if let Some(ref job) = job {value = "@job.date"}
 
       />
