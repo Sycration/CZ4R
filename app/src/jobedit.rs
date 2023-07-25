@@ -44,7 +44,6 @@ pub(crate) async fn jobeditpage(
         None => None,
     };
 
-
     let workers = match query!("select id, name from users;").fetch_all(&pool).await {
         Ok(r) => r.into_iter().map(|r| (r.id, r.name)).collect::<Vec<_>>(),
         Err(e) => return Err(CustomError::Database(e.to_string())),
@@ -84,7 +83,7 @@ pub(crate) async fn jobeditpage(
         .collect::<Vec<_>>();
 
     Ok(crate::render(|buf| {
-        crate::templates::jobedit_html(buf, "CZ4R Job Edit", admin, this_job, &list_data )
+        crate::templates::jobedit_html(buf, "CZ4R Job Edit", admin, this_job, &list_data)
     }))
 }
 
@@ -301,7 +300,7 @@ pub(crate) async fn jobedit(
 
 #[derive(Deserialize)]
 pub(crate) struct JobDeleteForm {
-    jobid: i64
+    jobid: i64,
 }
 
 pub(crate) async fn jobdelete(
@@ -316,26 +315,36 @@ pub(crate) async fn jobdelete(
     }
 
     //if let Err(e) =
-    query!(r#"
+    query!(
+        r#"
     delete from jobworkers
         where 
         job = $1;
-    "#, form.jobid).execute(&pool).await.unwrap();
+    "#,
+        form.jobid
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
     //  {
     //     return Err(CustomError::Database(e.to_string()));
     // }
 
     // if let Err(e) =
-    query!(r#"
+    query!(
+        r#"
     delete from jobs
         where 
         id = $1;
-    "#, form.jobid).execute(&pool).await.unwrap();
+    "#,
+        form.jobid
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
     //  {
     //     return Err(CustomError::Database(e.to_string()));
     // }
 
     return Ok(Redirect::to("/joblist"));
 }
-
-

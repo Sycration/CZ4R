@@ -31,7 +31,9 @@ pub(crate) async fn checkinoutpage(
     let worker = form.worker;
 
     if !admin && worker != auth.current_user.as_ref().unwrap().id {
-        return Err(CustomError::Auth("Attempted to check in for other worker".to_string()));
+        return Err(CustomError::Auth(
+            "Attempted to check in for other worker".to_string(),
+        ));
     }
 
     let jw = query_as!(
@@ -89,7 +91,12 @@ pub(crate) async fn checkinoutpage(
             job.servicecode.as_str(),
             job.sitename.as_str(),
             job.address.as_str(),
-            format!("{} {}, {}", job.date.month(), job.date.day(), job.date.year()),
+            format!(
+                "{} {}, {}",
+                job.date.month(),
+                job.date.day(),
+                job.date.year()
+            ),
             signin.unwrap_or_default().as_str(),
             signout.unwrap_or_default().as_str(),
             jw.miles_driven,
@@ -97,7 +104,7 @@ pub(crate) async fn checkinoutpage(
             60. * (jw.hours_driven - jw.hours_driven.floor()),
             jw.extraexpcents,
             jw.notes.as_str(),
-            job.notes.as_str()
+            job.notes.as_str(),
         )
     }))
 }
@@ -113,7 +120,7 @@ pub(crate) struct CheckInOutForm {
     ExtraExpenses: Option<String>,
     Notes: Option<String>,
     JobId: i64,
-    WorkerId: i64
+    WorkerId: i64,
 }
 
 pub(crate) async fn checkinout(
@@ -129,7 +136,9 @@ pub(crate) async fn checkinout(
     let worker = form.WorkerId;
 
     if !admin && worker != auth.current_user.as_ref().unwrap().id {
-        return Err(CustomError::Auth("Attempted to check in for other worker".to_string()));
+        return Err(CustomError::Auth(
+            "Attempted to check in for other worker".to_string(),
+        ));
     }
 
     let signin = form.Signin.unwrap_or_default();

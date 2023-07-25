@@ -20,14 +20,14 @@ use errors::CustomError;
 use password_hash::{PasswordHasher, Salt, SaltString};
 use rand::{thread_rng, Rng};
 use scrypt::Scrypt;
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer, de};
 use sqlx::types::time::Date;
 use sqlx::{query, query_as, Pool, Postgres};
 use std::{
     collections::HashMap,
     default, env,
     net::SocketAddr,
-    sync::{Arc, OnceLock},
+    sync::{Arc, OnceLock}, str::FromStr, fmt,
 };
 use time::{OffsetDateTime, Time, UtcOffset};
 use tokio::runtime::Builder;
@@ -59,7 +59,7 @@ pub struct Job {
     servicecode: String,
     address: String,
     date: Date,
-    notes: String
+    notes: String,
 }
 
 #[derive(Debug, Default, Clone, sqlx::FromRow)]
@@ -200,7 +200,6 @@ async fn app() {
         )
         .route("/admin/api/v1/edit-job", get(jobedit::jobedit))
         .route("/admin/api/v1/delete-job", get(jobedit::jobdelete))
-
         .route(
             "/admin/api/v1/change-worker/:id",
             get(change_worker::change_worker),
@@ -313,6 +312,20 @@ where
 pub fn now() -> OffsetDateTime {
     OffsetDateTime::now_utc().to_offset(*TZ_OFFSET.get().unwrap())
 }
+
+pub fn empty_string_as_none<'de, D, T>(de: D) -> Result<Option<T>, D::Error>
+where
+    D: Deserializer<'de>,
+    T: FromStr,
+    T::Err: fmt::Display,
+{
+    let opt = Option::<String>::deserialize(de)?;
+    match opt.as_deref() {
+        None | Some("") => Ok(None),
+        Some(s) => FromStr::from_str(s).map_err(de::Error::custom).map(Some),
+    }
+}
+
 
 // Include the generated source code
 include!(concat!(env!("OUT_DIR"), "/templates.rs"));

@@ -1,7 +1,7 @@
 @use super::card_html; 
 @use super::base_html; 
-@use crate::joblist::JobListPage;
-@(title: &str, admin: bool, logged_in: bool, job_datas: &[(i64, Option<i64>, String, String, String, String, String, String)], start: String, end: String)
+@use crate::joblist::*;
+@(title: &str, admin: bool, logged_in: bool, job_datas: &[JobData], params: SearchParams)
 
 @:base_html(title, admin,  logged_in, {
     
@@ -13,21 +13,62 @@
         </div>
     }
 
-    <div class="mb-2 justify-content-center">
-        <form id="range" method="get" class="form-inline row">
-            <div class="col">
-              From
-              <input form="range" type="date" class="form-control mx-2" id="start_date" name="start_date" onchange="this.form.submit()" value="@start"/>
-            </div>
-            <div class="col">
-              To
-              <input form="range" type="date" class="form-control mx-2" id="end_date" name="end_date" onchange="this.form.submit()" value="@end"/>
-            </div>
-        </form>
-    </div>
-    <ul class="list-group list-group-flush">  @for (job_id, worker_id, worker_name, job_name, address, date, notes, work_order) in job_datas.iter() {
+    <button
+    class="btn btn-primary"
+    type="button"
+    data-bs-toggle="collapse"
+    data-bs-target="#collapse"
+    aria-expanded="false"
+    aria-controls="collapse"
+  >
+    Filters
+  </button>
+  <div id="collapse" class="collapse show mb-2 justify-content-center ">
+    <form id="filter" method="get" class="form-inline col">
+      <div class="row">
+        <div class="col-sm-6">
+          From
+          <input required form="filter" type="date" class="form-control mx-2" id="start_date" name="start_date" value="@params.start"
+          />
+        </div>
+        <div class="col-sm-6">
+          To
+          <input required form="filter" type="date" class="form-control mx-2" id="end_date" name="end_date" value="@params.end"
+          />
+        </div>
+      </div>
+  
+      <div class="row">
+        <div class="col-sm-6">
+          Site name
+          <input form="filter" type="text" class="form-control mx-2" id="site_name" name="site_name" value="@params.site_name"
+          />
+        </div>
+        <div class="col-sm-6">
+          Work order
+          <input form="filter" type="text" class="form-control mx-2" id="work_order" name="work_order" value="@params.work_order"
+          />
+        </div>
+        <div class="col-sm">
+          Address
+          <input form="filter" type="text" class="form-control mx-2" id="address" name="address" value="@params.address"
+          />
+        </div>
+        <div class="col-sm">
+            Address
+            <input form="filter" type="text" class="form-control mx-2" id="notes" name="notes" value="@params.fieldnotes"
+            />
+          </div>
+      </div>
+  
+      <button form="filter" class="btn" type="submit">Search</button>
+    </form>
+  </div>
+
+
+    <ul class="list-group list-group-flush">  @for data in job_datas.iter() {
         <li class="list-group-item">
-            @:card_html(*job_id, *worker_id, worker_name, job_name, address, date, notes, work_order, admin)
+            @:card_html(data.job_id, data.worker_id, &data.worker_name, &data.job_name, &data.address, &data.date, &data.notes, &data.work_order, admin)
         </li>}
     </ul>
 }

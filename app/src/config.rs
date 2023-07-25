@@ -22,11 +22,14 @@ impl Config {
         let login_secret = base64::engine::general_purpose::STANDARD
             .decode(login_secret_b64)
             .expect("Invalid LOGIN_SECRET data");
-        let port = env::var("CZ4R_ADDR").ok().and_then(|s|s.parse().ok()).unwrap_or(3000u16);
+        let port = env::var("CZ4R_ADDR")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(3000u16);
         Config {
             database_url,
             login_secret,
-            port
+            port,
         }
     }
 

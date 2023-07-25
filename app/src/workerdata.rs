@@ -115,8 +115,11 @@ pub(crate) async fn workerdatapage(
                     Date: d.date.to_string(),
                     Location: d.sitename,
                     FlatRate: d.using_flat_rate,
-                    HoursWorked: ((d.signout.unwrap() - d.signin.unwrap()).as_seconds_f32() / 3600.).max(1.0),
-                    TrueHoursWorked: (d.signout.unwrap() - d.signin.unwrap()).as_seconds_f32() / 3600.,
+                    HoursWorked: ((d.signout.unwrap() - d.signin.unwrap()).as_seconds_f32()
+                        / 3600.)
+                        .max(1.0),
+                    TrueHoursWorked: (d.signout.unwrap() - d.signin.unwrap()).as_seconds_f32()
+                        / 3600.,
                     HoursDriven: d.hours_driven,
                     MilesDriven: d.miles_driven,
                     ExtraExpCents: d.extraexpcents,
