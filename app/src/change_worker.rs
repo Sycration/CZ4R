@@ -26,11 +26,11 @@ pub(crate) struct WorkerChangeForm {
     Drivetime: String,
     Flatrate: String,
     Admin: Option<String>,
+    id: i64
 }
 
 pub(crate) async fn change_worker(
     State(pool): State<Pool<Postgres>>,
-    Path(id): Path<i64>,
     mut auth: Auth,
     Form(workerdata): Form<WorkerChangeForm>,
 ) -> Result<Redirect, CustomError> {
@@ -100,7 +100,7 @@ pub(crate) async fn change_worker(
             mileage.to_i32().unwrap(),
             drivetime.to_i32().unwrap(),
             flatrate.to_i32().unwrap(),
-            id
+            workerdata.id
         )
         .execute(&pool)
         .await;
@@ -109,7 +109,7 @@ pub(crate) async fn change_worker(
             return Err(CustomError::Database(e.to_string()));
         }
         Ok(Redirect::to(
-            format!("/admin/worker-edit?worker={}", id).as_str(),
+            format!("/admin/worker-edit?worker={}", workerdata.id).as_str(),
         ))
     } else {
         Err(CustomError::Auth("Not logged in as admin".to_string()))

@@ -1,0 +1,86 @@
+{{!-- @(title: &str, admin: bool, logged_in: bool, job_datas: &[JobData], params: SearchParams) --}}
+{{#*inline "body"}}
+
+    
+    {{#if admin}}
+        <div class="mt-1 mb-2 input-group d-flex justify-content-center">
+            <a href="/jobedit">
+                <button type="button" class="btn btn-primary">Create new job</button>
+            </a>
+        </div>
+    {{/if}}
+
+
+    <button
+    class="btn btn-primary"
+    type="button"
+    data-bs-toggle="collapse"
+    data-bs-target="#collapse"
+    aria-expanded="false"
+    aria-controls="collapse"
+  >
+    Filters
+  </button>
+  <div id="collapse" class="collapse mb-2 justify-content-center ">
+    <form id="filter" method="get" class="form-inline col">
+      <div class="row">
+        <div class="col-sm-6">
+          From
+          <input required form="filter" type="date" class="form-control mx-2" id="start_date" name="start_date" value="{{params.start}}"
+          />
+        </div>
+        <div class="col-sm-6">
+          To
+          <input required form="filter" type="date" class="form-control mx-2" id="end_date" name="end_date" value="{{params.end}}"
+          />
+        </div>
+      </div>
+  
+      <div class="row">
+        <div class="col-sm-6">
+          Site name
+          <input form="filter" type="text" class="form-control mx-2" id="site_name" name="site_name" value="{{params.site_name}}"
+          />
+        </div>
+        <div class="col-sm-6">
+          Work order
+          <input form="filter" type="text" class="form-control mx-2" id="work_order" name="work_order" value="{{params.work_order}}"
+          />
+        </div>
+        <div class="col-sm">
+          Address
+          <input form="filter" type="text" class="form-control mx-2" id="address" name="address" value="{{params.address}}"
+          />
+        </div>
+        <div class="col-sm mb-2">
+            Field notes
+            <input form="filter" type="text" class="form-control mx-2" id="notes" name="notes" value="{{params.fieldnotes}}"
+            />
+          </div>
+      </div>
+  
+      <button form="filter" class="btn btn-outline-primary" type="submit">Search</button>
+    </form>
+  </div>
+
+    <ul class="list-group list-group-flush"> 
+      {{#each job_datas as |d|}}
+                <li class="list-group-item">
+            {{> card.hbs
+                job_id=d.job_id
+                worker_id=d.worker_id
+                worker_name=d.worker_name
+                job_name=d.job_name
+                address=d.address
+                date=d.date
+                notes=d.notes
+                work_order=d.work_order
+                admin=../admin
+                }}
+        </li>
+      {{/each}}
+
+    </ul>
+
+{{/inline}}
+{{> base.hbs}}

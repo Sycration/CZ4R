@@ -1,9 +1,4 @@
-@use super::base_html; 
-
-@(title: &str, admin: bool)
-
-@:base_html(title, admin, false, {
-    
+{{#*inline "body"}}
 
 <div class="container">
     <div class="row">
@@ -18,5 +13,5 @@
     </div>
 </div>
 
-}
-)
+{{/inline}}
+{{> base.hbs}}

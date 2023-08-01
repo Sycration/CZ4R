@@ -4,8 +4,8 @@
 
 use axum::{
     debug_handler,
-    extract::{Extension, Path, State},
-    response::{Html, Redirect},
+    extract::{Extension, Path, State, FromRef},
+    response::{Html, Redirect, IntoResponse},
     routing::get,
     Form, Router,
 };
@@ -19,12 +19,14 @@ use axum_login::{
 use errors::CustomError;
 use password_hash::{PasswordHasher, Salt, SaltString};
 use rand::{thread_rng, Rng};
+use rust_embed::RustEmbed;
 use scrypt::Scrypt;
-use serde::{Deserialize, Deserializer, de};
+use serde::{Deserialize, Deserializer, de, Serialize};
+use serde_json::Value;
 use sqlx::types::time::Date;
 use sqlx::{query, query_as, Pool, Postgres};
 use std::{
-    collections::HashMap,
+    collections::{HashMap, BTreeMap},
     default, env,
     net::SocketAddr,
     sync::{Arc, OnceLock}, str::FromStr, fmt,
@@ -35,8 +37,9 @@ use tokio::sync::RwLock;
 use tower_http::trace::{self, TraceLayer};
 use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-
-use crate::config::Config;
+use axum_template::{engine::Engine, Key, RenderHtml};
+use handlebars::{Handlebars, handlebars_helper};
+use crate::{config::Config, login::loginpage};
 
 mod change_pw;
 mod change_worker;
@@ -50,8 +53,11 @@ mod login;
 mod reset_pw;
 mod workerdata;
 mod workeredit;
+mod index;
+mod error404;
+mod admin;
 
-#[derive(Debug, Clone, sqlx::FromRow)]
+#[derive(Debug, Clone, sqlx::FromRow, Serialize)]
 pub struct Job {
     id: i64,
     sitename: String,
@@ -62,7 +68,7 @@ pub struct Job {
     notes: String,
 }
 
-#[derive(Debug, Default, Clone, sqlx::FromRow)]
+#[derive(Debug, Default, Clone, sqlx::FromRow, Serialize)]
 
 pub struct Worker {
     id: i64,
@@ -94,6 +100,14 @@ pub struct JobWorker {
     using_flat_rate: bool,
 }
 
+type AppEngine = Engine<Handlebars<'static>>;
+
+#[derive(Clone, FromRef)]
+pub struct AppState {
+    pool: Pool<Postgres>,
+    engine: AppEngine
+}
+
 type Auth = AuthContext<i64, Worker, PostgresStore<Worker, ()>, ()>;
 
 impl AuthUser<i64> for Worker {
@@ -114,15 +128,44 @@ fn main() {
         TZ_OFFSET.get_or_init(|| { OffsetDateTime::now_local().unwrap().offset() })
     );
 
+
     let rt = Builder::new_multi_thread().enable_all().build().unwrap();
 
     rt.block_on(app());
+}
+#[cfg(debug_assertions)]
+
+fn setup_handlebars(hbs: &mut Handlebars) {
+    hbs.set_dev_mode(true);
+    hbs.register_templates_directory("", "app/hb-templates").unwrap();
+}
+
+#[cfg(not(debug_assertions))]
+
+#[derive(RustEmbed)]
+#[folder = "hb-templates"]
+struct Templates;
+
+#[cfg(not(debug_assertions))]
+
+fn setup_handlebars(hbs: &mut Handlebars) {
+    hbs.set_dev_mode(false);
+    hbs.register_embed_templates::<Templates>();
 }
 
 async fn app() {
     dbg!(now());
 
     tracing_subscriber::fmt().pretty().init();
+
+    let mut hbs = Handlebars::new();
+    hbs.set_strict_mode(true);
+    setup_handlebars(&mut hbs);
+    handlebars_helper!(eq: |a: Value, b: Value| a == b);
+    handlebars_helper!(neq: |a: Value, b: Value| a != b);
+    hbs.register_helper("eq", Box::new(eq));
+    hbs.register_helper("neq", Box::new(neq));
+
 
     let config = config::Config::new();
 
@@ -179,7 +222,7 @@ async fn app() {
 
     // build our application with a route
     let app = Router::new()
-        .route("/", get(index))
+        .route("/", get(index::index))
         .route("/joblist", get(joblist::joblistpage))
         .route("/jobedit", get(jobedit::jobeditpage))
         .route("/loginpage", get(loginpage))
@@ -189,19 +232,22 @@ async fn app() {
         .route("/change-pw", get(change_pw::change_pw_page))
         .route("/api/v1/change-pw/:id", get(change_pw::change_pw))
         .route("/api/v1/checkinout", get(checkinout::checkinout))
-        .route("/admin", get(admin))
+        .route("/admin", get(admin::admin))
         .route("/admin/worker-edit", get(workeredit::workeredit))
         .route("/admin/worker-data", get(workerdata::workerdatapage))
-        .route("/admin/deactivated-workers", get(deactivatedworkers))
+        //.route("/admin/deactivated-workers", get(deactivatedworkers))
         .route("/admin/api/v1/create-worker", get(create_worker::create_worker))
         .route("/admin/api/v1/edit-job", get(jobedit::jobedit))
         .route("/admin/api/v1/delete-job", get(jobedit::jobdelete))
-        .route("/admin/api/v1/change-worker/:id",get(change_worker::change_worker))
+        .route("/admin/api/v1/change-worker",get(change_worker::change_worker))
         .route("/admin/api/v1/reset-pw", get(reset_pw::reset_pw))
-        .fallback(error404)
+        .fallback(error404::error404)
         .layer(auth_layer)
         .layer(session_layer)
-        .with_state(pool);
+        .with_state(AppState {
+            pool,
+            engine: Engine::from(hbs)
+        });
 
     // run it
     let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
@@ -210,85 +256,6 @@ async fn app() {
         .serve(app.into_make_service())
         .await
         .unwrap();
-}
-
-async fn index(
-    State(pool): State<Pool<Postgres>>,
-    mut auth: Auth,
-) -> Result<Html<String>, CustomError> {
-    //let client = pool.get().await?;
-
-    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
-    let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
-    let logged_in = auth.current_user.is_some();
-
-    Ok(crate::render(|buf| {
-        crate::templates::index_html(buf, "CZ4R Home", admin, logged_in)
-    }))
-}
-
-async fn deactivatedworkers(
-    State(pool): State<Pool<Postgres>>,
-    mut auth: Auth,
-) -> Result<Html<String>, CustomError> {
-    //let client = pool.get().await?;
-
-    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
-    let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
-    let logged_in = auth.current_user.is_some();
-
-    Ok(crate::render(|buf| {
-        crate::templates::deactivatedworkers_html(buf, "CZ4R Deleted Workers", admin)
-    }))
-}
-
-async fn admin(
-    State(pool): State<Pool<Postgres>>,
-    mut auth: Auth,
-) -> Result<Html<String>, CustomError> {
-    //let client = pool.get().await?;
-
-    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
-    let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
-    let logged_in = auth.current_user.is_some();
-
-    Ok(crate::render(|buf| {
-        crate::templates::admin_html(buf, "CZ4R Admin Page", admin)
-    }))
-}
-
-#[derive(Deserialize)]
-pub struct LoginPageForm {
-    failure: Option<bool>,
-}
-
-async fn loginpage(
-    State(pool): State<Pool<Postgres>>,
-    mut auth: Auth,
-    Form(form): Form<LoginPageForm>,
-) -> Result<Html<String>, CustomError> {
-    //let client = pool.get().await?;
-
-    let logged_in = auth.current_user.is_some();
-
-    Ok(crate::render(|buf| {
-        crate::templates::login_html(buf, "CZ4R Login", logged_in, form.failure == Some(true))
-    }))
-}
-
-async fn error404(
-    State(pool): State<Pool<Postgres>>,
-    mut auth: Auth,
-) -> Result<Html<String>, CustomError> {
-    //let client = pool.get().await?;
-
-    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
-    let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
-    let logged_in = auth.current_user.is_some();
-
-    Ok(crate::render(|buf| {
-        crate::templates::error404_html(buf, "CZ4R 404", admin)
-    }))
 }
 
 pub fn render<F>(f: F) -> Html<String>
@@ -320,6 +287,3 @@ where
     }
 }
 
-
-// Include the generated source code
-include!(concat!(env!("OUT_DIR"), "/templates.rs"));

@@ -1,8 +1,5 @@
-@use super::base_html; 
+{{#*inline "body"}}
 
-@(title: &str, logged_in: bool, failure: bool)
-  
-@:base_html(title, false, logged_in, {
   <div class="d-flex flex-column align-items-center">
     <form class="d-flex flex-column justify-content-center" action="/login">
         <div class="mb-3 p-2 flex-fill">
@@ -15,11 +12,12 @@
         </div>
         <button type="submit" class="btn btn-primary p-2 flex-fill">Login</button>
       </form>
-      @if failure {
+      {{#if failure}} 
         <div class="alert alert-warning" role="alert">
           Incorrect username or password
         </div>
-      }
+      {{/if}}
   </div>
-}
-)
+
+{{/inline}}
+{{> base.hbs}}

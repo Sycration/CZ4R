@@ -1,0 +1,65 @@
+{{!-- @(job_id: i64, worker_id: Option<i64>, worker_name: &str, job_name: &str, address: &str, date: &str, notes: &str, work_order: &str, is_admin: bool) --}}
+
+<div class="card">
+  
+  {{#if worker_id}}
+    <div class="card-header">Assigned to: {{worker_name}} </div>
+  {{else}}
+    <div class="card-header text-danger">WARNING: THIS JOB ({{job_name}}) IS NOT ASSIGNED TO ANY WORKER</div>
+  {{/if}}
+
+  <div class="card-body">
+
+    <div class="row">
+      <div class="col-12 col-sm-6">
+        <div class="row">
+          <div class="col-auto">
+            <h5 class="card-title">{{job_name}}</h5>
+          </div>
+          <div class="col">
+            <p class="text-end">{{work_order}}</p>
+          </div>
+        </div>
+        <p class="card-text  mb-3">{{address}} <br> {{date}}</p>
+
+          <div class="d-none d-sm-block ">
+           {{#if worker_id}}
+              <a href="/checkinout?id={{job_id}}&worker={{worker_id}}" class="btn btn-outline-primary">Open</a>
+                {{#if admin}}
+                    <a href="/jobedit?id={{job_id}}" class="btn btn-outline-secondary">Edit</a>
+                {{/if}}
+            {{else}}
+                {{#if admin}}
+                    <a href="/jobedit?id={{job_id}}" class="btn btn-outline-secondary">Edit</a>
+                {{/if}}
+            {{/if}}
+
+        </div>
+
+      </div>
+      <div class="col-12 col-sm-6">
+        <div class="card mb-3">
+          <div class="card-header">Notes</div>
+          <div class="card-body">
+            <p class="card-text">{{notes}}</p>
+          </div>
+        </div>
+        <div class="d-sm-none">
+           {{#if worker_id}}
+              <a href="/checkinout?id={{job_id}}&worker={{worker_id}}" class="btn btn-outline-primary">Open</a>
+                {{#if admin}}
+                    <a href="/jobedit?id={{job_id}}" class="btn btn-outline-secondary">Edit</a>
+                {{/if}}
+            {{else}}
+                {{#if admin}}
+                    <a href="/jobedit?id={{job_id}}" class="btn btn-outline-secondary">Edit</a>
+                {{/if}}
+            {{/if}}
+      </div>
+      </div>
+    </div>
+
+
+
+  </div>
+</div>

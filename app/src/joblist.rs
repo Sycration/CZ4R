@@ -1,9 +1,12 @@
-use axum::{extract::State, response::Html, Form};
-use serde::Deserialize;
+use std::collections::BTreeMap;
+
+use axum::{extract::State, response::{Html, IntoResponse}, Form};
+use axum_template::RenderHtml;
+use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, types::time::Date, Pool, Postgres, query_builder, QueryBuilder, Execute, FromRow};
 use time::{Duration, OffsetDateTime};
 
-use crate::{errors::CustomError, now, Auth, TZ_OFFSET, empty_string_as_none};
+use crate::{errors::CustomError, now, Auth, TZ_OFFSET, empty_string_as_none, AppState};
 
 #[derive(Deserialize, FromRow)]
 struct JobQueryOutput {
@@ -17,6 +20,7 @@ struct JobQueryOutput {
     workorder: String,
 }
 
+#[derive(Serialize, Deserialize, FromRow)]
 pub struct JobData {
     pub job_id: i64,
     pub worker_id: Option<i64>,
@@ -61,7 +65,7 @@ pub(crate) struct JobListPage {
     pub notes: Option<String>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 pub struct SearchParams {
     pub start: String,
     pub end: String,
@@ -72,10 +76,10 @@ pub struct SearchParams {
 }
 
 pub(crate) async fn joblistpage(
-    State(pool): State<Pool<Postgres>>,
+    State(AppState { pool, engine }): State<AppState>,
     mut auth: Auth,
     Form(form): Form<JobListPage>,
-) -> Result<Html<String>, CustomError> {
+) -> Result<impl IntoResponse, CustomError>  {
 
     let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
     let logged_in = auth.current_user.is_some();
@@ -171,17 +175,13 @@ pub(crate) async fn joblistpage(
         Err(e) => return Err(CustomError::Database(e.to_string())),
     };
 
-
-
-
-    Ok(crate::render(|buf| {
-        crate::templates::joblist_html(
-            buf,
-            "CZ4R Job List",
-            admin,
-            logged_in,
-            &JobData::from_outputs(jobs),
-            SearchParams {
+    dbg!(admin);
+    let data = serde_json::json!({
+            "title": "CZ4R Job List",
+            "admin": admin,
+            "logged_in": logged_in,
+            "job_datas": JobData::from_outputs(jobs),
+            "params": SearchParams {
                 start: start_date.to_string(),
                 end: end_date.to_string(),
                 site_name: form.site_name.unwrap_or_default(),
@@ -189,6 +189,8 @@ pub(crate) async fn joblistpage(
                 address: form.address.unwrap_or_default(),
                 fieldnotes: form.notes.unwrap_or_default(),
             }
-        )
-    }))
+        });
+
+    Ok(RenderHtml("joblist.hbs", engine, data))
+
 }

@@ -1,12 +1,14 @@
-use crate::{errors::CustomError, Auth, Job, JobWorker};
+use crate::{errors::CustomError, Auth, Job, JobWorker, AppState};
 use axum::{
     extract::{Path, State},
-    response::{Html, Redirect},
+    response::{Html, Redirect, IntoResponse},
     Form,
 };
+use axum_template::RenderHtml;
 use rust_decimal::prelude::*;
 use rust_decimal::Decimal;
 use serde::Deserialize;
+use serde_json::json;
 use sqlx::{query, query_as, Pool, Postgres};
 use time::{format_description, macros::format_description, Time};
 
@@ -17,10 +19,10 @@ pub(crate) struct CheckInOutPage {
 }
 
 pub(crate) async fn checkinoutpage(
-    State(pool): State<Pool<Postgres>>,
+    State(AppState { pool, engine }): State<AppState>,
     mut auth: Auth,
     Form(form): Form<CheckInOutPage>,
-) -> Result<Html<String>, CustomError> {
+) -> Result<impl IntoResponse, CustomError> {
     let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
     let logged_in = auth.current_user.is_some();
 
@@ -80,33 +82,28 @@ pub(crate) async fn checkinoutpage(
             .unwrap()
     });
 
-    Ok(crate::render(|buf| {
-        crate::templates::checkinout_html(
-            buf,
-            "CZ4R Time Tracking",
-            admin,
-            form.id,
-            form.worker,
-            job.workorder.as_str(),
-            job.servicecode.as_str(),
-            job.sitename.as_str(),
-            job.address.as_str(),
-            format!(
-                "{} {}, {}",
-                job.date.month(),
-                job.date.day(),
-                job.date.year()
-            ),
-            signin.unwrap_or_default().as_str(),
-            signout.unwrap_or_default().as_str(),
-            jw.miles_driven,
-            jw.hours_driven.floor(),
-            60. * (jw.hours_driven - jw.hours_driven.floor()),
-            jw.extraexpcents,
-            jw.notes.as_str(),
-            job.notes.as_str(),
-        )
-    }))
+    let data = json!({
+        "title": "CZ4R Time Tracking",
+        "admin": admin,
+        "job_id": form.id,
+        "worker_id": form.worker,
+        "work_order": job.workorder.as_str(),
+        "service_code": job.servicecode.as_str(),
+        "site_name": job.sitename.as_str(),
+        "address": job.address.as_str(),
+        "date": format!("{} {}, {}", job.date.month(), job.date.day(),  job.date.year()),
+        "signin": signin.unwrap_or_default().as_str(),
+        "signout": signout.unwrap_or_default().as_str(),
+        "miles": jw.miles_driven,
+        "hours": jw.hours_driven.floor(),
+        "minutes": 60. * (jw.hours_driven - jw.hours_driven.floor()),
+        "extra_exp_ct": format!("{:.2}", (jw.extraexpcents as f64 / 100.)),
+        "notes": jw.notes.as_str(),
+        "jobnotes": job.notes.as_str(),
+    });
+
+    Ok(RenderHtml("checkinout.hbs", engine, data))
+
 }
 
 //?Signin=&Signout=&MilesDriven=2&ExtraExpenses=&Notes=

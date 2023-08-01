@@ -1,9 +1,9 @@
-@use super::base_html;  
+{{#*inline "body"}}
 
-@(title: &str, admin: bool, job_id: i64, worker_id: i64, work_order: &str, service_code: &str, site_name: &str, address: &str, date: String, signin: &str, signout: &str, miles: f32, hours: f32, minutes: f32, extra_exp_ct: i32, notes: &str, jobnotes: &str)
+{{!-- @(title: &str, admin: bool, job_id: i64, worker_id: i64, work_order: &str, service_code: &str, site_name: &str, address: &str, date: String, signin: &str, signout: &str, miles: f32, hours: f32, minutes: f32, extra_exp_ct: i32, notes: &str, jobnotes: &str) --}}
 
 
-@:base_html(title, admin, true, {
+
     <div class="container">
       <h1 class="text-center ">Time Sheet</h1>
       <table class="table">
@@ -16,9 +16,9 @@
         </thead>
         <tbody>
           <tr>
-            <td>@site_name</td>
-            <td>@address</td>
-            <td>@date</td>
+            <td>{{site_name}}</td>
+            <td>{{address}}</td>
+            <td>{{date}}</td>
           </tr>
         </tbody>
       </table>
@@ -32,8 +32,8 @@
         </thead>
         <tbody>
           <tr>
-            <td>@work_order</td>
-            <td>@service_code</td>
+            <td>{{work_order}}</td>
+            <td>{{service_code}}</td>
           </tr>
         </tbody>
       </table>
@@ -55,14 +55,14 @@
             type="time"
             class="form-control"
             id="SigninInput"
-            value="@signin"
+            value="{{signin}}"
           />
           <input 
             name="Signout"
             type="time"
             class="form-control"
             id="SignoutInput"
-            value="@signout"
+            value="{{signout}}"
 
           />
           <span class="input-group-text d-none d-md-block">Sign-out time</span>
@@ -86,7 +86,7 @@
             class="form-control"
             id="HoursDriven"
             placeholder="0"
-            value="@hours"
+            value="{{hours}}"
             step="0.01"
             min="0"
 
@@ -97,7 +97,7 @@
             class="form-control"
             id="MinutesDriven"
             placeholder="0"
-            value="@minutes"
+            value="{{minutes}}"
             step="0.01"
             min="0"
 
@@ -114,7 +114,7 @@
         class="form-control"
         id="MilesDriven"
         placeholder="0"
-        value="@miles"
+        value="{{miles}}"
         step="0.01"
         min="0"
       />
@@ -130,7 +130,7 @@
             id="ExtraExpenses"
             min="0" step="0.01"
             placeholder="0.00"
-            value="@(format!("{:.2}", (extra_exp_ct as f64 / 100.)))"
+            value="{{extra_exp_ct}}"
             onchange="setTwoNumberDecimal()"
           />
         </div>
@@ -139,21 +139,21 @@
         <div class="input-group px-3 mb-3">
           <span class="input-group-text">Field Notes</span>
           <label for="notes" class="form-label d-none">Field Notes</label>
-          <textarea name="Notes" class="form-control" id="notes" rows="4" style="resize:none;" form="checkinoutform">@notes</textarea>
+          <textarea name="Notes" class="form-control" id="notes" rows="4" style="resize:none;" form="checkinoutform">{{notes}}</textarea>
         </div>
 
         <div class="input-group px-3 mb-3">
           <span class="input-group-text">Job Notes</span>
           <label for="jobnotes" class="form-label d-none">Job Notes</label>
-          <textarea disabled="disabled" class="form-control" id="jobnotes" rows="4" style="resize:none;">@jobnotes</textarea>
+          <textarea disabled="disabled" class="form-control" id="jobnotes" rows="4" style="resize:none;">{{jobnotes}}</textarea>
         </div>
 
         
 
-        <input type="hidden" id="JobId" name="JobId" value="@job_id">
+        <input type="hidden" id="JobId" name="JobId" value="{{job_id}}">
 
 
-        <input type="hidden" id="WorkerId" name="WorkerId" value="@worker_id">
+        <input type="hidden" id="WorkerId" name="WorkerId" value="{{worker_id}}">
 
 
 
@@ -178,7 +178,7 @@
       MilesDriven.value = parseFloat(parseFloat(MilesDriven.value).toFixed(2));
 
       
-    function setTwoNumberDecimal(event) @{
+    function setTwoNumberDecimal(event) {
       var extraexpct = document.getElementById("ExtraExpenses");
       extraexpct.value = parseFloat(parseFloat(extraexpct.value).toFixed(2));
       
@@ -192,8 +192,9 @@
       var MilesDriven = document.getElementById("MilesDriven");
       MilesDriven.value = parseFloat(parseFloat(MilesDriven.value).toFixed(2));
 
-  @}
+  }
   </script>
     </div>
 
-})
+{{/inline}}
+{{> base.hbs}}

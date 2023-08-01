@@ -1,0 +1,22 @@
+{{!-- @(target: &str, array: &[(i64, &str)], selected: Option<i64>) --}}
+
+<div class="list-group">
+    {{#each array as |item|}}
+    <a {{#if ../selected}}
+         {{#if (neq ../selected item.[0])}}
+          href="/admin/{{../target}}?worker={{item.[0]}}" 
+         {{/if}}
+      
+      {{else}}
+      href="/admin/{{../target}}?worker={{item.[0]}}" {{/if}} class="list-group-item list-group-item-action d-flex justify-content-between align-items-center row
+      
+        {{#if ../selected}}
+          {{#if (eq ../selected item.[0])}}
+            active
+          {{/if}}
+        {{/if}}
+      " style="margin: 0">
+      <p class="align-middle fs-4">{{item.[1]}}</p>
+    </a>
+    {{/each}}
+  </div>

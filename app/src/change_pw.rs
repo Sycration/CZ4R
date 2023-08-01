@@ -1,17 +1,21 @@
 //Name=&Address=&Phone=&Email=&Hourly=&Mileage=&Drivetime=
 
 use super::Auth;
+use crate::AppState;
 use crate::errors::CustomError;
 use axum::extract::Path;
 use axum::extract::State;
 use axum::response::Html;
+use axum::response::IntoResponse;
 use axum::response::Redirect;
 use axum::Form;
+use axum_template::RenderHtml;
 use password_hash::PasswordHasher;
 use password_hash::SaltString;
 use rand::thread_rng;
 use scrypt::Scrypt;
 use serde::Deserialize;
+use serde_json::json;
 use sqlx::query;
 use sqlx::Pool;
 use sqlx::Postgres;
@@ -23,11 +27,13 @@ pub(crate) struct ChangePwPageForm {
 }
 
 pub(crate) async fn change_pw_page(
-    State(pool): State<Pool<Postgres>>,
+    State(AppState { pool, engine }): State<AppState>,
     mut auth: Auth,
     Form(form): Form<ChangePwPageForm>,
-) -> Result<Html<String>, CustomError> {
+) -> Result<impl IntoResponse, CustomError>{
     let logged_in = auth.current_user.is_some();
+
+    let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
 
     let id = if let Some(id) = auth.current_user.map(|u| u.id) {
         id
@@ -39,15 +45,15 @@ pub(crate) async fn change_pw_page(
         ));
     };
 
-    Ok(crate::render(|buf| {
-        crate::templates::changepw_html(
-            buf,
-            "CZ4R Login",
-            logged_in,
-            form.no_match == Some(true),
-            id,
-        )
-    }))
+    let data = json!({
+        "title": "CZ4R Login",
+        "admin": admin,
+        "logged_in": logged_in,
+        "failure": form.no_match == Some(true),
+        "chg_id": id
+    });
+
+    Ok(RenderHtml("changepw.hbs",engine,data))
 }
 
 #[derive(Deserialize)]

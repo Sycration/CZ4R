@@ -1,18 +1,19 @@
 use axum::{
     extract::State,
-    response::{Html, Redirect},
+    response::{Html, Redirect, IntoResponse},
     Form,
 };
 
+use axum_template::RenderHtml;
 use password_hash::{rand_core::le, PasswordHasher, Salt, SaltString};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use sqlx::types::time::Date;
 use sqlx::{query, query_as, Pool, Postgres};
 use time::{OffsetDateTime, Time};
 
 use crate::{
     errors::{self, CustomError},
-    now, Auth, Worker,
+    now, Auth, Worker, AppState,
 };
 
 #[derive(Deserialize)]
@@ -22,24 +23,30 @@ pub(crate) struct WorkerDataForm {
     end_date: Option<Date>,
 }
 
+#[derive(Serialize, Default, Debug)]
 pub struct WDEntry {
     pub JobId: i64,
     pub WorkerId: i64,
     pub Date: String,
     pub Location: String,
     pub FlatRate: bool,
-    pub HoursWorked: f32,
-    pub TrueHoursWorked: f32,
-    pub HoursDriven: f32,
-    pub MilesDriven: f32,
+    pub HoursWorked: String,
+    pub TrueHoursWorked: String,
+    pub HoursDriven: String,
+    pub MilesDriven: String,
     pub ExtraExpCents: i32,
 }
 
+fn hours_worked(signin: Time, signout: Time) -> f32 {
+    ((signout - signin).as_seconds_f32() / 3600.).max(1.0)
+}
+
+
 pub(crate) async fn workerdatapage(
-    State(pool): State<Pool<Postgres>>,
+    State(AppState { pool, engine }): State<AppState>,
     mut auth: Auth,
     Form(worker): Form<WorkerDataForm>,
-) -> Result<Html<String>, CustomError> {
+) ->  Result<impl IntoResponse, CustomError> {
     let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
     let logged_in = auth.current_user.is_some();
 
@@ -66,7 +73,7 @@ pub(crate) async fn workerdatapage(
     let mut from = String::new();
     let mut to = String::new();
 
-    let entries = if let Some(id) = worker.worker {
+    let (entries, totals) = if let Some(id) = worker.worker {
         let start_date = if let Some(d) = worker.start_date {
             d
         } else if date.day() <= 15 {
@@ -108,73 +115,80 @@ pub(crate) async fn workerdatapage(
             }
         };
 
-        Some(
+        let hours_worked_total = data
+            .iter()
+            .filter(|d| d.signin.is_some() && d.signout.is_some())
+            .fold(0.0, |acc, x| acc + hours_worked(x.signin.unwrap(), x.signout.unwrap()));
+        let hours_driven_total = data
+            .iter()
+            .filter(|d| d.signin.is_some() && d.signout.is_some())
+            .fold(0.0, |acc, x| acc + x.hours_driven);
+        let miles_driven_total = data
+            .iter()
+            .filter(|d| d.signin.is_some() && d.signout.is_some())
+            .fold(0.0, |acc, x| acc + x.miles_driven);
+        let extra_exp_total = data
+            .iter()
+            .filter(|d| d.signin.is_some() && d.signout.is_some())
+            .fold(0, |acc, x| acc + x.extraexpcents);
+
+        let entries =
             data.into_iter()
                 .filter(|d| d.signin.is_some() && d.signout.is_some())
                 .map(|d| WDEntry {
                     Date: d.date.to_string(),
                     Location: d.sitename,
                     FlatRate: d.using_flat_rate,
-                    HoursWorked: ((d.signout.unwrap() - d.signin.unwrap()).as_seconds_f32()
-                        / 3600.)
-                        .max(1.0),
-                    TrueHoursWorked: (d.signout.unwrap() - d.signin.unwrap()).as_seconds_f32()
-                        / 3600.,
-                    HoursDriven: d.hours_driven,
-                    MilesDriven: d.miles_driven,
+                    HoursWorked: {
+                        let val = hours_worked(d.signin.unwrap(), d.signout.unwrap());
+                        format!("{:.2}", val)
+                    },
+                    TrueHoursWorked: {
+                        let val = (d.signout.unwrap() - d.signin.unwrap()).as_seconds_f32() / 3600.;
+                        format!("{:.2}", val)
+                    },
+                    HoursDriven: format!("{:.2}", d.hours_driven),
+                    MilesDriven: format!("{:.2}", d.miles_driven),
                     ExtraExpCents: d.extraexpcents,
                     WorkerId: d.worker,
                     JobId: d.job,
                 })
-                .collect::<Vec<_>>(),
-        )
+                .collect::<Vec<_>>();
+
+        let totals = WDEntry {
+            Date: String::new(),
+            Location: String::new(),
+            FlatRate: false,
+            HoursWorked: format!("{:.2}", hours_worked_total),
+            TrueHoursWorked: String::new(),
+            HoursDriven: format!("{:.2}", hours_driven_total),
+            MilesDriven: format!("{:.2}", miles_driven_total),
+            ExtraExpCents: extra_exp_total,
+            JobId: -1,
+            WorkerId: -1,
+        };
+
+        (entries, totals)
     } else {
-        None
+        (vec![], WDEntry::default())
     };
 
-    let hours_worked_total = entries
-        .as_ref()
-        .map(|e| e.iter().fold(0.0, |acc, x| acc + x.HoursWorked))
-        .unwrap_or_default();
-    let hours_driven_total = entries
-        .as_ref()
-        .map(|e| e.iter().fold(0.0, |acc, x| acc + x.HoursDriven))
-        .unwrap_or_default();
-    let miles_driven_total = entries
-        .as_ref()
-        .map(|e| e.iter().fold(0.0, |acc, x| acc + x.MilesDriven))
-        .unwrap_or_default();
-    let extra_exp_total = entries
-        .as_ref()
-        .map(|e| e.iter().fold(0, |acc, x| acc + x.ExtraExpCents))
-        .unwrap_or_default();
+    let data = serde_json::json!({
+        "title": "CZ4R Worker Data",
+        "admin": admin,
+        "logged_in": logged_in,
+        "selected": worker.worker,
+        "workerlist": users,
+        "selectlist": selectlist,
+        "entries": entries,
+        "totals": totals,
+        "from": from,
+        "to": to,
+        "target": "worker-data"
+    });
 
-    let totals = WDEntry {
-        Date: String::new(),
-        Location: String::new(),
-        FlatRate: false,
-        HoursWorked: hours_worked_total,
-        TrueHoursWorked: 0.0,
-        HoursDriven: hours_driven_total,
-        MilesDriven: miles_driven_total,
-        ExtraExpCents: extra_exp_total,
-        JobId: -1,
-        WorkerId: -1,
-    };
+    Ok(RenderHtml("workerdata.hbs",engine,data))
 
-    Ok(crate::render(|buf| {
-        crate::templates::workerdata_html(
-            buf,
-            "CZ4R Worker Data",
-            admin,
-            logged_in,
-            worker.worker,
-            users.as_slice(),
-            selectlist.as_slice(),
-            entries,
-            totals,
-            from,
-            to,
-        )
-    }))
+
 }
+

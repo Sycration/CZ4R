@@ -1,7 +1,12 @@
+use crate::AppState;
+use crate::errors::CustomError;
+
 use super::Worker;
 
 use axum::response::Html;
+use axum::response::IntoResponse;
 use axum::response::Redirect;
+use axum_template::RenderHtml;
 use sqlx::query_as;
 
 use super::Auth;
@@ -18,6 +23,31 @@ use sqlx::Postgres;
 pub struct LoginForm {
     username: String,
     password: String,
+}
+
+#[derive(Deserialize)]
+pub struct LoginPageForm {
+    failure: Option<bool>,
+}
+
+pub async fn loginpage(
+    State(AppState { pool, engine }): State<AppState>,
+    mut auth: Auth,
+    Form(form): Form<LoginPageForm>,
+) -> Result<impl IntoResponse, CustomError> {
+
+    let logged_in = auth.current_user.is_some();
+    let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
+
+    let data = serde_json::json!({
+        "title": "CZ4R Login",
+        "admin": admin,
+        "logged_in": logged_in,
+        "failure": form.failure == Some(true)
+    });
+
+    Ok(RenderHtml("login.hbs",engine,data))
+
 }
 
 pub(crate) async fn login(

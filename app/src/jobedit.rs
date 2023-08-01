@@ -3,15 +3,17 @@ use std::collections::HashMap;
 use axum::{
     debug_handler,
     extract::State,
-    response::{Html, Redirect},
+    response::{Html, Redirect, IntoResponse},
     Form,
 };
+use axum_template::RenderHtml;
 use serde::Deserialize;
+use serde_json::{json, Value};
 use sqlx::{
     query, query_as, query_builder, types::time::Date, Execute, Pool, Postgres, QueryBuilder,
 };
 
-use crate::{errors::CustomError, Auth, Job};
+use crate::{errors::CustomError, Auth, Job, AppState};
 
 #[derive(Deserialize)]
 pub(crate) struct JobEditPage {
@@ -19,13 +21,10 @@ pub(crate) struct JobEditPage {
 }
 
 pub(crate) async fn jobeditpage(
-    State(pool): State<Pool<Postgres>>,
+    State(AppState { pool, engine }): State<AppState>,
     mut auth: Auth,
     Form(form): Form<JobEditPage>,
-) -> Result<Html<String>, CustomError> {
-    //let client = pool.get().await?;
-
-    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
+) -> Result<impl IntoResponse, CustomError> {
     let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
     let logged_in = auth.current_user.is_some();
 
@@ -82,9 +81,27 @@ pub(crate) async fn jobeditpage(
         })
         .collect::<Vec<_>>();
 
-    Ok(crate::render(|buf| {
-        crate::templates::jobedit_html(buf, "CZ4R Job Edit", admin, this_job, &list_data)
-    }))
+    let data = json!({
+        "title": "Job Edit",
+        "admin": admin,
+        "logged_in": logged_in,
+        "job": ({if let Some(job) = this_job {
+            json!({
+                "id": job.id,
+                "sitename": job.sitename,
+                "workorder": job.workorder,
+                "servicecode": job.servicecode,
+                "address": job.address,
+                "date": job.date.to_string(),
+                "notes": job.notes,
+            })
+        } else {
+            Value::Null
+        }}),
+        "list-data": list_data
+    });
+
+    Ok(RenderHtml("jobedit.hbs",engine,data))
 }
 
 #[derive(Deserialize)]
@@ -314,7 +331,6 @@ pub(crate) async fn jobdelete(
         return Err(CustomError::Auth("Not logged in as admin".to_string()));
     }
 
-    //if let Err(e) =
     query!(
         r#"
     delete from jobworkers
@@ -326,11 +342,7 @@ pub(crate) async fn jobdelete(
     .execute(&pool)
     .await
     .unwrap();
-    //  {
-    //     return Err(CustomError::Database(e.to_string()));
-    // }
 
-    // if let Err(e) =
     query!(
         r#"
     delete from jobs
@@ -342,9 +354,7 @@ pub(crate) async fn jobdelete(
     .execute(&pool)
     .await
     .unwrap();
-    //  {
-    //     return Err(CustomError::Database(e.to_string()));
-    // }
+
 
     return Ok(Redirect::to("/joblist"));
 }

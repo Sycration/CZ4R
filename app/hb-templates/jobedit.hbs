@@ -1,6 +1,10 @@
-@use super::base_html; @use crate::Job; @use super::list_html; @(title: &str, admin: bool, job: Option<Job>, list_data: &[(i64, String, bool, bool)]) @:base_html(title, admin, true,  {
-  
-@if let Some(ref job) = job {
+{{!-- @use super::base_html; @use crate::Job; @use super::list_html; @(title: &str, admin: bool, job: Option<Job>, list-data: &[(i64, String, bool, bool)]) @:base_html(title, admin, true,  { --}}
+{{#*inline "body"}}
+
+
+{{#if job}}
+    
+
 
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
   <div class="modal-dialog">
@@ -15,17 +19,16 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-        <a type="button" class="btn btn-danger" href="/admin/api/v1/delete-job?jobid=@job.id">Delete</a>
+        <a type="button" class="btn btn-danger" href="/admin/api/v1/delete-job?jobid={{job.id}}">Delete</a>
       </div>
     </div>
   </div>
 </div>
 
-}
+{{/if}}
 
   <h1 class="text-center ">
-    @match &job { Some(ref job) => { Editing job @job.id } None => { Create a new job
-    } }
+    {{#if job}} Editing job {{job.id}} {{else}} Create a new job {{/if}}
   </h1>
 
   <form method="get" action="/admin/api/v1/edit-job">
@@ -37,7 +40,7 @@
         type="text"
         class="form-control"
         id="SiteNameInput"
-        @if let Some(ref job) = job {value = "@job.sitename"}
+        {{#if job}} value = "{{job.sitename}}" {{/if}}
       />
     </div>
 
@@ -57,14 +60,14 @@
         type="text"
         class="form-control"
         id="ServcodeInput"
-        @if let Some(ref job) = job {value = "@job.servicecode"}
+                {{#if job}} value = "{{job.servicecode}}" {{/if}}
       />
       <input
         name="workorder"
         type="text"
         class="form-control"
         id="WorkorderInput"
-        @if let Some(ref job) = job {value = "@job.workorder"}
+        {{#if job}} value = "{{job.workorder}}" {{/if}}
 
       />
       <span class="input-group-text d-none d-sm-block">Work order</span>
@@ -78,7 +81,7 @@
         type="text"
         class="form-control"
         id="AddressInput"
-        @if let Some(ref job) = job {value = "@job.address"}
+        {{#if job}} value = "{{job.address}}" {{/if}}
 
       />
     </div>
@@ -87,8 +90,7 @@
       <span class="input-group-text">Date</span>
       <label for="DateInput" class="form-label d-none">Date</label>
       <input required name="date" type="date" class="form-control" id="DateInput" 
-          @if let Some(ref job) = job {value = "@job.date"}
-
+        {{#if job}} value = "{{job.date}}" {{/if}}
       />
     </div>
 
@@ -96,31 +98,53 @@
       class="px-3 mb-3"
       style="max-height: 15em; overflow-x: hidden; overflow-y: auto"
     >
-      @:list_html(list_data)
+     
+        <ul class="list-group"> {{#each ../list-data as |item|}}
+            <li class="list-group-item d-flex justify-content-between align-items-center row" style="margin: 0;">
+                <div class="col-sm align-middle">
+                    <h6 class="align-middle display-6">
+                        {{item.[1]}}
+
+                    </h6>
+                </div>
+                <ul class="list-group list-group-horizontal col-sm justify-content-end">
+                    <li class="list-group-item"><input type="checkbox" name="" id="{{item.[0]}}-assigned" class=" ms-auto form-check-input" {{#if item.[2]}} checked {{/if}}>
+                        <label for="{{item.[0]}}-assigned" class=" form-check-label">assigned</label>    
+                    </li>
+                    <li class="list-group-item">
+                        <input type="checkbox" name="" id="{{item.[0]}}-flatrate" class=" form-check-input" {{#if item.[3]}} checked {{/if}}>
+                        <label for="{{item.[0]}}-flatrate" class=" form-check-label">flat rate</label>
+                    </li>
+                </ul>
+            </li>
+        {{/each}}
+        </ul>
+
     </div>
 
     <div class="input-group px-3 mb-3">
       <span class="input-group-text">Job Notes</span>
       <label for="notes" class="form-label d-none">Job Notes</label>
-      <textarea name="notes" class="form-control" id="notes" rows="4" style="resize:none;">@if let Some(ref job) = job {@job.notes} else {} </textarea>
+      <textarea name="notes" class="form-control" id="notes" rows="4" style="resize:none;"> {{#if job}} {{job.notes}} {{/if}} </textarea>
     </div>
 
 
     <input type="hidden" id="assigned" name="assigned" value=" ">
     <input type="hidden" id="flatrate" name="flatrate" value=" ">
-    @if let Some(ref job) = job {
-    <input type="hidden" id="jobid" name="jobid" value="@job.id">
+    {{#if job}} 
 
-    }
+    <input type="hidden" id="jobid" name="jobid" value="{{job.id}}">
+
+    {{/if}}
 
     <div class="text-center">
 
         <button type="submit" class="btn btn-primary btn-lg mt-4 mb-4">
-          @if job.is_some() { Submit changes } else { Create }
+        {{#if job}} Submit changes {{else}} Create {{/if}}
         </button>
-        @if let Some(ref job) = job {
+       {{#if job}} 
           <a href="" class="btn btn-outline-danger btn-lg mt-4 mb-4" data-bs-toggle="modal" data-bs-target="#deleteModal">Delete</a>
-        }
+        {{/if}}
 
     </div>
   </form>
@@ -128,77 +152,79 @@
   <script>
     var assigned = [];
     var flatrate = [];
-    @for item in list_data { 
-        @if item.2 {
-            assigned.push("@item.0");
-        }
-        @if item.3 {
-            flatrate.push("@item.0");
-        }
+    {{#each list-data as |item|}}
+        
+    
+        {{#if item.[2]}}
+            assigned.push("{{item.[0]}}");
+        {{/if}} 
+        {{#if item.[3]}}
+            flatrate.push("{{item.[0]}}");
+        {{/if}}
 
-        if (assigned.length > 0) @{
+
+        if (assigned.length > 0) {
             document.getElementById("assigned").value = assigned.join("-");
-        @} else @{
+        } else {
             document.getElementById("assigned").value = "";
-        @}
+        }
 
-        if (flatrate.length > 0) @{
+        if (flatrate.length > 0) {
             document.getElementById("flatrate").value = flatrate.join("-");
-        @} else @{
+        } else {
             document.getElementById("flatrate").value = "";
-        @}
+        }
 
 
-        document.getElementById("@item.0-assigned").addEventListener("change", function(evt)@{
+        document.getElementById("{{item.[0]}}-assigned").addEventListener("change", function(evt){
             var cbAssigned = evt.target;
-            if (!assigned.includes("@item.0")) @{
-                if (cbAssigned.checked) @{
-                    assigned.push("@item.0"); 
-                @}
-            @} else @{
-                if (!cbAssigned.checked) @{
-                    assigned = assigned.filter(x => x !== "@item.0");
-                    flatrate = flatrate.filter(x => x !== "@item.0");
-                    document.getElementById("@item.0-flatrate").checked = false;
-                @}
-            @}
+            if (!assigned.includes("{{item.[0]}}")) {
+                if (cbAssigned.checked) {
+                    assigned.push("{{item.[0]}}"); 
+                }
+            } else {
+                if (!cbAssigned.checked) {
+                    assigned = assigned.filter(x => x !== "{{item.[0]}}");
+                    flatrate = flatrate.filter(x => x !== "{{item.[0]}}");
+                    document.getElementById("{{item.[0]}}-flatrate").checked = false;
+                }
+            }
 
             assigned.sort();
-            if (assigned.length > 0) @{
+            if (assigned.length > 0) {
                 document.getElementById("assigned").value = assigned.join("-");
-            @} else @{
+            } else {
                 document.getElementById("assigned").value = "";
-            @}
-        @})
+            }
+        })
 
-        document.getElementById("@item.0-flatrate").addEventListener("change", function(evt)@{
+        document.getElementById("{{item.[0]}}-flatrate").addEventListener("change", function(evt){
             var cbFlatrate = evt.target;
-            if (!assigned.includes("@item.0")) @{
+            if (!assigned.includes("{{item.[0]}}")) {
                 cbFlatrate.checked = false;
-            @} else @{
-            if (!flatrate.includes("@item.0")) @{
-                if (cbFlatrate.checked) @{
-                    flatrate.push("@item.0"); 
-                @}
-            @} else @{
-                if (!cbFlatrate.checked) @{
-                    flatrate = flatrate.filter(x => x !== "@item.0");
-                @}
-            @}
+            } else {
+            if (!flatrate.includes("{{item.[0]}}")) {
+                if (cbFlatrate.checked) {
+                    flatrate.push("{{item.[0]}}"); 
+                }
+            } else {
+                if (!cbFlatrate.checked) {
+                    flatrate = flatrate.filter(x => x !== "{{item.[0]}}");
+                }
+            }
 
             flatrate.sort();
-            if (flatrate.length > 0) @{
+            if (flatrate.length > 0) {
                 document.getElementById("flatrate").value = flatrate.join("-");
-            @} else @{
+            } else {
             document.getElementById("flatrate").value = "";
-            @}
-            @}
+            }
+            }
 
-        @})
+        })
     
-    }
+    {{/each}}
 </script>
 
-  
-  } )
-
+{{/inline}}
+{{> base.hbs}}

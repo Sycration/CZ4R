@@ -1,15 +1,5 @@
-@use super::base_html; 
-
-@(title: &str, admin: bool)
-
-@:base_html(title, admin, true, {
+{{#*inline "body"}}
     
-    @if !admin {
-        <script>
-            window.location.href = "/";
-            console.log("%c🖕", "background: red; color: yellow; font-size: x-large");
-        </script>
-    } else {
       <div class="row row-cols-lg-3 row-cols-sm-2 row-cols-1 g-4 pb-5 ">
         <div class="col" >
           <div class="card text-center">
@@ -48,21 +38,6 @@
           </div>
         </div>
      
-        <!--div class="col">
-          <div class="card text-center">
-            <div class="card-header">
-              <i class="bi bi-trash" style="font-size: 2rem"></i>
-            </div>
-              <ul class="list-group list-group-flush">
-                <li class="list-group-item">Restore deactivated workers</li>
-                <li class="list-group-item">
-                  <a href="/admin/deactivated-workers" class="btn btn-outline-primary">
-                    Go
-                  </a>
-                </li>
-              </ul>
-          </div>
-        </div-->
 
         <div class="col">
           <div class="card text-center">
@@ -80,7 +55,6 @@
 
 
       </div>
-    }
-    
-}
-)
+
+{{/inline}}
+{{> base.hbs}}
