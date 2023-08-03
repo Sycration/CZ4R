@@ -189,69 +189,6 @@
     },
     "query": "\n    delete from jobs\n        where \n        id = $1;\n    "
   },
-  "68b9c3d9fa4f3b49d388b829b639ecaaff30990e112fb4eaffe54a9afcaf2855": {
-    "describe": {
-      "columns": [
-        {
-          "name": "name!",
-          "ordinal": 0,
-          "type_info": "Text"
-        },
-        {
-          "name": "worker",
-          "ordinal": 1,
-          "type_info": "Int8"
-        },
-        {
-          "name": "id",
-          "ordinal": 2,
-          "type_info": "Int8"
-        },
-        {
-          "name": "sitename",
-          "ordinal": 3,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "address",
-          "ordinal": 4,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "date",
-          "ordinal": 5,
-          "type_info": "Date"
-        },
-        {
-          "name": "notes",
-          "ordinal": 6,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "workorder",
-          "ordinal": 7,
-          "type_info": "Varchar"
-        }
-      ],
-      "nullable": [
-        null,
-        null,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Date",
-          "Date"
-        ]
-      }
-    },
-    "query": "\n            select '' as \"name!\", NULL::bigint as worker, jobs.id, jobs.sitename, jobs.address, jobs.date, jobs.notes, jobs.workorder from jobs\n            where not exists (\n                select *\n                from jobworkers\n                where jobworkers.job = jobs.id\n            )\n            and date >= $1 and date <= $2\n            order by date desc;\n            "
-  },
   "6b1b358b19615fc5ba50b7dcf0eeb5b9f453b071b7273a335d6b98840bd32b2a": {
     "describe": {
       "columns": [
@@ -916,5 +853,104 @@
       }
     },
     "query": "update jobworkers set using_flat_rate = false where job = $1 and worker = any($2);"
+  },
+  "ea199f0b573f0ab557c5f708be837cd4b00cba3eaa83802de6f587f053c5b492": {
+    "describe": {
+      "columns": [
+        {
+          "name": "name!",
+          "ordinal": 0,
+          "type_info": "Text"
+        },
+        {
+          "name": "worker",
+          "ordinal": 1,
+          "type_info": "Int8"
+        },
+        {
+          "name": "id",
+          "ordinal": 2,
+          "type_info": "Int8"
+        },
+        {
+          "name": "sitename",
+          "ordinal": 3,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "address",
+          "ordinal": 4,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "date",
+          "ordinal": 5,
+          "type_info": "Date"
+        },
+        {
+          "name": "signin",
+          "ordinal": 6,
+          "type_info": "Time"
+        },
+        {
+          "name": "signout",
+          "ordinal": 7,
+          "type_info": "Time"
+        },
+        {
+          "name": "workernotes",
+          "ordinal": 8,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "notes",
+          "ordinal": 9,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "workorder",
+          "ordinal": 10,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "miles_driven",
+          "ordinal": 11,
+          "type_info": "Float4"
+        },
+        {
+          "name": "hours_driven",
+          "ordinal": 12,
+          "type_info": "Float4"
+        },
+        {
+          "name": "extraexpcents",
+          "ordinal": 13,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        null,
+        null,
+        false,
+        false,
+        false,
+        false,
+        null,
+        null,
+        null,
+        false,
+        false,
+        null,
+        null,
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Date",
+          "Date"
+        ]
+      }
+    },
+    "query": "\n            select '' as \"name!\", NULL::bigint as worker, jobs.id,\n            jobs.sitename, jobs.address, jobs.date, NULL::time as signin, \n            NULL::time as signout, NULL::varchar as workernotes,\n            jobs.notes, jobs.workorder, NULL::real as miles_driven,\n            NULL::real as hours_driven, NULL::integer as extraexpcents from jobs \n\n            where not exists (\n                select *\n                from jobworkers\n                where jobworkers.job = jobs.id\n            )\n            and date >= $1 and date <= $2\n            order by date desc;\n            "
   }
 }

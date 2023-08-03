@@ -1,12 +1,19 @@
 use std::collections::BTreeMap;
 
-use axum::{extract::State, response::{Html, IntoResponse}, Form};
+use axum::{
+    extract::State,
+    response::{Html, IntoResponse},
+    Form,
+};
 use axum_template::RenderHtml;
 use serde::{Deserialize, Serialize};
-use sqlx::{query, query_as, types::time::Date, Pool, Postgres, query_builder, QueryBuilder, Execute, FromRow};
-use time::{Duration, OffsetDateTime};
+use sqlx::{
+    query, query_as, query_builder, types::time::Date, Execute, FromRow, Pool, Postgres,
+    QueryBuilder,
+};
+use time::{Duration, OffsetDateTime, Time};
 
-use crate::{errors::CustomError, now, Auth, TZ_OFFSET, empty_string_as_none, AppState};
+use crate::{empty_string_as_none, errors::CustomError, now, AppState, Auth, TZ_OFFSET};
 
 #[derive(Deserialize, FromRow)]
 struct JobQueryOutput {
@@ -18,6 +25,12 @@ struct JobQueryOutput {
     date: time::Date,
     notes: String,
     workorder: String,
+    signin: Option<Time>,
+    signout: Option<Time>,
+    workernotes: Option<String>,
+    miles_driven: Option<f32>,
+    hours_driven: Option<f32>,
+    extraexpcents: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize, FromRow)]
@@ -30,13 +43,12 @@ pub struct JobData {
     pub date: String,
     pub notes: String,
     pub work_order: String,
+    pub status: String,
 }
 
 impl JobData {
     fn from_outputs(jobs: Vec<JobQueryOutput>) -> Vec<Self> {
-        
-        jobs
-            .into_iter()
+        jobs.into_iter()
             .map(|j| JobData {
                 job_id: j.id,
                 worker_id: j.worker,
@@ -46,6 +58,24 @@ impl JobData {
                 date: format!("{} {}, {}", j.date.month(), j.date.day(), j.date.year()),
                 notes: j.notes,
                 work_order: j.workorder,
+                status: {
+                    match (j.signin, j.signout) {
+                        (None, None) => {
+                            if j.hours_driven.map(|x| x == 0.) != Some(true)
+                                || j.miles_driven.map(|x| x == 0.) != Some(true)
+                                || j.extraexpcents.map(|x| x == 0) != Some(true)
+                                || j.workernotes.map(|x| x.is_empty()) != Some(true)
+                            {
+                                "started".to_owned()
+                            } else {
+                                "assigned".to_owned()
+                            }
+                        }
+                        (None, Some(_)) => "outnotin".to_owned(),
+                        (Some(_), None) => "started".to_owned(),
+                        (Some(_), Some(_)) => "signedout".to_owned(),
+                    }
+                },
             })
             .collect::<Vec<_>>()
     }
@@ -79,8 +109,7 @@ pub(crate) async fn joblistpage(
     State(AppState { pool, engine }): State<AppState>,
     mut auth: Auth,
     Form(form): Form<JobListPage>,
-) -> Result<impl IntoResponse, CustomError>  {
-
+) -> Result<impl IntoResponse, CustomError> {
     let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
     let logged_in = auth.current_user.is_some();
 
@@ -100,11 +129,16 @@ pub(crate) async fn joblistpage(
     };
 
     let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new(
-        r#"select users.name, jobs.id, jobworkers.worker, jobs.sitename, jobs.address, jobs.date, jobs.notes, jobs.workorder from jobs inner join jobworkers
+        r#"select users.name, jobs.id, jobworkers.worker, 
+        jobworkers.notes as workernotes, jobworkers.signin, 
+        jobworkers.miles_driven, jobworkers.hours_driven,
+        jobworkers.extraexpcents, jobworkers.signout, jobs.sitename, jobs.address, 
+        jobs.date, jobs.notes, jobs.workorder 
+        from jobs inner join jobworkers
                 on jobs.id = jobworkers.job
                 inner join users
                 on jobworkers.worker = users.id
-                 "#
+                 "#,
     );
 
     query_builder.push("where date >= ");
@@ -127,26 +161,21 @@ pub(crate) async fn joblistpage(
         query_builder.push("and jobs.workorder ilike concat('%', ");
         query_builder.push_bind(work_order);
         query_builder.push(", '%') ");
-
     }
 
     if let Some(address) = &form.address {
         query_builder.push("and jobs.address ilike concat('%', ");
         query_builder.push_bind(address);
         query_builder.push(", '%') ");
-
     }
 
     if let Some(notes) = &form.notes {
         query_builder.push("and jobworkers.notes ilike concat('%', ");
         query_builder.push_bind(notes);
         query_builder.push(", '%') ");
-
     }
 
     query_builder.push(" order by date desc;");
-
-
 
     let query = query_builder.build_query_as();
 
@@ -154,8 +183,15 @@ pub(crate) async fn joblistpage(
 
     let jobs = match query {
         Ok(mut r) => {
-            let query =query_as!(JobQueryOutput, r#"
-            select '' as "name!", NULL::bigint as worker, jobs.id, jobs.sitename, jobs.address, jobs.date, jobs.notes, jobs.workorder from jobs
+            let query = query_as!(
+                JobQueryOutput,
+                r#"
+            select '' as "name!", NULL::bigint as worker, jobs.id,
+            jobs.sitename, jobs.address, jobs.date, NULL::time as signin, 
+            NULL::time as signout, NULL::varchar as workernotes,
+            jobs.notes, jobs.workorder, NULL::real as miles_driven,
+            NULL::real as hours_driven, NULL::integer as extraexpcents from jobs 
+
             where not exists (
                 select *
                 from jobworkers
@@ -163,7 +199,12 @@ pub(crate) async fn joblistpage(
             )
             and date >= $1 and date <= $2
             order by date desc;
-            "#, start_date, end_date).fetch_all(&pool).await;
+            "#,
+                start_date,
+                end_date
+            )
+            .fetch_all(&pool)
+            .await;
             if let Ok(mut orphans) = query {
                 r = {
                     orphans.append(&mut r);
@@ -177,20 +218,19 @@ pub(crate) async fn joblistpage(
 
     dbg!(admin);
     let data = serde_json::json!({
-            "title": "CZ4R Job List",
-            "admin": admin,
-            "logged_in": logged_in,
-            "job_datas": JobData::from_outputs(jobs),
-            "params": SearchParams {
-                start: start_date.to_string(),
-                end: end_date.to_string(),
-                site_name: form.site_name.unwrap_or_default(),
-                work_order: form.work_order.unwrap_or_default(),
-                address: form.address.unwrap_or_default(),
-                fieldnotes: form.notes.unwrap_or_default(),
-            }
-        });
+        "title": "CZ4R Job List",
+        "admin": admin,
+        "logged_in": logged_in,
+        "job_datas": JobData::from_outputs(jobs),
+        "params": SearchParams {
+            start: start_date.to_string(),
+            end: end_date.to_string(),
+            site_name: form.site_name.unwrap_or_default(),
+            work_order: form.work_order.unwrap_or_default(),
+            address: form.address.unwrap_or_default(),
+            fieldnotes: form.notes.unwrap_or_default(),
+        }
+    });
 
     Ok(RenderHtml("joblist.hbs", engine, data))
-
 }

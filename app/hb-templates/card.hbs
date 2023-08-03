@@ -1,9 +1,37 @@
-{{!-- @(job_id: i64, worker_id: Option<i64>, worker_name: &str, job_name: &str, address: &str, date: &str, notes: &str, work_order: &str, is_admin: bool) --}}
 
 <div class="card">
   
   {{#if worker_id}}
-    <div class="card-header">Assigned to: {{worker_name}} </div>
+  <div class="card-header 
+      {{#if (eq status "assigned")}}
+        bg-success-subtle
+      {{/if}}
+      {{#if (eq status "outnotin")}}
+        bg-primary-subtle
+      {{/if}}
+      {{#if (eq status "started")}}
+        bg-warning-subtle
+      {{/if}}
+      {{#if (eq status "signedout")}}
+        bg-danger-subtle
+      {{/if}}
+  "> 
+    <div class="d-flex justify-content-between">
+      <div>Assigned to: {{worker_name}}</div>
+      {{#if (eq status "assigned")}}
+        <div>📌</div>
+      {{/if}}
+      {{#if (eq status "outnotin")}}
+        <div>🤔</div>
+      {{/if}}
+      {{#if (eq status "started")}}
+        <div>⌚</div>
+      {{/if}}
+      {{#if (eq status "signedout")}}
+        <div>✔️</div>
+      {{/if}}
+    </div>
+  </div>
   {{else}}
     <div class="card-header text-danger">WARNING: THIS JOB ({{job_name}}) IS NOT ASSIGNED TO ANY WORKER</div>
   {{/if}}
