@@ -47,7 +47,7 @@ pub struct JobData {
 }
 
 impl JobData {
-    fn from_outputs(jobs: Vec<JobQueryOutput>) -> Vec<Self> {
+    fn from_outputs(jobs: Vec<JobQueryOutput>, assigned: bool, started: bool, completed: bool) -> Vec<Self> {
         jobs.into_iter()
             .map(|j| JobData {
                 job_id: j.id,
@@ -77,12 +77,19 @@ impl JobData {
                     }
                 },
             })
+            .filter(|d| {
+                (assigned && d.status.starts_with('a')) ||
+                (started && d.status.starts_with("st")) ||
+                (completed && d.status.starts_with("si")) ||
+                d.status.starts_with('o')
+
+            })
             .collect::<Vec<_>>()
     }
 }
 
 #[derive(Deserialize)]
-pub(crate) struct JobListPage {
+pub(crate) struct JobListForm {
     start_date: Option<Date>,
     end_date: Option<Date>,
     #[serde(default, deserialize_with = "empty_string_as_none")]
@@ -93,6 +100,16 @@ pub(crate) struct JobListPage {
     pub address: Option<String>,
     #[serde(default, deserialize_with = "empty_string_as_none")]
     pub notes: Option<String>,
+    pub order: Option<Order>,
+    pub assigned: Option<bool>,
+    pub started: Option<bool>,
+    pub completed: Option<bool>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum Order {
+    latest,
+    earliest,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -108,7 +125,7 @@ pub struct SearchParams {
 pub(crate) async fn joblistpage(
     State(AppState { pool, engine }): State<AppState>,
     mut auth: Auth,
-    Form(form): Form<JobListPage>,
+    Form(form): Form<JobListForm>,
 ) -> Result<impl IntoResponse, CustomError> {
     let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
     let logged_in = auth.current_user.is_some();
@@ -127,6 +144,11 @@ pub(crate) async fn joblistpage(
     } else {
         (now() + Duration::days(15)).date()
     };
+
+    //testing form.order because that is always sent on form submit
+    let assigned = if (&form.order).is_some() { form.assigned.unwrap_or(false) } else {true};
+    let started = if (&form.order).is_some() { form.started.unwrap_or(false) } else {true};
+    let completed = if (&form.order).is_some() { form.completed.unwrap_or(false) } else {true};
 
     let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new(
         r#"select users.name, jobs.id, jobworkers.worker, 
@@ -175,7 +197,15 @@ pub(crate) async fn joblistpage(
         query_builder.push(", '%') ");
     }
 
-    query_builder.push(" order by date desc;");
+    match form.order {
+        Some(Order::earliest) => {
+            query_builder.push(" order by date asc;");
+        }
+        _ => {
+            query_builder.push(" order by date desc;");
+        }
+    }
+
 
     let query = query_builder.build_query_as();
 
@@ -216,12 +246,14 @@ pub(crate) async fn joblistpage(
         Err(e) => return Err(CustomError::Database(e.to_string())),
     };
 
+    
+
     dbg!(admin);
     let data = serde_json::json!({
         "title": "CZ4R Job List",
         "admin": admin,
         "logged_in": logged_in,
-        "job_datas": JobData::from_outputs(jobs),
+        "job_datas": JobData::from_outputs(jobs, assigned, started, completed),
         "params": SearchParams {
             start: start_date.to_string(),
             end: end_date.to_string(),
@@ -229,7 +261,11 @@ pub(crate) async fn joblistpage(
             work_order: form.work_order.unwrap_or_default(),
             address: form.address.unwrap_or_default(),
             fieldnotes: form.notes.unwrap_or_default(),
-        }
+        },
+        "order": form.order.unwrap_or(Order::latest),
+        "assigned": assigned,
+        "started": started,
+        "completed": completed
     });
 
     Ok(RenderHtml("joblist.hbs", engine, data))

@@ -23,6 +23,38 @@
   </button>
   <div id="collapse" class="collapse mb-2 justify-content-center ">
     <form id="filter" method="get" class="form-inline col">
+
+      <div class="row">
+        <div class="col-sm-6">
+      <label for="sort">Sort by:</label>
+      <select class="form-control mx-2" id="order" name="order" >
+        <option {{#if (eq order "latest")}} selected="selected" {{/if}} value="latest">Latest first</option>
+        <option {{#if (eq order "earliest")}} selected="selected" {{/if}} value="earliest">Earliest first</option>
+      </select>
+      </div>
+
+
+<div class="col-sm-6">
+      <label>Filter by:</label>
+      <div class="row ms-2 border rounded py-1 px-2">
+
+        <div class="col form-check">
+        <input class="form-check-input" type="checkbox" id="assigned" name="assigned" value="true" {{#if assigned}} checked="checked" {{/if}}> 
+        <label class="form-check-label" for="assigned">Assigned</label>
+        </div>
+        <div class="col form-check">
+        <input class="form-check-input" type="checkbox" id="started" name="started" value="true" {{#if started}} checked="checked" {{/if}}>
+        <label class="form-check-label" for="started">Started</label>
+        </div>
+        <div class="col form-check">
+        <input class="form-check-input" type="checkbox" id="completed" name="completed" value="true" {{#if completed}} checked="checked" {{/if}}>
+        <label class="form-check-label" for="completed">Completed</label>
+        </div>
+      </div>
+
+      </div>
+</div>
+    
       <div class="row">
         <div class="col-sm-6">
           From
