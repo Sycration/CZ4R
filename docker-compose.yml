@@ -2,6 +2,7 @@ version: '3.4'
 services:
 
   db:
+    restart: always 
     image: postgres:14-alpine
     env_file:
       - ./.devcontainer/.env
@@ -13,6 +14,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
   app:
+    restart: always 
     build: 
       context: .
       dockerfile: Dockerfile
