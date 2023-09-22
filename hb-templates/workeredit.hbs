@@ -12,11 +12,14 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          Are you sure you want to deactivate this worker? It will be accessible in the "Deactivated workers" section of the site settings page.
+          Are you sure you want to deactivate this worker? It will be accessible in the "Restore workers" section of the site admin page.
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-danger">Deactivate</button>
+           <form action="/admin/api/v1/deactivate-worker" method="get">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-danger">Deactivate</button>
+            <input type="hidden" id="hidden-user" name="user" value="{{selected}}">
+          </form>        
         </div>
       </div>
     </div>
@@ -151,7 +154,8 @@
             </div>
             <div class="col">
               <div class="gap-2 pb-4 text-end">
-                <div class="pb-2">
+                {{#if (neq w.id ../own_id)}}
+                  <div class="pb-2">
                   <a class="btn btn-outline-danger" type="button" data-bs-toggle="modal"
                   data-bs-target="#ResetModal"> Reset password</a>
                 </div>
@@ -159,6 +163,8 @@
                   <a class="btn btn-outline-danger" type="button" data-bs-toggle="modal"
                     data-bs-target="#DeactivateModal">Deactivate</a>
                 </div>
+                {{/if}}    
+                
               </div>
               
             </div>

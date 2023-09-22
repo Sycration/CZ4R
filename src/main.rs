@@ -53,6 +53,8 @@ mod login;
 mod reset_pw;
 mod workerdata;
 mod workeredit;
+mod restore;
+mod deactivate;
 mod index;
 mod error404;
 mod admin;
@@ -84,6 +86,7 @@ pub struct Worker {
     rate_drive_hourly_cents: i32,
     flat_rate_cents: i32,
     must_change_pw: bool,
+    deactivated: bool,
 }
 
 #[derive(Debug, Default, Clone, sqlx::FromRow)]
@@ -137,7 +140,7 @@ fn main() {
 
 fn setup_handlebars(hbs: &mut Handlebars) {
     hbs.set_dev_mode(true);
-    hbs.register_templates_directory("", "app/hb-templates").unwrap();
+    hbs.register_templates_directory("", "hb-templates").unwrap();
 }
 
 #[cfg(not(debug_assertions))]
@@ -177,7 +180,7 @@ async fn app() {
         port,
     } = config;
 
-    sqlx::migrate!("./../migrations").run(&pool).await.unwrap();
+    sqlx::migrate!("./migrations").run(&pool).await.unwrap();
 
     let secret = login_secret;
 
@@ -235,11 +238,13 @@ async fn app() {
         .route("/admin", get(admin::admin))
         .route("/admin/worker-edit", get(workeredit::workeredit))
         .route("/admin/worker-data", get(workerdata::workerdatapage))
-        //.route("/admin/deactivated-workers", get(deactivatedworkers))
+        .route("/admin/restore", get(restore::restorepage))
         .route("/admin/api/v1/create-worker", get(create_worker::create_worker))
         .route("/admin/api/v1/edit-job", get(jobedit::jobedit))
         .route("/admin/api/v1/delete-job", get(jobedit::jobdelete))
+        .route("/admin/api/v1/deactivate-worker", get(deactivate::deactivate))
         .route("/admin/api/v1/change-worker",get(change_worker::change_worker))
+        .route("/admin/api/v1/restore-worker",get(restore::restore))
         .route("/admin/api/v1/reset-pw", get(reset_pw::reset_pw))
         .fallback(error404::error404)
         .layer(auth_layer)

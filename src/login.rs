@@ -69,6 +69,10 @@ pub(crate) async fn login(
         return Redirect::to("/loginpage?failure=true");
     };
 
+    if worker.deactivated {
+        return Redirect::to("/loginpage?failure=true");
+    }
+
     if worker.must_change_pw && worker.hash.is_empty() && worker.salt.is_empty() {
         return Redirect::to(format!("/change-pw?id={}", worker.id).as_str());
     }

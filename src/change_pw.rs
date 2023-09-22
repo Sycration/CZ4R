@@ -71,7 +71,8 @@ pub(crate) async fn change_pw(
     let must_change = query!(
         r#"
     select (must_change_pw) from users 
-    where id = $1;
+    where id = $1
+    and users.deactivated = false;
     "#,
         id
     )

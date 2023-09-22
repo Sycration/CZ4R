@@ -58,6 +58,7 @@ pub(crate) async fn workerdatapage(
         Worker,
         "
     select * from users
+        where deactivated = false;
     "
     )
     .fetch_all(&pool)
@@ -96,6 +97,7 @@ pub(crate) async fn workerdatapage(
         select jobworkers.*, jobs.date, jobs.sitename from jobworkers
             inner join jobs
             on jobs.id = jobworkers.job
+            
         where
             jobworkers.worker = $1
         and

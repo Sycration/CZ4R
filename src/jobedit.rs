@@ -43,7 +43,7 @@ pub(crate) async fn jobeditpage(
         None => None,
     };
 
-    let workers = match query!("select id, name from users;").fetch_all(&pool).await {
+    let workers = match query!("select id, name from users where users.deactivated = false;").fetch_all(&pool).await {
         Ok(r) => r.into_iter().map(|r| (r.id, r.name)).collect::<Vec<_>>(),
         Err(e) => return Err(CustomError::Database(e.to_string())),
     };
@@ -54,7 +54,8 @@ pub(crate) async fn jobeditpage(
         inner join jobworkers
         on users.id = jobworkers.worker
         where jobworkers.job = $1
-        ;"#,
+        and users.deactivated = false;
+        "#,
             id
         )
         .fetch_all(&pool)

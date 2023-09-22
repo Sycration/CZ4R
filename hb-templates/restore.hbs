@@ -1,0 +1,17 @@
+{{#*inline "body"}}
+    
+<ul class="list-group">
+    {{#each workers as |w|}}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            {{w.name}}
+            <form action="/admin/api/v1/restore-worker" method="get">
+                <button class="btn btn-success reactivate-btn">Reactivate</button>
+                <input type="hidden" id="hidden-user" name="user" value="{{w.id}}">
+
+            </form>
+        </li>
+    {{/each}}
+</ul>
+
+{{/inline}}
+{{> base.hbs}}

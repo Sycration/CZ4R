@@ -31,7 +31,7 @@ pub(crate) async fn workeredit(
         let users = sqlx::query_as!(
             Worker,
             "
-        select * from users
+        select * from users where deactivated = false;
         "
         )
         .fetch_all(&pool)
