@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "update jobworkers set using_flat_rate = false where job = $1 and worker = any($2);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "cbe0f5dc4b77fdddf0290a8d08dce124aa5a3cdcd6d5f2a7e761a9eca6e145a4"
+}

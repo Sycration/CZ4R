@@ -166,10 +166,10 @@ pub(crate) async fn jobedit(
             form.workorder,
             form.servcode,
             form.address,
-            form.date,
+            form.date, 
             form.notes
         )
-        .execute(&mut tx)
+        .execute(&mut *tx)
         .await;
         if let Err(e) = query {
             return Err(CustomError::Database(e.to_string()));
@@ -184,7 +184,7 @@ pub(crate) async fn jobedit(
         where jobs.id = $1;"#,
             job_id
         )
-        .fetch_all(&mut tx)
+        .fetch_all(&mut *tx)
         .await;
         let currently_assigned = match currently_assigned {
             Ok(v) => v
@@ -217,7 +217,7 @@ pub(crate) async fn jobedit(
 
         //remove flatrates
         if !flatrates_to_remove.is_empty() {
-            let query = query!("update jobworkers set using_flat_rate = false where job = $1 and worker = any($2);",job_id, flatrates_to_remove.as_slice()).execute(&mut tx).await;
+            let query = query!("update jobworkers set using_flat_rate = false where job = $1 and worker = any($2);",job_id, flatrates_to_remove.as_slice()).execute(&mut *tx).await;
             if let Err(e) = query {
                 return Err(CustomError::Database(e.to_string()));
             }
@@ -230,7 +230,7 @@ pub(crate) async fn jobedit(
                 job_id,
                 assignments_to_remove.as_slice()
             )
-            .execute(&mut tx)
+            .execute(&mut *tx)
             .await;
             if let Err(e) = query {
                 return Err(CustomError::Database(e.to_string()));
@@ -249,7 +249,7 @@ pub(crate) async fn jobedit(
 
             let query = query_builder.build();
             println!("{}", query.sql());
-            let query = query.execute(&mut tx).await;
+            let query = query.execute(&mut *tx).await;
             if let Err(e) = query {
                 return Err(CustomError::Database(e.to_string()));
             }
@@ -280,7 +280,7 @@ pub(crate) async fn jobedit(
             form.date,
             form.notes
         )
-        .fetch_one(&mut tx)
+        .fetch_one(&mut *tx)
         .await;
         let job_id = match query {
             Ok(v) => v.id,
@@ -301,7 +301,7 @@ pub(crate) async fn jobedit(
 
             let query = query_builder.build();
             println!("{}", query.sql());
-            let query = query.execute(&mut tx).await;
+            let query = query.execute(&mut *tx).await;
             if let Err(e) = query {
                 return Err(CustomError::Database(e.to_string()));
             }

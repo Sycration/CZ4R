@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        select jobworkers.worker, jobworkers.using_flat_rate\n            from\n        jobworkers inner join jobs\n            on jobworkers.job = jobs.id\n        where jobs.id = $1;",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "worker",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "using_flat_rate",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "b4d9e32b4f286a3242f4916d9b61fca998dbd4e21627c0b16716e17bf74c9912"
+}

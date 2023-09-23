@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n    update jobworkers\n    set\n        signin = $1,\n        signout = $2,\n        miles_driven = $3,\n        hours_driven = $4,\n        extraexpcents = $5,\n        notes = $6\n    where worker = $7\n    and job = $8;\n    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Time",
+        "Time",
+        "Float4",
+        "Float4",
+        "Int4",
+        "Text",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "10402b37695fac1e03a79f0819a94db3fb00f4b8605e2ca03ea7012603340c34"
+}

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "delete from jobworkers where job = $1 and worker = any($2);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ac3722dfad2ea4515526e95a38e7e85251f59efcedb9852e98ea7a00d73d163a"
+}

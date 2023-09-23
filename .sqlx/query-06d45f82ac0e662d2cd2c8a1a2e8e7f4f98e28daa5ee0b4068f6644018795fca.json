@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n    select (must_change_pw) from users \n    where id = $1\n    and users.deactivated = false;\n    ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "must_change_pw",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "06d45f82ac0e662d2cd2c8a1a2e8e7f4f98e28daa5ee0b4068f6644018795fca"
+}

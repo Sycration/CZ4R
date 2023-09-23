@@ -248,7 +248,6 @@ pub(crate) async fn joblistpage(
 
     
 
-    dbg!(admin);
     let data = serde_json::json!({
         "title": "CZ4R Job List",
         "admin": admin,

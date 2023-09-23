@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n    delete from jobworkers\n        where \n        job = $1;\n    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b48c93d50e49e0e5a63bc44b466419ea249a8cc132c2f80bcf520b7ab00cc4cf"
+}

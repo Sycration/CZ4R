@@ -1,0 +1,98 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        select * from users where deactivated = false;\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "hash",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "salt",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "admin",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "address",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "phone",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "email",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "rate_hourly_cents",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "rate_mileage_cents",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 10,
+        "name": "rate_drive_hourly_cents",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 11,
+        "name": "must_change_pw",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 12,
+        "name": "flat_rate_cents",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 13,
+        "name": "deactivated",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "afeb5a65216d2881f60fc817e75a6de36a37bce5f93d8ab12a6d723a960f2b54"
+}

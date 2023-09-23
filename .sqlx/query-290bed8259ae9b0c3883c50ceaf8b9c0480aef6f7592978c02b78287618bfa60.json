@@ -1,0 +1,58 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        select * from jobs\n            where \n            id = $1;           \n    ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "sitename",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "workorder",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "address",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 5,
+        "name": "servicecode",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "notes",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "290bed8259ae9b0c3883c50ceaf8b9c0480aef6f7592978c02b78287618bfa60"
+}

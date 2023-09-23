@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "select users.id, jobworkers.using_flat_rate from users\n        inner join jobworkers\n        on users.id = jobworkers.worker\n        where jobworkers.job = $1\n        and users.deactivated = false;\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "using_flat_rate",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "76d6c0dd68dd90a7fbd909a11441b09317d5e8d57a54995cfdbe6a0c0c4a0232"
+}

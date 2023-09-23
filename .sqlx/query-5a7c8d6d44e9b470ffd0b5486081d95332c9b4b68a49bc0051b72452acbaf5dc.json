@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "update users set deactivated = true where id = $1;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5a7c8d6d44e9b470ffd0b5486081d95332c9b4b68a49bc0051b72452acbaf5dc"
+}

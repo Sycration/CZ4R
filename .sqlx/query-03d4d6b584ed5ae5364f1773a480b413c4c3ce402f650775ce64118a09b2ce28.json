@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        update jobs set \n            sitename = $2,\n            workorder = $3,\n            servicecode = $4,\n            address = $5,\n            date = $6,\n            notes = $7\n        where id = $1;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Date",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "03d4d6b584ed5ae5364f1773a480b413c4c3ce402f650775ce64118a09b2ce28"
+}

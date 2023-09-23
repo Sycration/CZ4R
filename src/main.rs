@@ -195,7 +195,7 @@ async fn app() {
     //check if no users, create it from env vars otherwise
     let mut conn = pool.acquire().await.unwrap();
     let a = query!("select count(*) from users")
-        .fetch_one(&mut conn)
+        .fetch_one(&mut *conn)
         .await
         .unwrap()
         .count
@@ -218,7 +218,7 @@ async fn app() {
             salt.as_str(),
             true
         )
-        .execute(&mut conn)
+        .execute(&mut *conn)
         .await
         .expect("Failed to insert default admin user");
     }

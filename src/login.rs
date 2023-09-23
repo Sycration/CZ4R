@@ -60,7 +60,7 @@ pub(crate) async fn login(
     let mut conn = pool.acquire().await.unwrap();
 
     let worker = query_as!(Worker, "select * from users where name = $1", username)
-        .fetch_one(&mut conn)
+        .fetch_one(&mut *conn)
         .await;
 
     let worker = if let Ok(w) = worker {
