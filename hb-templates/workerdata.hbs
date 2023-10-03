@@ -46,8 +46,8 @@
                   {{#each entries as |entry|}}
                     
                       <tr class="position-relative">
-                        <td>{{entry.Date}} <a href="/checkinout?id={{entry.JobId}}&worker={{entry.WorkerId}}" class="stretched-link"></a></td>
-                        <td>{{entry.Location}}</td>
+                        <td>{{entry.Date}} </td>
+                        <td><a href="/checkinout?id={{entry.JobId}}&worker={{entry.WorkerId}}">{{entry.Location}}</a></td>
                         <td>{{#if entry.FlatRate}} ✅ {{/if}}</td>
                         <td>{{entry.HoursWorked}}</td>
                         <td>{{entry.HoursDriven}}</td>

@@ -85,6 +85,7 @@ pub(crate) async fn checkinoutpage(
     let data = json!({
         "title": "CZ4R Time Tracking",
         "admin": admin,
+        "logged_in": logged_in,
         "job_id": form.id,
         "worker_id": form.worker,
         "work_order": job.workorder.as_str(),
