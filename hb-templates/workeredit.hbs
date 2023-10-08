@@ -1,6 +1,7 @@
 {{!-- @(title: &str, admin: bool, creating: bool, selected:Option<i64>, workerlist: &[Worker], selectlist: &[(i64, &str)], own_id: i64) --}}
 {{#*inline "body"}}
 
+<div id="worker-edit">
 
 {{#if selected}}
 
@@ -66,7 +67,7 @@
           
         
 
-      <form action="/admin/worker-edit" method="get" id="edit">
+      <form method="get" id="edit" hx-get="/admin/api/v1/change-worker" hx-target="#worker-edit" hx-select="#worker-edit" hx-trigger="change delay:500ms">
         <div class="input-group pb-2">
           {{#each workerlist as |w|}}
             
@@ -145,10 +146,6 @@
             <div class="col  ">
               <div class="d-grid gap-2 ">
                 <input type="hidden" id="id" name="id" value="{{w.id}}"/>
-  
-                <button type="submit" class="btn btn-primary" formaction="api/v1/change-worker">
-                  Submit
-                </button>
               </div>
   
             </div>
@@ -181,27 +178,27 @@
 
       {{/unless}}
       {{#if creating}}
-        <form action="/admin/worker-edit" method="get" id="edit">
+        <form method="get" id="edit" hx-get="/admin/api/v1/create-worker" hx-target="#worker-edit" hx-select="#worker-edit" hx-trigger="change delay:500ms">
           <div class="input-group pb-2">
             <span class="input-group-text">Name</span>
-            <input form="edit" type="text" aria-label="First name" placeholder="Name" id="Name" name="Name"
+            <input required form="edit" type="text" aria-label="First name" placeholder="Name" id="Name" name="Name"
               class="form-control">
   
               <div class="input-group pb-2">
                 <span class="input-group-text">Address</span>
-                <textarea form="edit" class="form-control" id="Address" name="Address" aria-label="Address"
+                <textarea  form="edit" class="form-control" id="Address" name="Address" aria-label="Address"
                   placeholder="Address"></textarea>
               </div>
       
               <div class="input-group pb-2">
                 <span class="input-group-text">Phone</span>
-                <input form="edit" type="tel" aria-label="Phone" placeholder="000-000-0000" id="Phone" name="Phone"
+                <input  form="edit" type="tel" aria-label="Phone" placeholder="000-000-0000" id="Phone" name="Phone"
                   class="form-control">
               </div>
       
               <div class="input-group pb-3">
                 <span class="input-group-text">Email</span>
-                <input form="edit" type="email" aria-label="Email" placeholder="example@example.com" id="Email" name="Email"
+                <input  form="edit" type="email" aria-label="Email" placeholder="example@example.com" id="Email" name="Email"
                   class="form-control">
               </div>
       
@@ -209,26 +206,26 @@
               <div class="container-fluid bg-secondary-subtle border pb-4  rounded">
                 <div class="input-group pb-3 pt-3">
                   <span class="input-group-text">Hourly $</span>
-                  <input form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01" aria-label="Hourly"
-                    placeholder="0.00" id="Hourly" name="Hourly" class="form-control" >
+                  <input required form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01" aria-label="Hourly"
+                    placeholder="0.00" value="0.00" id="Hourly" name="Hourly" class="form-control" >
                 </div>
       
                 <div class="input-group pb-3">
                   <span class="input-group-text">Mileage $</span>
-                  <input form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01" aria-label="Mileage"
-                    placeholder="0.00" id="Mileage" name="Mileage" class="form-control">
+                  <input required form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01" aria-label="Mileage"
+                    placeholder="0.00" value="0.00" id="Mileage" name="Mileage" class="form-control">
                 </div>
       
                 <div class="input-group pb-3">
                   <span class="input-group-text">Drive time $</span>
-                  <input form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01" aria-label="Drivetime"
-                    placeholder="0.00" id="Drivetime" name="Drivetime" class="form-control">
+                  <input required form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01" aria-label="Drivetime"
+                    placeholder="0.00" value="0.00" id="Drivetime" name="Drivetime" class="form-control">
                 </div>
 
                 <div class="input-group ">
                   <span class="input-group-text">Flat Rate $</span>
-                  <input form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01" aria-label="Flatrate"
-                    placeholder="0.00" id="Flatrate" name="Flatrate" class="form-control">
+                  <input required form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01" aria-label="Flatrate"
+                    placeholder="0.00" value="0.00" id="Flatrate" name="Flatrate" class="form-control">
                 </div>
               </div>
               
@@ -245,9 +242,6 @@
             <div class="col  ">
               <div class="d-grid gap-2 ">
   
-                <button type="submit" class="btn btn-primary" formaction="api/v1/create-worker">
-                  Create
-                </button>
               </div>
   
             </div>
@@ -256,6 +250,10 @@
         </form>
       {{/if}}
     </div>
+  </div>
+
+
+
   </div>
   <script>
     function setTwoNumberDecimal(event) {

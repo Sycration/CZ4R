@@ -2,11 +2,18 @@
 {{#*inline "body"}}
 
 
-{{#if job}}
+
     
 
 
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+
+
+
+
+  <form id="editform" method="get" hx-get="/admin/api/v1/edit-job" hx-target="#editform" hx-select="#editform"  hx-trigger="change delay:500ms"> 
+
+  {{#if job}}
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
@@ -25,17 +32,15 @@
   </div>
 </div>
 
-{{/if}}
-
-  <h1 class="text-center ">
+{{/if}} 
+  
+   <h1 class="text-center ">
     {{#if job}} Editing job {{job.id}} {{else}} Create a new job {{/if}}
   </h1>
-
-  <form method="get" action="/admin/api/v1/edit-job">
     <div class="input-group px-3 mb-3">
       <span class="input-group-text">Site name</span>
       <label for="SiteNameInput" class="form-label d-none">Site name</label>
-      <input
+      <input required
         name="sitename"
         type="text"
         class="form-control"
@@ -138,18 +143,12 @@
     {{/if}}
 
     <div class="text-center">
-
-        <button type="submit" class="btn btn-primary btn-lg mt-4 mb-4">
-        {{#if job}} Submit changes {{else}} Create {{/if}}
-        </button>
        {{#if job}} 
           <a href="" class="btn btn-outline-danger btn-lg mt-4 mb-4" data-bs-toggle="modal" data-bs-target="#deleteModal">Delete</a>
         {{/if}}
 
     </div>
-  </form>
-
-  <script>
+<script>
     var assigned = [];
     var flatrate = [];
     {{#each list-data as |item|}}
@@ -225,6 +224,9 @@
     
     {{/each}}
 </script>
+  </form>
+
+
 
 {{/inline}}
 {{> base.hbs}}

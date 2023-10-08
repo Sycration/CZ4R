@@ -4,7 +4,7 @@
 
 
 
-    <div class="container">
+    <div id="cio" class="container">
       <h1 class="text-center ">Time Sheet</h1>
       <table class="table">
         <thead>
@@ -37,7 +37,7 @@
           </tr>
         </tbody>
       </table>
-      <form id="checkinoutform" action="/api/v1/checkinout">
+      <form id="checkinoutform" hx-get="/api/v1/checkinout" hx-target="#cio" hx-select="#cio"  hx-trigger="change delay:500ms"  >
 
         <div class="row d-md-none text-center" style="margin: 0">
           <div class="col">
@@ -157,9 +157,9 @@
 
 
 
-        <div class="text-center">
+        {{!-- <div class="text-center">
           <button type="submit" class="btn btn-primary btn-lg mt-4 mb-4">Submit</button>
-        </div>
+        </div> --}}
 
       </form>
         <script>

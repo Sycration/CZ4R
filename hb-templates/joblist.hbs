@@ -21,8 +21,10 @@
   >
     Filters
   </button>
+
+
   <div id="collapse" class="collapse mb-2 justify-content-center ">
-    <form id="filter" method="get" class="form-inline col">
+    <form id="filter" hx-trigger="change,keyup"  hx-get="/joblist" hx-target="#list" hx-select="#list" hx-swap="outerHTML" class="form-inline col">
 
       <div class="row">
         <div class="col-sm-6">
@@ -91,11 +93,11 @@
           </div>
       </div>
   
-      <button form="filter" class="btn btn-outline-primary" type="submit">Search</button>
+      {{!-- <button form="filter" class="btn btn-outline-primary" type="submit">Search</button> --}}
     </form>
   </div>
 
-    <ul class="list-group list-group-flush"> 
+    <ul id="list" class="list-group list-group-flush"> 
       {{#each job_datas as |d|}}
                 <li class="list-group-item">
             {{> card.hbs
@@ -114,6 +116,5 @@
       {{/each}}
 
     </ul>
-
 {{/inline}}
 {{> base.hbs}}
