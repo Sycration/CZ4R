@@ -11,16 +11,16 @@
         
           
 
-          <div class="card">
+          <div id="card" class="card">
             <div class="card-header">
-              <form id="RangeForm" hx-get="/admin/worker-data" hx-target="#RangeForm" hx-select="#RangeForm"  hx-trigger="change delay:500ms" class="form-inline row">
+              <form id="RangeForm" hx-get="/admin/worker-data" hx-target="#card" hx-select="#card"  hx-trigger="change delay:500ms" class="form-inline row">
                 <div class="col">
                   From
-                  <input form="RangeForm" type="date" class="form-control mx-2" id="start_date" name="start_date" onchange="this.form.submit()" value="{{from}}"/>
+                  <input form="RangeForm" type="date" class="form-control mx-2" id="start_date" name="start_date"  value="{{from}}"/>
                 </div>
                 <div class="col">
                   To
-                  <input form="RangeForm" type="date" class="form-control mx-2" id="end_date" name="end_date"  onchange="this.form.submit()" value="{{to}}" />
+                  <input form="RangeForm" type="date" class="form-control mx-2" id="end_date" name="end_date"  value="{{to}}" />
                 </div>
 
                   <input form="RangeForm" type="hidden" name="worker" id="worker" value="{{selected}}">
