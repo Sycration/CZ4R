@@ -1,25 +1,25 @@
 {{#*inline "body"}}
 
 <div class="container col-xxl-8 px-4 py-5">
-  <div class="row flex-lg-row-reverse align-items-center g-5">
-    <div class="col-10 col-sm-8 col-lg-6">
-      <img
+  <div class="row flex-lg-row-reverse align-items-center g-3">
+    {{!-- <div class="col-10 col-sm-8 col-lg-6">
+       <img
         src='{{> CZ4R.svg}}'
-        class="d-block mx-lg-auto "
+        class="d-block mx-md-auto img-fluid"
         alt="CZ4R logo"
         width="500"
         height="500"
         loading="lazy"
-      />
-    </div>
-    <div class="col-lg-6">
-      <h1 class="display-5 fw-bold lh-1 mb-3">
+      /> 
+    </div> --}}
+
+      <h1 class="display-1 fw-bold lh-1 mb-1">
         CZ4R, a time tracking software by Sycration 
       </h1>
-      <p class="lead">
-        Built using the wonderful <a href="https://rust-on-nails.com/">Rust on Nails</a> framework
+      <p class="lead mb-5">
+        Built using <a target="_blank" rel="noopener noreferrer" href="https://rust-lang.org">Rust</a> and <a target="_blank" rel="noopener noreferrer" href="https://htmx.org/">htmx</a>
       </p>
-      <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+      <div class="d-grid gap-2 d-md-flex justify-content-md-start mt-5">
 
         {{#if logged_in}}
         <a href="/joblist">
@@ -42,7 +42,7 @@
        {{/if}}
         
       </div>
-    </div>
+
   </div>
 </div>
 

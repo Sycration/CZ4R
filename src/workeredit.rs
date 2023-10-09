@@ -45,7 +45,7 @@ pub(crate) async fn workeredit(
         let data = serde_json::json!({
             "admin": admin,
             "logged_in": logged_in,
-            "title": "CZ4R Error 404",
+            "title": "CZ4R Worker Edit",
             "target": "worker-edit",
             "creating": worker.creating == Some(true),
             "selected": worker.worker,
