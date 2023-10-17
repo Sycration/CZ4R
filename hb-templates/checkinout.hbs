@@ -17,7 +17,7 @@
         <tbody>
           <tr>
             <td>{{site_name}}</td>
-            <td>{{address}}</td>
+            <td class="fs-5">{{address}}</td>
             <td>{{date}}</td>
           </tr>
         </tbody>
@@ -32,8 +32,8 @@
         </thead>
         <tbody>
           <tr>
-            <td>{{work_order}}</td>
-            <td>{{service_code}}</td>
+            <td class="fs-5" >{{work_order}}</td>
+            <td class="fs-5" >{{service_code}}</td>
           </tr>
         </tbody>
       </table>
@@ -68,6 +68,21 @@
           <span class="input-group-text d-none d-md-block">Sign-out time</span>
         </div>
 
+      <div class="input-group px-3 mb-3">
+        <span class="input-group-text">Miles Driven</span>
+        <label for="MilesDriven" class="form-label d-none">Miles Driven</label>
+        <input required
+        name="MilesDriven"
+        type="number"
+        class="form-control"
+        id="MilesDriven"
+        placeholder="0"
+        value="{{miles}}"
+        step="0.01"
+        min="0"
+        onchange="setTwoNumberDecimal()"
+      />
+      </div>
 
         <div class="row d-md-none text-center" style="margin: 0">
           <div class="col">
@@ -89,7 +104,7 @@
             value="{{hours}}"
             step="0.01"
             min="0"
-
+            onchange="setTwoNumberDecimal()"
           />
           <input required
             name="MinutesDriven"
@@ -100,25 +115,12 @@
             value="{{minutes}}"
             step="0.01"
             min="0"
-
+            onchange="setTwoNumberDecimal()"
           />
           <span class="input-group-text d-none d-md-block">Minutes Driven</span>
         </div>
 
-      <div class="input-group px-3 mb-3">
-        <span class="input-group-text">Miles Driven</span>
-        <label for="MilesDriven" class="form-label d-none">Miles Driven</label>
-        <input required
-        name="MilesDriven"
-        type="number"
-        class="form-control"
-        id="MilesDriven"
-        placeholder="0"
-        value="{{miles}}"
-        step="0.01"
-        min="0"
-      />
-      </div>
+
 
         <div class="input-group px-3 mb-3">
           <span class="input-group-text">Extra expenses $</span>

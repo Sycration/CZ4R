@@ -43,12 +43,13 @@
         <div class="row">
           <div class="col-auto">
             <h5 class="card-title">{{job_name}}</h5>
+            {{address}}
           </div>
           <div class="col">
-            <p class="text-end">{{work_order}}</p>
+            <p class="text-end">{{work_order}} <br> {{service_code}}</p>
           </div>
         </div>
-        <p class="card-text  mb-3">{{address}} <br> {{date}}</p>
+        <p class="card-text  mb-3"> {{date}}</p>
 
           <div class="d-none d-sm-block ">
            {{#if worker_id}}

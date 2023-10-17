@@ -25,6 +25,7 @@ struct JobQueryOutput {
     date: time::Date,
     notes: String,
     workorder: String,
+    servicecode: String,
     signin: Option<Time>,
     signout: Option<Time>,
     workernotes: Option<String>,
@@ -43,6 +44,7 @@ pub struct JobData {
     pub date: String,
     pub notes: String,
     pub work_order: String,
+    pub service_code: String,
     pub status: String,
 }
 
@@ -58,6 +60,7 @@ impl JobData {
                 date: format!("{} {}, {}", j.date.month(), j.date.day(), j.date.year()),
                 notes: j.notes,
                 work_order: j.workorder,
+                service_code: j.servicecode,
                 status: {
                     match (j.signin, j.signout) {
                         (None, None) => {
@@ -155,7 +158,7 @@ pub(crate) async fn joblistpage(
         jobworkers.notes as workernotes, jobworkers.signin, 
         jobworkers.miles_driven, jobworkers.hours_driven,
         jobworkers.extraexpcents, jobworkers.signout, jobs.sitename, jobs.address, 
-        jobs.date, jobs.notes, jobs.workorder 
+        jobs.date, jobs.notes, jobs.workorder, jobs.servicecode
         from jobs inner join jobworkers
                 on jobs.id = jobworkers.job
                 inner join users
@@ -219,7 +222,7 @@ pub(crate) async fn joblistpage(
             select '' as "name!", NULL::bigint as worker, jobs.id,
             jobs.sitename, jobs.address, jobs.date, NULL::time as signin, 
             NULL::time as signout, NULL::varchar as workernotes,
-            jobs.notes, jobs.workorder, NULL::real as miles_driven,
+            jobs.notes, jobs.workorder, jobs.servicecode, NULL::real as miles_driven,
             NULL::real as hours_driven, NULL::integer as extraexpcents from jobs 
 
             where not exists (
