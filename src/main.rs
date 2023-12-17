@@ -7,16 +7,13 @@ use axum::{
     extract::{Extension, Path, State, FromRef},
     response::{Html, Redirect, IntoResponse},
     routing::get,
-    Form, Router,
+    Form, Router, error_handling::HandleErrorLayer, BoxError, http::StatusCode,
 };
-use axum_login::{
-    axum_sessions::{async_session::MemoryStore as SessionMemoryStore, SessionLayer},
-    extractors::AuthContext,
-    memory_store::MemoryStore as AuthMemoryStore,
-    secrecy::SecretVec,
-    AuthLayer, AuthUser, PostgresStore, RequireAuthorizationLayer,
-};
+use secrecy::SecretVec;
+use axum::async_trait;
+use axum_login::{AuthUser, AuthnBackend, UserId, tower_sessions::{MemoryStore, SessionManagerLayer}, AuthManagerLayerBuilder};
 use errors::CustomError;
+use login::LoginForm;
 use password_hash::{PasswordHasher, Salt, SaltString};
 use rand::{thread_rng, Rng};
 use rust_embed::RustEmbed;
@@ -38,6 +35,7 @@ use tower_http::trace::{self, TraceLayer};
 use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use axum_template::{engine::Engine, Key, RenderHtml};
+use tower::ServiceBuilder;
 use handlebars::{Handlebars, handlebars_helper};
 use crate::{config::Config, login::loginpage};
 
@@ -111,16 +109,69 @@ pub struct AppState {
     engine: AppEngine
 }
 
-type Auth = AuthContext<i64, Worker, PostgresStore<Worker, ()>, ()>;
 
-impl AuthUser<i64> for Worker {
-    fn get_id(&self) -> i64 {
+impl AuthUser for Worker {
+    type Id = i64;
+    fn id(&self) -> i64 {
         self.id
     }
 
-    fn get_password_hash(&self) -> axum_login::secrecy::SecretVec<u8> {
-        SecretVec::new(self.hash.clone().into())
+    fn session_auth_hash(&self) -> &[u8] {
+        self.hash.as_bytes()
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct Backend {
+    db: Pool<Postgres>,
+}
+
+impl Backend {
+    fn new(db: Pool<Postgres>) -> Self {
+        Self { db }
+    }
+}
+
+
+#[async_trait]
+impl AuthnBackend for Backend {
+ type User = Worker;
+ type Credentials = LoginForm;
+ type Error = sqlx::Error;
+ async fn authenticate(
+    &self,
+    creds: Self::Credentials,
+) -> Result<Option<Self::User>, Self::Error> {
+    let user = query_as!(Worker, "select * from users where name = $1", creds.username)
+    .fetch_optional(&self.db)
+    .await?;
+
+    Ok(user.filter(|user| {
+        let salt = &user.salt;
+        let saltstr: Result<SaltString, password_hash::Error> = SaltString::from_b64(salt.as_str());
+        let saltstr = if let Ok(s) = saltstr {
+            s
+        } else {
+            return false;
+        };
+
+        let challenge_hash = Scrypt
+        .hash_password(creds.password.as_bytes(), saltstr.as_salt())
+        .unwrap()
+        .to_string();
+
+        challenge_hash == user.hash
+    }))
+}
+
+async fn get_user(&self, user_id: &UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
+    let user  = query_as!(Worker, "select * from users where id = $1", user_id)
+    .fetch_optional(&self.db)
+    .await?;
+
+    Ok(user)
+}
+
 }
 
 pub static TZ_OFFSET: OnceLock<UtcOffset> = OnceLock::new();
@@ -172,7 +223,8 @@ async fn app() {
 
     let config = config::Config::new();
 
-    let pool = config.create_pool().await;
+    let app_pool: Pool<Postgres> = config.create_pool().await;
+    let auth_pool = config.create_pool().await;
 
     let Config {
         database_url,
@@ -180,20 +232,23 @@ async fn app() {
         port,
     } = config;
 
-    sqlx::migrate!("./migrations").run(&pool).await.unwrap();
+    sqlx::migrate!("./migrations").run(&app_pool).await.unwrap();
 
-    let secret = login_secret;
+    let backend = Backend::new(auth_pool);
 
-    let session_store = SessionMemoryStore::new();
-    let session_layer = SessionLayer::new(session_store, &secret).with_secure(false);
 
-    let user_store = PostgresStore::<Worker>::new(pool.clone());
+    let session_store = MemoryStore::default();
+    let session_layer = SessionManagerLayer::new(session_store).with_secure(false);
 
-    let auth_layer: AuthLayer<PostgresStore<Worker, ()>, i64, Worker, ()> =
-        AuthLayer::new(user_store, &secret);
+
+        let auth_service = ServiceBuilder::new()
+        .layer(HandleErrorLayer::new(|e: BoxError| async {
+            StatusCode::BAD_REQUEST
+        }))
+        .layer(AuthManagerLayerBuilder::new(backend, session_layer).build());
 
     //check if no users, create it from env vars otherwise
-    let mut conn = pool.acquire().await.unwrap();
+    let mut conn = app_pool.acquire().await.unwrap();
     let a = query!("select count(*) from users")
         .fetch_one(&mut *conn)
         .await
@@ -247,20 +302,18 @@ async fn app() {
         .route("/admin/api/v1/restore-worker",get(restore::restore))
         .route("/admin/api/v1/reset-pw", get(reset_pw::reset_pw))
         .fallback(error404::error404)
-        .layer(auth_layer)
-        .layer(session_layer)
+        .layer(auth_service)
         .with_state(AppState {
-            pool,
+            pool: app_pool,
             engine: Engine::from(hbs)
         });
 
     // run it
+
     let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
+    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     println!("listening on {}", addr);
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+    axum::serve(listener, app).await.unwrap();
 }
 
 pub fn render<F>(f: F) -> Html<String>

@@ -1,4 +1,6 @@
-use crate::{errors::CustomError, Auth, Job, JobWorker, AppState, AppEngine};
+use crate::{errors::CustomError,Job, JobWorker, AppState, AppEngine};
+use crate::Backend;
+use axum_login::AuthSession;
 use axum::{
     extract::{Path, State},
     response::{Html, Redirect, IntoResponse},
@@ -13,10 +15,10 @@ use sqlx::{query, query_as, Pool, Postgres};
 
 pub(crate) async fn index(
     State(engine): State<AppEngine>,
-    mut auth: Auth,
+    mut auth: AuthSession<Backend>,
 ) -> Result<impl IntoResponse, CustomError> {
-    let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
-    let logged_in = auth.current_user.is_some();
+    let admin = auth.user.as_ref().map_or(false, |w| w.admin);
+    let logged_in = auth.user.is_some();
 
     let data = serde_json::json!({
             "admin": admin,

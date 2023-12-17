@@ -1,4 +1,5 @@
-use super::Auth;
+use crate::Backend;
+use axum_login::AuthSession;
 use super::Worker;
 use crate::AppState;
 use crate::errors::CustomError;
@@ -20,12 +21,12 @@ pub(crate) struct WorkerEditForm {
 
 pub(crate) async fn workeredit(
     State(AppState { pool, engine }): State<AppState>,
-    mut auth: Auth,
+    mut auth: AuthSession<Backend>,
     Form(worker): Form<WorkerEditForm>,
 ) -> Result<impl IntoResponse, CustomError> {
     //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
-    let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
-    let logged_in = auth.current_user.is_some();
+    let admin = auth.user.as_ref().map_or(false, |w| w.admin);
+    let logged_in = auth.user.is_some();
 
     if admin && logged_in {
         let users = sqlx::query_as!(
@@ -50,7 +51,7 @@ pub(crate) async fn workeredit(
             "creating": worker.creating == Some(true),
             "selected": worker.worker,
             "selectlist": selectlist,
-            "own_id": auth.current_user.unwrap().id,
+            "own_id": auth.user.unwrap().id,
             "workerlist": (users.iter().map(|u|json!({
                 "id": u.id,
                 "name": u.name,

@@ -1,6 +1,7 @@
 //Name=&Address=&Phone=&Email=&Hourly=&Mileage=&Drivetime=
 
-use super::Auth;
+use crate::Backend;
+use axum_login::AuthSession;
 use crate::AppState;
 use crate::errors::CustomError;
 use axum::extract::Path;
@@ -28,14 +29,14 @@ pub(crate) struct ChangePwPageForm {
 
 pub(crate) async fn change_pw_page(
     State(AppState { pool, engine }): State<AppState>,
-    mut auth: Auth,
+    mut auth: AuthSession<Backend>,
     Form(form): Form<ChangePwPageForm>,
 ) -> Result<impl IntoResponse, CustomError>{
-    let logged_in = auth.current_user.is_some();
+    let logged_in = auth.user.is_some();
 
-    let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
+    let admin = auth.user.as_ref().map_or(false, |w| w.admin);
 
-    let id = if let Some(id) = auth.current_user.map(|u| u.id) {
+    let id = if let Some(id) = auth.user.map(|u| u.id) {
         id
     } else if let Some(id) = form.id {
         id
@@ -64,7 +65,7 @@ pub(crate) struct ChangePwForm {
 
 pub(crate) async fn change_pw(
     State(pool): State<Pool<Postgres>>,
-    mut auth: Auth,
+    mut auth: AuthSession<Backend>,
     Path(id): Path<i64>,
     Form(form): Form<ChangePwForm>,
 ) -> Result<Redirect, CustomError> {

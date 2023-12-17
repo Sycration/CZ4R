@@ -13,9 +13,10 @@ use time::{OffsetDateTime, Time};
 
 use crate::{
     errors::{self, CustomError},
-    now, Auth, Worker, AppState,
+    now,  Worker, AppState,
 };
-
+use crate::Backend;
+use axum_login::AuthSession;
 #[derive(Deserialize)]
 pub(crate) struct WorkerDataForm {
     worker: Option<i64>,
@@ -34,7 +35,7 @@ pub struct WDEntry {
     pub TrueHoursWorked: String,
     pub HoursDriven: String,
     pub MilesDriven: String,
-    pub ExtraExpCents: i32,
+    pub ExtraExpCents: String,
 }
 
 fn hours_worked(signin: Time, signout: Time) -> f32 {
@@ -44,11 +45,11 @@ fn hours_worked(signin: Time, signout: Time) -> f32 {
 
 pub(crate) async fn workerdatapage(
     State(AppState { pool, engine }): State<AppState>,
-    mut auth: Auth,
+    mut auth: AuthSession<Backend>,
     Form(worker): Form<WorkerDataForm>,
 ) ->  Result<impl IntoResponse, CustomError> {
-    let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
-    let logged_in = auth.current_user.is_some();
+    let admin = auth.user.as_ref().map_or(false, |w| w.admin);
+    let logged_in = auth.user.is_some();
 
     if !admin {
         return Err(CustomError::Auth("Not logged in as admin".to_string()));
@@ -151,7 +152,7 @@ pub(crate) async fn workerdatapage(
                     },
                     HoursDriven: format!("{:.2}", d.hours_driven),
                     MilesDriven: format!("{:.2}", d.miles_driven),
-                    ExtraExpCents: d.extraexpcents,
+                    ExtraExpCents: format!("{:.2}", (d.extraexpcents as f64 / 100.)),
                     WorkerId: d.worker,
                     JobId: d.job,
                 })
@@ -165,7 +166,7 @@ pub(crate) async fn workerdatapage(
             TrueHoursWorked: String::new(),
             HoursDriven: format!("{:.2}", hours_driven_total),
             MilesDriven: format!("{:.2}", miles_driven_total),
-            ExtraExpCents: extra_exp_total,
+            ExtraExpCents: format!("{:.2}", (extra_exp_total as f64 / 100.)),
             JobId: -1,
             WorkerId: -1,
         };

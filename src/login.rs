@@ -8,8 +8,8 @@ use axum::response::IntoResponse;
 use axum::response::Redirect;
 use axum_template::RenderHtml;
 use sqlx::query_as;
-
-use super::Auth;
+use crate::Backend;
+use axum_login::AuthSession;
 use axum::extract::State;
 use axum::Form;
 use password_hash::SaltString;
@@ -19,10 +19,10 @@ use serde::Deserialize;
 use sqlx::Pool;
 use sqlx::Postgres;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct LoginForm {
-    username: String,
-    password: String,
+    pub username: String,
+    pub password: String,
 }
 
 #[derive(Deserialize)]
@@ -32,12 +32,12 @@ pub struct LoginPageForm {
 
 pub async fn loginpage(
     State(AppState { pool, engine }): State<AppState>,
-    mut auth: Auth,
+    mut auth: AuthSession<Backend>,
     Form(form): Form<LoginPageForm>,
 ) -> Result<impl IntoResponse, CustomError> {
 
-    let logged_in = auth.current_user.is_some();
-    let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
+    let logged_in = auth.user.is_some();
+    let admin = auth.user.as_ref().map_or(false, |w| w.admin);
 
     let data = serde_json::json!({
         "title": "CZ4R Login",
@@ -51,7 +51,7 @@ pub async fn loginpage(
 }
 
 pub(crate) async fn login(
-    mut auth: Auth,
+    mut auth: AuthSession<Backend>,
     State(pool): State<Pool<Postgres>>,
     Form(login_form): Form<LoginForm>, //Extension(worker): Extension<Worker>
 ) -> Redirect {
@@ -78,7 +78,7 @@ pub(crate) async fn login(
     }
 
     let salt = &worker.salt;
-    let saltstr = SaltString::from_b64(salt.as_str());
+    let saltstr: Result<SaltString, password_hash::Error> = SaltString::from_b64(salt.as_str());
     let saltstr = if let Ok(s) = saltstr {
         s
     } else {
@@ -109,7 +109,7 @@ pub(crate) async fn login(
     }
 }
 
-pub(crate) async fn logout(mut auth: Auth, State(pool): State<Pool<Postgres>>) -> Redirect {
-    auth.logout().await;
+pub(crate) async fn logout(mut auth: AuthSession<Backend>, State(pool): State<Pool<Postgres>>) -> Redirect {
+    auth.logout();
     Redirect::to("/")
 }

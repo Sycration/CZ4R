@@ -13,8 +13,9 @@ use sqlx::{
     query, query_as, query_builder, types::time::Date, Execute, Pool, Postgres, QueryBuilder,
 };
 
-use crate::{errors::CustomError, Auth, Job, AppState};
-
+use crate::{errors::CustomError, Job, AppState};
+use crate::Backend;
+use axum_login::AuthSession;
 #[derive(Deserialize)]
 pub(crate) struct JobEditPage {
     id: Option<i64>,
@@ -22,11 +23,11 @@ pub(crate) struct JobEditPage {
 
 pub(crate) async fn jobeditpage(
     State(AppState { pool, engine }): State<AppState>,
-    mut auth: Auth,
+    mut auth: AuthSession<Backend>,
     Form(form): Form<JobEditPage>,
 ) -> Result<impl IntoResponse, CustomError> {
-    let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
-    let logged_in = auth.current_user.is_some();
+    let admin = auth.user.as_ref().map_or(false, |w| w.admin);
+    let logged_in = auth.user.is_some();
 
     if !admin {
         return Err(CustomError::Auth("Not logged in as admin".to_string()));
@@ -120,10 +121,10 @@ pub(crate) struct JobEditForm {
 
 pub(crate) async fn jobedit(
     State(pool): State<Pool<Postgres>>,
-    mut auth: Auth,
+    mut auth: AuthSession<Backend>,
     Form(form): Form<JobEditForm>,
 ) -> Result<Redirect, CustomError> {
-    let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
+    let admin = auth.user.as_ref().map_or(false, |w| w.admin);
 
     if !admin {
         return Err(CustomError::Auth("Not logged in as admin".to_string()));
@@ -323,10 +324,10 @@ pub(crate) struct JobDeleteForm {
 
 pub(crate) async fn jobdelete(
     State(pool): State<Pool<Postgres>>,
-    mut auth: Auth,
+    mut auth: AuthSession<Backend>,
     Form(form): Form<JobDeleteForm>,
 ) -> Result<Redirect, CustomError> {
-    let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
+    let admin = auth.user.as_ref().map_or(false, |w| w.admin);
 
     if !admin {
         return Err(CustomError::Auth("Not logged in as admin".to_string()));

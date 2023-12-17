@@ -2,7 +2,6 @@ use std::env;
 use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
 
-use axum_login::secrecy::SecretVec;
 use base64::Engine;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres};

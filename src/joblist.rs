@@ -12,8 +12,9 @@ use sqlx::{
     QueryBuilder,
 };
 use time::{Duration, OffsetDateTime, Time};
-
-use crate::{empty_string_as_none, errors::CustomError, now, AppState, Auth, TZ_OFFSET};
+use crate::Backend;
+use axum_login::AuthSession;
+use crate::{empty_string_as_none, errors::CustomError, now, AppState,  TZ_OFFSET};
 
 #[derive(Deserialize, FromRow)]
 struct JobQueryOutput {
@@ -127,11 +128,11 @@ pub struct SearchParams {
 
 pub(crate) async fn joblistpage(
     State(AppState { pool, engine }): State<AppState>,
-    mut auth: Auth,
+    mut auth: AuthSession<Backend>,
     Form(form): Form<JobListForm>,
 ) -> Result<impl IntoResponse, CustomError> {
-    let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
-    let logged_in = auth.current_user.is_some();
+    let admin = auth.user.as_ref().map_or(false, |w| w.admin);
+    let logged_in = auth.user.is_some();
 
     if !logged_in {
         return Err(CustomError::Auth("Not logged in".to_string()));
@@ -173,7 +174,7 @@ pub(crate) async fn joblistpage(
 
     if !admin {
         query_builder.push(" and jobworkers.worker = ");
-        query_builder.push_bind(auth.current_user.as_ref().unwrap().id);
+        query_builder.push_bind(auth.user.as_ref().unwrap().id);
     }
 
     if let Some(site_name) = &form.site_name {

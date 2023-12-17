@@ -9,8 +9,8 @@ use axum::response::Redirect;
 use axum_template::RenderHtml;
 use sqlx::query_as;
 use sqlx::query;
-
-use super::Auth;
+use crate::Backend;
+use axum_login::AuthSession;
 use axum::extract::State;
 use axum::Form;
 use password_hash::SaltString;
@@ -35,10 +35,10 @@ struct RestoreListItem {
 
 pub async fn restorepage(
     State(AppState { pool, engine }): State<AppState>,
-    mut auth: Auth,
+    mut auth: AuthSession<Backend>,
 ) -> Result<impl IntoResponse, CustomError> {
-    let logged_in = auth.current_user.is_some();
-    let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
+    let logged_in = auth.user.is_some();
+    let admin = auth.user.as_ref().map_or(false, |w| w.admin);
 
     if !admin {
         return Err(CustomError::Auth("Not logged in as admin".to_string()));
@@ -63,11 +63,11 @@ pub async fn restorepage(
 }
 
 pub(crate) async fn restore(
-    mut auth: Auth,
+    mut auth: AuthSession<Backend>,
     State(pool): State<Pool<Postgres>>,
     Form(restore_form): Form<RestoreForm>, //Extension(worker): Extension<Worker>
 ) -> Result<impl IntoResponse, CustomError> {
-    if let Some(true) = auth.current_user.map(|u| u.admin) {
+    if let Some(true) = auth.user.map(|u| u.admin) {
 
     let mut conn = pool.acquire().await.unwrap();
     

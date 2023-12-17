@@ -1,6 +1,7 @@
 //Name=&Address=&Phone=&Email=&Hourly=&Mileage=&Drivetime=
 
-use super::Auth;
+use crate::Backend;
+use axum_login::AuthSession;
 use super::Worker;
 use crate::errors::CustomError;
 use axum::debug_handler;
@@ -31,10 +32,10 @@ pub(crate) struct WorkerCreateForm {
 pub(crate) async fn create_worker(
     State(pool): State<Pool<Postgres>>,
     //Path(id): Path<i64>,
-    mut auth: Auth,
+    mut auth: AuthSession<Backend>,
     Form(workerdata): Form<WorkerCreateForm>,
 ) -> Result<Redirect, CustomError> {
-    if let Some(true) = auth.current_user.map(|u| u.admin) {
+    if let Some(true) = auth.user.map(|u| u.admin) {
         let hourly = Decimal::from_str_exact(&workerdata.Hourly);
         let hourly = if let Ok(v) = hourly {
             v * Decimal::ONE_HUNDRED

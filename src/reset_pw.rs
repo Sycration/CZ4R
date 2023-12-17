@@ -1,6 +1,5 @@
 //Name=&Address=&Phone=&Email=&Hourly=&Mileage=&Drivetime=
 
-use super::Auth;
 use crate::errors::CustomError;
 use axum::extract::Path;
 use axum::extract::State;
@@ -15,7 +14,8 @@ use serde::Deserialize;
 use sqlx::query;
 use sqlx::Pool;
 use sqlx::Postgres;
-
+use crate::Backend;
+use axum_login::AuthSession;
 #[derive(Deserialize)]
 pub(crate) struct ResetPwForm {
     id: i64,
@@ -23,10 +23,10 @@ pub(crate) struct ResetPwForm {
 
 pub(crate) async fn reset_pw(
     State(pool): State<Pool<Postgres>>,
-    mut auth: Auth,
+    mut auth: AuthSession<Backend>,
     Form(form): Form<ResetPwForm>,
 ) -> Result<Redirect, CustomError> {
-    if auth.current_user.map(|w| w.admin) == Some(true) {
+    if auth.user.map(|w| w.admin) == Some(true) {
         let res = query!(
             r#"
         update users

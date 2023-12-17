@@ -1,9 +1,11 @@
-use crate::{errors::CustomError, Auth, Job, JobWorker, AppState};
+use crate::{errors::CustomError, Job, JobWorker, AppState};
 use axum::{
     extract::{Path, State},
     response::{Html, Redirect, IntoResponse},
     Form,
 };
+use crate::Backend;
+use axum_login::AuthSession;
 use axum_template::RenderHtml;
 use rust_decimal::prelude::*;
 use rust_decimal::Decimal;
@@ -20,11 +22,11 @@ pub(crate) struct CheckInOutPage {
 
 pub(crate) async fn checkinoutpage(
     State(AppState { pool, engine }): State<AppState>,
-    mut auth: Auth,
+    mut auth: AuthSession<Backend>,
     Form(form): Form<CheckInOutPage>,
 ) -> Result<impl IntoResponse, CustomError> {
-    let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
-    let logged_in = auth.current_user.is_some();
+    let admin = auth.user.as_ref().map_or(false, |w| w.admin);
+    let logged_in = auth.user.is_some();
 
     if !logged_in {
         return Err(CustomError::Auth("Not logged in".to_string()));
@@ -32,7 +34,7 @@ pub(crate) async fn checkinoutpage(
 
     let worker = form.worker;
 
-    if !admin && worker != auth.current_user.as_ref().unwrap().id {
+    if !admin && worker != auth.user.as_ref().unwrap().id {
         return Err(CustomError::Auth(
             "Attempted to check in for other worker".to_string(),
         ));
@@ -123,17 +125,17 @@ pub(crate) struct CheckInOutForm {
 
 pub(crate) async fn checkinout(
     State(pool): State<Pool<Postgres>>,
-    mut auth: Auth,
+    mut auth: AuthSession<Backend>,
     Form(form): Form<CheckInOutForm>,
 ) -> Result<Redirect, CustomError> {
-    if auth.current_user.is_none() {
+    if auth.user.is_none() {
         return Err(CustomError::Auth("Not logged in".to_string()));
     }
-    let admin = auth.current_user.as_ref().map_or(false, |w| w.admin);
+    let admin = auth.user.as_ref().map_or(false, |w| w.admin);
 
     let worker = form.WorkerId;
 
-    if !admin && worker != auth.current_user.as_ref().unwrap().id {
+    if !admin && worker != auth.user.as_ref().unwrap().id {
         return Err(CustomError::Auth(
             "Attempted to check in for other worker".to_string(),
         ));
