@@ -190,8 +190,10 @@ fn main() {
 #[cfg(debug_assertions)]
 
 fn setup_handlebars(hbs: &mut Handlebars) {
+    use handlebars::DirectorySourceOptions;
+
     hbs.set_dev_mode(true);
-    hbs.register_templates_directory("", "hb-templates").unwrap();
+    hbs.register_templates_directory("", DirectorySourceOptions { tpl_extension: ".hbs".to_string(), hidden: false, temporary: false }).unwrap();
 }
 
 #[cfg(not(debug_assertions))]
@@ -241,11 +243,13 @@ async fn app() {
     let session_layer = SessionManagerLayer::new(session_store).with_secure(false);
 
 
-        let auth_service = ServiceBuilder::new()
-        .layer(HandleErrorLayer::new(|e: BoxError| async {
-            StatusCode::BAD_REQUEST
-        }))
-        .layer(AuthManagerLayerBuilder::new(backend, session_layer).build());
+        // let auth_service = ServiceBuilder::new()
+        // .layer(HandleErrorLayer::new(|e: BoxError| async {
+        //     StatusCode::BAD_REQUEST
+        // }))
+        // .layer(AuthManagerLayerBuilder::new(backend, session_layer).build());
+
+    let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer).build();
 
     //check if no users, create it from env vars otherwise
     let mut conn = app_pool.acquire().await.unwrap();
@@ -302,7 +306,7 @@ async fn app() {
         .route("/admin/api/v1/restore-worker",get(restore::restore))
         .route("/admin/api/v1/reset-pw", get(reset_pw::reset_pw))
         .fallback(error404::error404)
-        .layer(auth_service)
+        .layer(auth_layer)
         .with_state(AppState {
             pool: app_pool,
             engine: Engine::from(hbs)

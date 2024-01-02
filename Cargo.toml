@@ -11,7 +11,7 @@ tower = "0.4"
 tower-http = {version = "0.5", features = ["trace"]}
 #axum-login ={ version = "0.6", features = ["sqlx", "postgres"]}
 # axum-login = { git = "https://github.com/maxcountryman/axum-login", features = ["sqlx", "postgres"]}
-axum-login = "0.10.2"
+axum-login = "0.12"
 sqlx = { version = "0.7", features = [ "runtime-tokio-rustls" , "postgres", "time",] }
 time = {version = "*", features = ["serde", "local-offset"]}
 futures = "0.3.25"
@@ -27,7 +27,7 @@ scrypt = "0.11.0"
 password-hash = {version = "0.5.0", features = ["rand_core"]}
 rust_decimal = "1.29.1"
 axum-template = {version = "2", features = ["handlebars"]}
-handlebars = {version = "4", features = ["dir_source", "rust-embed"]}
+handlebars = {version = "5", features = ["dir_source", "rust-embed"]}
 rust-embed = "8"
 serde_json = "1.0.104"
 secrecy = "0.8.0"

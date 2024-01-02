@@ -103,13 +103,16 @@ pub(crate) async fn login(
     }
 
     if failure {
-        return Redirect::to("/loginpage?failure=true");
+        Redirect::to("/loginpage?failure=true")
     } else {
-        return Redirect::to("/");
+        Redirect::to("/")
     }
 }
 
-pub(crate) async fn logout(mut auth: AuthSession<Backend>, State(pool): State<Pool<Postgres>>) -> Redirect {
-    auth.logout();
-    Redirect::to("/")
+pub(crate) async fn logout(mut auth: AuthSession<Backend>, State(_pool): State<Pool<Postgres>>) -> Redirect {
+    if (auth.logout().await).is_ok() {
+        Redirect::to("/")
+    } else {
+        Redirect::to("/loginpage?failure=true")
+    }
 }
