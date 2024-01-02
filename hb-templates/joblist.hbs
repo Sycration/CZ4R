@@ -23,15 +23,16 @@
   </button>
 
 
+
   <div id="collapse" class="collapse mb-2 justify-content-center ">
-    <form id="filter" hx-trigger="change,keyup"  hx-get="/joblist" hx-target="#list" hx-select="#list" hx-swap="outerHTML" class="form-inline col">
+    <form id="filter" hx-trigger="change,keyup"  hx-get="/joblist" hx-target="#list" hx-select="#list" hx-swap="outerHTML" hx-push-url="true" class="form-inline col">
 
       <div class="row">
         <div class="col-sm-6">
       <label for="sort">Sort by:</label>
       <select class="form-control mx-2" id="order" name="order" >
-        <option {{#if (eq order "latest")}} selected="selected" {{/if}} value="latest">Latest first</option>
-        <option {{#if (eq order "earliest")}} selected="selected" {{/if}} value="earliest">Earliest first</option>
+        <option {{#if (eq order "Latest")}} selected="selected" {{/if}} value="Latest">Latest first</option>
+        <option {{#if (eq order "Earliest")}} selected="selected" {{/if}} value="Earliest">Earliest first</option>
       </select>
       </div>
 

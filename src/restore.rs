@@ -44,7 +44,7 @@ pub async fn restorepage(
         return Err(CustomError::Auth("Not logged in as admin".to_string()));
     }
 
-    let mut conn = pool.acquire().await.unwrap();
+    let mut _conn = pool.acquire().await.unwrap();
 
     let workers = match query_as!(RestoreListItem, "select id, name from users where users.deactivated = true").fetch_all(&pool).await {
         Ok(w) => w,
@@ -69,15 +69,15 @@ pub(crate) async fn restore(
 ) -> Result<impl IntoResponse, CustomError> {
     if let Some(true) = auth.user.map(|u| u.admin) {
 
-    let mut conn = pool.acquire().await.unwrap();
+    let mut _conn = pool.acquire().await.unwrap();
     
     match query!("update users set deactivated = false where id = $1", restore_form.user).execute(&pool).await {
         Ok(_) => {},
         Err(e) => return Err(CustomError::Database(e.to_string())),
     }
 
-        return Ok(Redirect::to("/admin/restore"));
+        Ok(Redirect::to("/admin/restore"))
     } else {
-        return Err(CustomError::Auth("Not logged in as admin".to_string()));
+        Err(CustomError::Auth("Not logged in as admin".to_string()))
     }
 }

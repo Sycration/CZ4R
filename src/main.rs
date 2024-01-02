@@ -193,7 +193,7 @@ fn setup_handlebars(hbs: &mut Handlebars) {
     use handlebars::DirectorySourceOptions;
 
     hbs.set_dev_mode(true);
-    hbs.register_templates_directory("", DirectorySourceOptions { tpl_extension: ".hbs".to_string(), hidden: false, temporary: false }).unwrap();
+    hbs.register_templates_directory("./hb-templates", DirectorySourceOptions { tpl_extension: "".to_string(), hidden: false, temporary: false }).unwrap();
 }
 
 #[cfg(not(debug_assertions))]
@@ -206,7 +206,7 @@ struct Templates;
 
 fn setup_handlebars(hbs: &mut Handlebars) {
     hbs.set_dev_mode(false);
-    hbs.register_embed_templates::<Templates>();
+    hbs.register_embed_templates::<Templates>().unwrap();
 }
 
 async fn app() {
@@ -229,9 +229,9 @@ async fn app() {
     let auth_pool = config.create_pool().await;
 
     let Config {
-        database_url,
-        login_secret,
-        port,
+        database_url: _,
+        login_secret: _,
+        port: _,
     } = config;
 
     sqlx::migrate!("./migrations").run(&app_pool).await.unwrap();

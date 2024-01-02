@@ -28,7 +28,7 @@ pub(crate) struct ChangePwPageForm {
 }
 
 pub(crate) async fn change_pw_page(
-    State(AppState { pool, engine }): State<AppState>,
+    State(AppState { pool: _, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<ChangePwPageForm>,
 ) -> Result<impl IntoResponse, CustomError>{
@@ -65,7 +65,7 @@ pub(crate) struct ChangePwForm {
 
 pub(crate) async fn change_pw(
     State(pool): State<Pool<Postgres>>,
-    mut auth: AuthSession<Backend>,
+    mut _auth: AuthSession<Backend>,
     Path(id): Path<i64>,
     Form(form): Form<ChangePwForm>,
 ) -> Result<Redirect, CustomError> {

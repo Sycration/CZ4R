@@ -39,15 +39,15 @@ pub(crate) async fn deactivate(
             return Err(CustomError::Auth("You cannot deactivate yourself".to_string()));
         }
 
-    let mut conn = pool.acquire().await.unwrap();
+    let mut _conn = pool.acquire().await.unwrap();
     
     match query!("update users set deactivated = true where id = $1;", deactivate_form.user).execute(&pool).await {
         Ok(_) => {},
         Err(e) => return Err(CustomError::Database(e.to_string())),
     }
 
-        return Ok(Redirect::to("/admin/worker-edit"));
+        Ok(Redirect::to("/admin/worker-edit"))
     } else {
-        return Err(CustomError::Auth("Not logged in as admin".to_string()));
+        Err(CustomError::Auth("Not logged in as admin".to_string()))
     }
 }

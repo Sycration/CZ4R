@@ -31,7 +31,7 @@ pub struct LoginPageForm {
 }
 
 pub async fn loginpage(
-    State(AppState { pool, engine }): State<AppState>,
+    State(AppState { pool: _, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<LoginPageForm>,
 ) -> Result<impl IntoResponse, CustomError> {

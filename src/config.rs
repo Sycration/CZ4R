@@ -33,11 +33,11 @@ impl Config {
     }
 
     pub async fn create_pool(&self) -> Pool<Postgres> {
-        let pool = PgPoolOptions::new()
+        
+
+        PgPoolOptions::new()
             .connect(&self.database_url)
             .await
-            .unwrap();
-
-        pool
+            .unwrap()
     }
 }

@@ -13,7 +13,7 @@ use sqlx::{query, query_as, Pool, Postgres};
 use crate::Backend;
 use axum_login::AuthSession;
 pub(crate) async fn error404(
-    State(AppState { pool, engine }): State<AppState>,
+    State(AppState { pool: _, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
 ) -> Result<impl IntoResponse, CustomError>  {
     //let client = pool.get().await?;

@@ -358,5 +358,5 @@ pub(crate) async fn jobdelete(
     .unwrap();
 
 
-    return Ok(Redirect::to("/joblist"));
+    Ok(Redirect::to("/joblist"))
 }

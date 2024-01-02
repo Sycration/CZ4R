@@ -112,8 +112,8 @@ pub(crate) struct JobListForm {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Order {
-    latest,
-    earliest,
+    Latest,
+    Earliest,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -150,9 +150,9 @@ pub(crate) async fn joblistpage(
     };
 
     //testing form.order because that is always sent on form submit
-    let assigned = if (&form.order).is_some() { form.assigned.unwrap_or(false) } else {true};
-    let started = if (&form.order).is_some() { form.started.unwrap_or(false) } else {true};
-    let completed = if (&form.order).is_some() { form.completed.unwrap_or(false) } else {true};
+    let assigned = if form.order.is_some() { form.assigned.unwrap_or(false) } else {true};
+    let started = if form.order.is_some() { form.started.unwrap_or(false) } else {true};
+    let completed = if form.order.is_some() { form.completed.unwrap_or(false) } else {true};
 
     let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new(
         r#"select users.name, jobs.id, jobworkers.worker, 
@@ -202,7 +202,7 @@ pub(crate) async fn joblistpage(
     }
 
     match form.order {
-        Some(Order::earliest) => {
+        Some(Order::Earliest) => {
             query_builder.push(" order by date asc;");
         }
         _ => {
@@ -265,7 +265,7 @@ pub(crate) async fn joblistpage(
             address: form.address.unwrap_or_default(),
             fieldnotes: form.notes.unwrap_or_default(),
         },
-        "order": form.order.unwrap_or(Order::latest),
+        "order": form.order.unwrap_or(Order::Latest),
         "assigned": assigned,
         "started": started,
         "completed": completed
