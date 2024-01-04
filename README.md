@@ -1,8 +1,10 @@
 # CZ4R
 
+Version 1.0.0
+
 CZ4R is a time tracking software written in plain HTML (with Bootstrap) and Rust. It aims to use as little javascript as possible.
 
-It is currently in active development. Not all features are complete. Do not use in production. Cavē.
+To run:
 
 First, clone the repo.
 ```
@@ -19,5 +21,3 @@ docker-compose up -d
 ```
 
 The web UI will be exposed on port 3000 by default.
-
-Documentation on the use of the software is in progress.
