@@ -20,4 +20,6 @@ Next, to run CZ4R, use `docker-compose`.
 docker-compose up -d
 ```
 
+If you want to run CZ4R without docker, this is possible too, just set the environment variables seen in `.devcontainer/.env.template` yourself, and point it at an instance of Postgresql 14.
+
 The web UI will be exposed on port 3000 by default.
