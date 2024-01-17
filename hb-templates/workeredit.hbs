@@ -16,7 +16,7 @@
           Are you sure you want to deactivate this worker? It will be accessible in the "Restore workers" section of the site admin page.
         </div>
         <div class="modal-footer">
-           <form action="/admin/api/v1/deactivate-worker" method="get">
+           <form action="/admin/api/v1/deactivate-worker" method="post">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
             <button type="submit" class="btn btn-danger">Deactivate</button>
             <input type="hidden" id="hidden-user" name="user" value="{{selected}}">
@@ -37,7 +37,7 @@
           Are you sure you want to reset this worker's password? They will have to set a new one on their next login.
         </div>
         <div class="modal-footer">
-          <form action="/admin/api/v1/reset-pw" method="get">
+          <form action="/admin/api/v1/reset-pw" method="post">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
             <button type="submit" class="btn btn-danger">Reset</button>
             <input type="hidden" id="hidden-id" name="id" value="{{selected}}">
@@ -67,7 +67,7 @@
           
         
 
-      <form method="get" id="edit" hx-get="/admin/api/v1/change-worker" hx-target="#worker-edit" hx-select="#worker-edit" hx-trigger="change delay:500ms">
+      <form method="post" id="edit" hx-post="/admin/api/v1/change-worker" hx-target="#worker-edit" hx-select="#worker-edit" hx-trigger="change delay:500ms">
         <div class="input-group pb-2">
           {{#each workerlist as |w|}}
             
@@ -178,7 +178,7 @@
 
       {{/unless}}
       {{#if creating}}
-        <form method="get" id="edit" hx-get="/admin/api/v1/create-worker" hx-target="#worker-edit" hx-select="#worker-edit" hx-trigger="change delay:500ms">
+        <form method="post" id="edit" hx-post="/admin/api/v1/create-worker" hx-target="#worker-edit" hx-select="#worker-edit" hx-trigger="change delay:500ms">
           <div class="input-group pb-2">
             <span class="input-group-text">Name</span>
             <input required form="edit" type="text" aria-label="First name" placeholder="Name" id="Name" name="Name"

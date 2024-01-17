@@ -4,13 +4,17 @@
 
 
     
+<div id="wholething">
+{{!-- up here because html  --}}
+  {{#if job}}
+<form action="/admin/api/v1/delete-job" id="deleter" method="post">
+<input type="hidden" name="jobid" id="jobid" value="{{job.id}}">
+</form>
+{{/if}} 
 
 
 
-
-
-
-  <form id="editform" method="get" hx-get="/admin/api/v1/edit-job" hx-target="#editform" hx-select="#editform"  hx-trigger="change delay:500ms"> 
+  <form id="editform" method="post" hx-post="/admin/api/v1/edit-job" hx-target="#wholething" hx-select="#wholething"  hx-trigger="change delay:500ms"> 
 
   {{#if job}}
     <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
@@ -25,8 +29,9 @@
         No data related to this job will appear in the generated reports.
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-        <a type="button" class="btn btn-danger" href="/admin/api/v1/delete-job?jobid={{job.id}}">Delete</a>
+
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <input type="submit" form="deleter"  class="btn btn-danger" value="Delete">
       </div>
     </div>
   </div>
@@ -41,6 +46,7 @@
       <span class="input-group-text">Site name</span>
       <label for="SiteNameInput" class="form-label d-none">Site name</label>
       <input required
+        form="editform"
         name="sitename"
         type="text"
         class="form-control"
@@ -61,6 +67,7 @@
     <div class="input-group px-3 mb-3">
       <span class="input-group-text d-none d-sm-block">Service code</span>
       <input
+        form="editform"
         name="servcode"
         type="text"
         class="form-control"
@@ -68,6 +75,7 @@
                 {{#if job}} value = "{{job.servicecode}}" {{/if}}
       />
       <input
+        form="editform"
         name="workorder"
         type="text"
         class="form-control"
@@ -82,6 +90,7 @@
       <span class="input-group-text">Address</span>
       <label for="AddressInput" class="form-label d-none">Address</label>
       <input
+        form="editform"
         name="address"
         type="text"
         class="form-control"
@@ -94,7 +103,7 @@
     <div class="input-group px-3 mb-3">
       <span class="input-group-text">Date</span>
       <label for="DateInput" class="form-label d-none">Date</label>
-      <input required name="date" type="date" class="form-control" id="DateInput" 
+      <input required form="editform" name="date" type="date" class="form-control" id="DateInput" 
         {{#if job}} value = "{{job.date}}" {{/if}}
       />
     </div>
@@ -130,15 +139,15 @@
     <div class="input-group px-3 mb-3">
       <span class="input-group-text">Job Notes</span>
       <label for="notes" class="form-label d-none">Job Notes</label>
-      <textarea name="notes" class="form-control" id="notes" rows="4" style="resize:none;">{{#if job}}{{job.notes}}{{/if}}</textarea>
+      <textarea form="editform" name="notes" class="form-control" id="notes" rows="4" style="resize:none;">{{#if job}}{{job.notes}}{{/if}}</textarea>
     </div>
 
 
-    <input type="hidden" id="assigned" name="assigned" value=" ">
-    <input type="hidden" id="flatrate" name="flatrate" value=" ">
+    <input type="hidden" form="editform" id="assigned" name="assigned" value=" ">
+    <input type="hidden" form="editform" id="flatrate" name="flatrate" value=" ">
     {{#if job}} 
 
-    <input type="hidden" id="jobid" name="jobid" value="{{job.id}}">
+    <input type="hidden" form="editform" id="jobid" name="jobid" value="{{job.id}}">
 
     {{/if}}
 
@@ -225,6 +234,7 @@
     {{/each}}
 </script>
   </form>
+</div>
 
 
 

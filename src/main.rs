@@ -6,7 +6,7 @@ use axum::{
     debug_handler,
     extract::{Extension, Path, State, FromRef},
     response::{Html, Redirect, IntoResponse},
-    routing::get,
+    routing::{get, post, put},
     Form, Router, error_handling::HandleErrorLayer, BoxError, http::StatusCode,
 };
 use secrecy::SecretVec;
@@ -288,23 +288,23 @@ async fn app() {
         .route("/joblist", get(joblist::joblistpage))
         .route("/jobedit", get(jobedit::jobeditpage))
         .route("/loginpage", get(loginpage))
-        .route("/login", get(login::login))
-        .route("/logout", get(login::logout))
+        .route("/login", post(login::login))
+        .route("/logout", post(login::logout))
         .route("/checkinout", get(checkinout::checkinoutpage))
         .route("/change-pw", get(change_pw::change_pw_page))
-        .route("/api/v1/change-pw/:id", get(change_pw::change_pw))
-        .route("/api/v1/checkinout", get(checkinout::checkinout))
+        .route("/api/v1/change-pw/:id", post(change_pw::change_pw))
+        .route("/api/v1/checkinout", post(checkinout::checkinout))
         .route("/admin", get(admin::admin))
         .route("/admin/worker-edit", get(workeredit::workeredit))
         .route("/admin/worker-data", get(workerdata::workerdatapage))
         .route("/admin/restore", get(restore::restorepage))
-        .route("/admin/api/v1/create-worker", get(create_worker::create_worker))
-        .route("/admin/api/v1/edit-job", get(jobedit::jobedit))
-        .route("/admin/api/v1/delete-job", get(jobedit::jobdelete))
-        .route("/admin/api/v1/deactivate-worker", get(deactivate::deactivate))
-        .route("/admin/api/v1/change-worker",get(change_worker::change_worker))
-        .route("/admin/api/v1/restore-worker",get(restore::restore))
-        .route("/admin/api/v1/reset-pw", get(reset_pw::reset_pw))
+        .route("/admin/api/v1/create-worker", post(create_worker::create_worker))
+        .route("/admin/api/v1/edit-job", post(jobedit::jobedit))
+        .route("/admin/api/v1/delete-job", post(jobedit::jobdelete))
+        .route("/admin/api/v1/deactivate-worker", post(deactivate::deactivate))
+        .route("/admin/api/v1/change-worker",post(change_worker::change_worker))
+        .route("/admin/api/v1/restore-worker",post(restore::restore))
+        .route("/admin/api/v1/reset-pw", post(reset_pw::reset_pw))
         .fallback(error404::error404)
         .layer(auth_layer)
         .with_state(AppState {

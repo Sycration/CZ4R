@@ -14,22 +14,22 @@ tower-http = {version = "0.5", features = ["trace"]}
 axum-login = "0.12"
 sqlx = { version = "0.7", features = [ "runtime-tokio-rustls" , "postgres", "time",] }
 time = {version = "*", features = ["serde", "local-offset"]}
-futures = "0.3.25"
+futures = "0.3"
 rand = "0.8"
 rustls = "0.22"
-serde = { version = "1.0.152", features = ["derive"] }
-tokio = { version = "1.23.0", features = ["macros", "rt-multi-thread"] }
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1.23", features = ["macros", "rt-multi-thread"] }
 base64 = "0.21"
 webpki-roots = "0.26"
 tracing-subscriber = { version = "0.3"}
 tracing = "0.1"
-scrypt = "0.11.0"
+scrypt = "0.11"
 password-hash = {version = "0.5.0", features = ["rand_core"]}
-rust_decimal = "1.29.1"
+rust_decimal = "1.33"
 axum-template = {version = "2", features = ["handlebars"]}
 handlebars = {version = "5", features = ["dir_source", "rust-embed"]}
 rust-embed = "8"
-serde_json = "1.0.104"
-secrecy = "0.8.0"
+serde_json = "1.0"
+secrecy = "0.8"
 [profile.dev.package."*"]
 opt-level = 3

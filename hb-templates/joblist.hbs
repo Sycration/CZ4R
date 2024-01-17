@@ -25,7 +25,7 @@
 
 
   <div id="collapse" class="collapse mb-2 justify-content-center ">
-    <form id="filter" hx-trigger="change,keyup"  hx-get="/joblist" hx-target="#list" hx-select="#list" hx-swap="outerHTML" hx-push-url="true" class="form-inline col">
+    <form id="filter" hx-trigger="change,keyup,load"  hx-get="/joblist" hx-target="#list" hx-select="#list" hx-swap="outerHTML" hx-push-url="true" class="form-inline col">
 
       <div class="row">
         <div class="col-sm-6">
@@ -118,5 +118,17 @@
       {{/each}}
 
     </ul>
+
+<script>
+
+///TODO reload on back arrow, or get htmx to do it
+ 
+var perfEntries = performance.getEntriesByType("navigation");
+
+if (perfEntries[0].type === "back_forward") {
+    location.reload();
+}
+</script>
+
 {{/inline}}
 {{> base.hbs}}
