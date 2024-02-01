@@ -1,4 +1,5 @@
 #!/usr/bin/env sh
 git pull
-docker-compose up --force-recreate --build -d
+docker-compose build
+docker-compose up -d
 docker image prune -f
