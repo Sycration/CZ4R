@@ -1,4 +1,4 @@
-FROM rust:1.70 AS build
+FROM rust AS build
 
 COPY . /code/
 
