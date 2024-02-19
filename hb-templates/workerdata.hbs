@@ -13,7 +13,7 @@
 
           <div id="card" class="card">
             <div class="card-header">
-              <form id="RangeForm" hx-get="/admin/worker-data" hx-target="#card" hx-select="#card"  hx-trigger="change delay:500ms" class="form-inline row">
+              <form id="RangeForm" hx-get="/admin/worker-data" hx-target="#card" hx-select="#card"  hx-trigger="change delay:500ms" hx-push-url="true" class="form-inline row">
                 <div class="col">
                   From
                   <input form="RangeForm" type="date" class="form-control mx-2" id="start_date" name="start_date"  value="{{from}}"/>

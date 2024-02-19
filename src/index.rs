@@ -1,11 +1,11 @@
-use crate::{errors::CustomError,Job, JobWorker, AppState, AppEngine};
 use crate::Backend;
-use axum_login::AuthSession;
+use crate::{errors::CustomError, AppEngine, AppState, Job, JobWorker};
 use axum::{
     extract::{Path, State},
-    response::{Html, Redirect, IntoResponse},
+    response::{Html, IntoResponse, Redirect},
     Form,
 };
+use axum_login::AuthSession;
 use axum_template::RenderHtml;
 use rust_decimal::prelude::*;
 use rust_decimal::Decimal;
@@ -21,10 +21,10 @@ pub(crate) async fn index(
     let logged_in = auth.user.is_some();
 
     let data = serde_json::json!({
-            "admin": admin,
-            "logged_in": logged_in,
-            "title": "CZ4R"
-        });
+        "admin": admin,
+        "logged_in": logged_in,
+        "title": "CZ4R"
+    });
 
-    Ok(RenderHtml("home.hbs",engine,data))
+    Ok(RenderHtml("home.hbs", engine, data))
 }

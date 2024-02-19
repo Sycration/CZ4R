@@ -1,15 +1,15 @@
-use crate::Backend;
-use axum_login::AuthSession;
 use super::Worker;
-use crate::AppState;
 use crate::errors::CustomError;
-use axum::extract::State;
-use axum_template::RenderHtml;
-use serde_json::json;
+use crate::AppState;
+use crate::Backend;
 use crate::IntoResponse;
+use axum::extract::State;
 use axum::response::Html;
 use axum::Form;
+use axum_login::AuthSession;
+use axum_template::RenderHtml;
 use serde::Deserialize;
+use serde_json::json;
 use sqlx::Pool;
 use sqlx::Postgres;
 
@@ -69,9 +69,9 @@ pub(crate) async fn workeredit(
             })).collect::<Vec<_>>())
         });
 
-        Ok(RenderHtml("workeredit.hbs",engine,data))
+        Ok(RenderHtml("workeredit.hbs", engine, data))
     } else if logged_in {
-        Err(CustomError::Auth("Not Admin".to_string()))
+        Err(CustomError::AdminReqd("Not Logged in as Admin".to_string()))
     } else {
         Err(CustomError::Auth("Not Logged In".to_string()))
     }

@@ -1,10 +1,10 @@
-use crate::{errors::CustomError, Job, JobWorker, AppState};
+use crate::Backend;
+use crate::{errors::CustomError, AppState, Job, JobWorker};
 use axum::{
     extract::{Path, State},
-    response::{Html, Redirect, IntoResponse},
+    response::{Html, IntoResponse, Redirect},
     Form,
 };
-use crate::Backend;
 use axum_login::AuthSession;
 use axum_template::RenderHtml;
 use rust_decimal::prelude::*;
@@ -106,7 +106,6 @@ pub(crate) async fn checkinoutpage(
     });
 
     Ok(RenderHtml("checkinout.hbs", engine, data))
-
 }
 
 //?Signin=&Signout=&MilesDriven=2&ExtraExpenses=&Notes=

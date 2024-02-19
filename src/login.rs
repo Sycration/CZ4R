@@ -1,21 +1,21 @@
-use crate::AppState;
 use crate::errors::CustomError;
+use crate::AppState;
 
 use super::Worker;
 
+use crate::Backend;
+use axum::extract::State;
 use axum::response::Html;
 use axum::response::IntoResponse;
 use axum::response::Redirect;
-use axum_template::RenderHtml;
-use sqlx::query_as;
-use crate::Backend;
-use axum_login::AuthSession;
-use axum::extract::State;
 use axum::Form;
+use axum_login::AuthSession;
+use axum_template::RenderHtml;
 use password_hash::SaltString;
 use scrypt::password_hash::PasswordHasher;
 use scrypt::Scrypt;
 use serde::Deserialize;
+use sqlx::query_as;
 use sqlx::Pool;
 use sqlx::Postgres;
 
@@ -35,7 +35,6 @@ pub async fn loginpage(
     mut auth: AuthSession<Backend>,
     Form(form): Form<LoginPageForm>,
 ) -> Result<impl IntoResponse, CustomError> {
-
     let logged_in = auth.user.is_some();
     let admin = auth.user.as_ref().map_or(false, |w| w.admin);
 
@@ -46,8 +45,7 @@ pub async fn loginpage(
         "failure": form.failure == Some(true)
     });
 
-    Ok(RenderHtml("login.hbs",engine,data))
-
+    Ok(RenderHtml("login.hbs", engine, data))
 }
 
 pub(crate) async fn login(
@@ -73,7 +71,7 @@ pub(crate) async fn login(
         return Redirect::to("/loginpage?failure=true");
     }
 
-    if worker.must_change_pw{
+    if worker.must_change_pw {
         return Redirect::to(format!("/change-pw?id={}", worker.id).as_str());
     }
 
@@ -109,7 +107,10 @@ pub(crate) async fn login(
     }
 }
 
-pub(crate) async fn logout(mut auth: AuthSession<Backend>, State(_pool): State<Pool<Postgres>>) -> Redirect {
+pub(crate) async fn logout(
+    mut auth: AuthSession<Backend>,
+    State(_pool): State<Pool<Postgres>>,
+) -> Redirect {
     if (auth.logout().await).is_ok() {
         Redirect::to("/")
     } else {

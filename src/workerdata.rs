@@ -1,6 +1,6 @@
 use axum::{
     extract::State,
-    response::{Html, Redirect, IntoResponse},
+    response::{Html, IntoResponse, Redirect},
     Form,
 };
 
@@ -11,11 +11,11 @@ use sqlx::types::time::Date;
 use sqlx::{query, query_as, Pool, Postgres};
 use time::{OffsetDateTime, Time};
 
+use crate::Backend;
 use crate::{
     errors::{self, CustomError},
-    now,  Worker, AppState,
+    now, AppState, Worker,
 };
-use crate::Backend;
 use axum_login::AuthSession;
 #[derive(Deserialize)]
 pub(crate) struct WorkerDataForm {
@@ -42,12 +42,11 @@ fn hours_worked(signin: Time, signout: Time) -> f32 {
     ((signout - signin).as_seconds_f32() / 3600.).max(1.0)
 }
 
-
 pub(crate) async fn workerdatapage(
     State(AppState { pool, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(worker): Form<WorkerDataForm>,
-) ->  Result<impl IntoResponse, CustomError> {
+) -> Result<impl IntoResponse, CustomError> {
     let admin = auth.user.as_ref().map_or(false, |w| w.admin);
     let logged_in = auth.user.is_some();
 
@@ -121,7 +120,9 @@ pub(crate) async fn workerdatapage(
         let hours_worked_total = data
             .iter()
             .filter(|d| d.signin.is_some() && d.signout.is_some())
-            .fold(0.0, |acc, x| acc + hours_worked(x.signin.unwrap(), x.signout.unwrap()));
+            .fold(0.0, |acc, x| {
+                acc + hours_worked(x.signin.unwrap(), x.signout.unwrap())
+            });
         let hours_driven_total = data
             .iter()
             .filter(|d| d.signin.is_some() && d.signout.is_some())
@@ -135,28 +136,28 @@ pub(crate) async fn workerdatapage(
             .filter(|d| d.signin.is_some() && d.signout.is_some())
             .fold(0, |acc, x| acc + x.extraexpcents);
 
-        let entries =
-            data.into_iter()
-                .filter(|d| d.signin.is_some() && d.signout.is_some())
-                .map(|d| WDEntry {
-                    Date: d.date.to_string(),
-                    Location: d.sitename,
-                    FlatRate: d.using_flat_rate,
-                    HoursWorked: {
-                        let val = hours_worked(d.signin.unwrap(), d.signout.unwrap());
-                        format!("{:.2}", val)
-                    },
-                    TrueHoursWorked: {
-                        let val = (d.signout.unwrap() - d.signin.unwrap()).as_seconds_f32() / 3600.;
-                        format!("{:.2}", val)
-                    },
-                    HoursDriven: format!("{:.2}", d.hours_driven),
-                    MilesDriven: format!("{:.2}", d.miles_driven),
-                    ExtraExpCents: format!("{:.2}", (d.extraexpcents as f64 / 100.)),
-                    WorkerId: d.worker,
-                    JobId: d.job,
-                })
-                .collect::<Vec<_>>();
+        let entries = data
+            .into_iter()
+            .filter(|d| d.signin.is_some() && d.signout.is_some())
+            .map(|d| WDEntry {
+                Date: d.date.to_string(),
+                Location: d.sitename,
+                FlatRate: d.using_flat_rate,
+                HoursWorked: {
+                    let val = hours_worked(d.signin.unwrap(), d.signout.unwrap());
+                    format!("{:.2}", val)
+                },
+                TrueHoursWorked: {
+                    let val = (d.signout.unwrap() - d.signin.unwrap()).as_seconds_f32() / 3600.;
+                    format!("{:.2}", val)
+                },
+                HoursDriven: format!("{:.2}", d.hours_driven),
+                MilesDriven: format!("{:.2}", d.miles_driven),
+                ExtraExpCents: format!("{:.2}", (d.extraexpcents as f64 / 100.)),
+                WorkerId: d.worker,
+                JobId: d.job,
+            })
+            .collect::<Vec<_>>();
 
         let totals = WDEntry {
             Date: String::new(),
@@ -190,8 +191,5 @@ pub(crate) async fn workerdatapage(
         "target": "worker-data"
     });
 
-    Ok(RenderHtml("workerdata.hbs",engine,data))
-
-
+    Ok(RenderHtml("workerdata.hbs", engine, data))
 }
-

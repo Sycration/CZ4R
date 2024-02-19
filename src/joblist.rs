@@ -1,10 +1,13 @@
 use std::collections::BTreeMap;
 
+use crate::Backend;
+use crate::{empty_string_as_none, errors::CustomError, now, AppState, TZ_OFFSET};
 use axum::{
     extract::State,
     response::{Html, IntoResponse},
     Form,
 };
+use axum_login::AuthSession;
 use axum_template::RenderHtml;
 use serde::{Deserialize, Serialize};
 use sqlx::{
@@ -12,9 +15,6 @@ use sqlx::{
     QueryBuilder,
 };
 use time::{Duration, OffsetDateTime, Time};
-use crate::Backend;
-use axum_login::AuthSession;
-use crate::{empty_string_as_none, errors::CustomError, now, AppState,  TZ_OFFSET};
 
 #[derive(Deserialize, FromRow)]
 struct JobQueryOutput {
@@ -50,7 +50,12 @@ pub struct JobData {
 }
 
 impl JobData {
-    fn from_outputs(jobs: Vec<JobQueryOutput>, assigned: bool, started: bool, completed: bool) -> Vec<Self> {
+    fn from_outputs(
+        jobs: Vec<JobQueryOutput>,
+        assigned: bool,
+        started: bool,
+        completed: bool,
+    ) -> Vec<Self> {
         jobs.into_iter()
             .map(|j| JobData {
                 job_id: j.id,
@@ -82,11 +87,10 @@ impl JobData {
                 },
             })
             .filter(|d| {
-                (assigned && d.status.starts_with('a')) ||
-                (started && d.status.starts_with("st")) ||
-                (completed && d.status.starts_with("si")) ||
-                d.status.starts_with('o')
-
+                (assigned && d.status.starts_with('a'))
+                    || (started && d.status.starts_with("st"))
+                    || (completed && d.status.starts_with("si"))
+                    || d.status.starts_with('o')
             })
             .collect::<Vec<_>>()
     }
@@ -150,9 +154,21 @@ pub(crate) async fn joblistpage(
     };
 
     //testing form.order because that is always sent on form submit
-    let assigned = if form.order.is_some() { form.assigned.unwrap_or(false) } else {true};
-    let started = if form.order.is_some() { form.started.unwrap_or(false) } else {true};
-    let completed = if form.order.is_some() { form.completed.unwrap_or(false) } else {true};
+    let assigned = if form.order.is_some() {
+        form.assigned.unwrap_or(false)
+    } else {
+        true
+    };
+    let started = if form.order.is_some() {
+        form.started.unwrap_or(false)
+    } else {
+        true
+    };
+    let completed = if form.order.is_some() {
+        form.completed.unwrap_or(false)
+    } else {
+        true
+    };
 
     let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new(
         r#"select users.name, jobs.id, jobworkers.worker, 
@@ -210,7 +226,6 @@ pub(crate) async fn joblistpage(
         }
     }
 
-
     let query = query_builder.build_query_as();
 
     let query = query.fetch_all(&pool).await;
@@ -249,8 +264,6 @@ pub(crate) async fn joblistpage(
         }
         Err(e) => return Err(CustomError::Database(e.to_string())),
     };
-
-    
 
     let data = serde_json::json!({
         "title": "CZ4R Job List",

@@ -33,8 +33,6 @@ impl Config {
     }
 
     pub async fn create_pool(&self) -> Pool<Postgres> {
-        
-
         PgPoolOptions::new()
             .connect(&self.database_url)
             .await

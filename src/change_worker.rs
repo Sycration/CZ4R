@@ -1,14 +1,14 @@
 //Name=&Address=&Phone=&Email=&Hourly=&Mileage=&Drivetime=
 
-use crate::Backend;
-use axum_login::AuthSession;
 use super::Worker;
 use crate::errors::CustomError;
+use crate::Backend;
 use axum::debug_handler;
 use axum::extract::Path;
 use axum::extract::State;
 use axum::response::Redirect;
 use axum::Form;
+use axum_login::AuthSession;
 use rust_decimal::prelude::*;
 use serde::Deserialize;
 use sqlx::query;
@@ -27,7 +27,7 @@ pub(crate) struct WorkerChangeForm {
     Drivetime: String,
     Flatrate: String,
     Admin: Option<String>,
-    id: i64
+    id: i64,
 }
 
 pub(crate) async fn change_worker(

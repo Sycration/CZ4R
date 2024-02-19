@@ -1,15 +1,15 @@
 //Name=&Address=&Phone=&Email=&Hourly=&Mileage=&Drivetime=
 
-use crate::Backend;
-use axum_login::AuthSession;
-use crate::AppState;
 use crate::errors::CustomError;
+use crate::AppState;
+use crate::Backend;
 use axum::extract::Path;
 use axum::extract::State;
 use axum::response::Html;
 use axum::response::IntoResponse;
 use axum::response::Redirect;
 use axum::Form;
+use axum_login::AuthSession;
 use axum_template::RenderHtml;
 use password_hash::PasswordHasher;
 use password_hash::SaltString;
@@ -31,7 +31,7 @@ pub(crate) async fn change_pw_page(
     State(AppState { pool: _, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<ChangePwPageForm>,
-) -> Result<impl IntoResponse, CustomError>{
+) -> Result<impl IntoResponse, CustomError> {
     let logged_in = auth.user.is_some();
 
     let admin = auth.user.as_ref().map_or(false, |w| w.admin);
@@ -54,7 +54,7 @@ pub(crate) async fn change_pw_page(
         "chg_id": id
     });
 
-    Ok(RenderHtml("changepw.hbs",engine,data))
+    Ok(RenderHtml("changepw.hbs", engine, data))
 }
 
 #[derive(Deserialize)]

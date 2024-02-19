@@ -1,10 +1,10 @@
-use crate::{errors::CustomError,  Job, JobWorker, AppState, AppEngine};
+use crate::Backend;
+use crate::{errors::CustomError, AppEngine, AppState, Job, JobWorker};
 use axum::{
     extract::{Path, State},
-    response::{Html, Redirect, IntoResponse},
+    response::{Html, IntoResponse, Redirect},
     Form,
 };
-use crate::Backend;
 use axum_login::AuthSession;
 use axum_template::RenderHtml;
 use rust_decimal::prelude::*;
@@ -25,6 +25,11 @@ pub(crate) async fn admin(
         "logged_in": logged_in,
         "title": "CZ4R"
     });
-
-    Ok(RenderHtml("admin.hbs",engine,data))
+    if admin && logged_in {
+        Ok(RenderHtml("admin.hbs", engine, data))
+    } else if logged_in {
+        Err(CustomError::AdminReqd("Not Logged in as Admin".to_string()))
+    } else {
+        Err(CustomError::Auth("Not Logged In".to_string()))
+    }
 }

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use axum::{
     debug_handler,
     extract::State,
-    response::{Html, Redirect, IntoResponse},
+    response::{Html, IntoResponse, Redirect},
     Form,
 };
 use axum_template::RenderHtml;
@@ -13,8 +13,8 @@ use sqlx::{
     query, query_as, query_builder, types::time::Date, Execute, Pool, Postgres, QueryBuilder,
 };
 
-use crate::{errors::CustomError, Job, AppState};
 use crate::Backend;
+use crate::{errors::CustomError, AppState, Job};
 use axum_login::AuthSession;
 #[derive(Deserialize)]
 pub(crate) struct JobEditPage {
@@ -44,7 +44,10 @@ pub(crate) async fn jobeditpage(
         None => None,
     };
 
-    let workers = match query!("select id, name from users where users.deactivated = false;").fetch_all(&pool).await {
+    let workers = match query!("select id, name from users where users.deactivated = false;")
+        .fetch_all(&pool)
+        .await
+    {
         Ok(r) => r.into_iter().map(|r| (r.id, r.name)).collect::<Vec<_>>(),
         Err(e) => return Err(CustomError::Database(e.to_string())),
     };
@@ -103,7 +106,7 @@ pub(crate) async fn jobeditpage(
         "list-data": list_data
     });
 
-    Ok(RenderHtml("jobedit.hbs",engine,data))
+    Ok(RenderHtml("jobedit.hbs", engine, data))
 }
 
 #[derive(Deserialize)]
@@ -167,7 +170,7 @@ pub(crate) async fn jobedit(
             form.workorder,
             form.servcode,
             form.address,
-            form.date, 
+            form.date,
             form.notes
         )
         .execute(&mut *tx)
@@ -356,7 +359,6 @@ pub(crate) async fn jobdelete(
     .execute(&pool)
     .await
     .unwrap();
-
 
     Ok(Redirect::to("/joblist"))
 }

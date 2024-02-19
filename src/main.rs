@@ -2,60 +2,66 @@
 #![allow(unused_imports)]
 #![allow(non_snake_case)]
 
+use crate::{config::Config, login::loginpage};
+use axum::async_trait;
 use axum::{
     debug_handler,
-    extract::{Extension, Path, State, FromRef},
-    response::{Html, Redirect, IntoResponse},
+    error_handling::HandleErrorLayer,
+    extract::{Extension, FromRef, Path, State},
+    http::StatusCode,
+    response::{Html, IntoResponse, Redirect},
     routing::{get, post, put},
-    Form, Router, error_handling::HandleErrorLayer, BoxError, http::StatusCode,
+    BoxError, Form, Router,
 };
-use secrecy::SecretVec;
-use axum::async_trait;
-use axum_login::{AuthUser, AuthnBackend, UserId, tower_sessions::{MemoryStore, SessionManagerLayer}, AuthManagerLayerBuilder};
+use axum_login::{
+    tower_sessions::{MemoryStore, SessionManagerLayer},
+    AuthManagerLayerBuilder, AuthUser, AuthnBackend, UserId,
+};
+use axum_template::{engine::Engine, Key, RenderHtml};
 use errors::CustomError;
+use handlebars::{handlebars_helper, Handlebars};
 use login::LoginForm;
 use password_hash::{PasswordHasher, Salt, SaltString};
 use rand::{thread_rng, Rng};
 use rust_embed::RustEmbed;
 use scrypt::Scrypt;
-use serde::{Deserialize, Deserializer, de, Serialize};
+use secrecy::SecretVec;
+use serde::{de, Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use sqlx::types::time::Date;
 use sqlx::{query, query_as, Pool, Postgres};
 use std::{
-    collections::{HashMap, BTreeMap},
-    default, env,
+    collections::{BTreeMap, HashMap},
+    default, env, fmt,
     net::SocketAddr,
-    sync::{Arc, OnceLock}, str::FromStr, fmt,
+    str::FromStr,
+    sync::{Arc, OnceLock},
 };
 use time::{OffsetDateTime, Time, UtcOffset};
 use tokio::runtime::Builder;
 use tokio::sync::RwLock;
+use tower::ServiceBuilder;
 use tower_http::trace::{self, TraceLayer};
 use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-use axum_template::{engine::Engine, Key, RenderHtml};
-use tower::ServiceBuilder;
-use handlebars::{Handlebars, handlebars_helper};
-use crate::{config::Config, login::loginpage};
 
+mod admin;
 mod change_pw;
 mod change_worker;
 mod checkinout;
 mod config;
 mod create_worker;
+mod deactivate;
+mod error404;
 mod errors;
+mod index;
 mod jobedit;
 mod joblist;
 mod login;
 mod reset_pw;
+mod restore;
 mod workerdata;
 mod workeredit;
-mod restore;
-mod deactivate;
-mod index;
-mod error404;
-mod admin;
 
 #[derive(Debug, Clone, sqlx::FromRow, Serialize)]
 pub struct Job {
@@ -106,9 +112,8 @@ type AppEngine = Engine<Handlebars<'static>>;
 #[derive(Clone, FromRef)]
 pub struct AppState {
     pool: Pool<Postgres>,
-    engine: AppEngine
+    engine: AppEngine,
 }
-
 
 impl AuthUser for Worker {
     type Id = i64;
@@ -132,46 +137,49 @@ impl Backend {
     }
 }
 
-
 #[async_trait]
 impl AuthnBackend for Backend {
- type User = Worker;
- type Credentials = LoginForm;
- type Error = sqlx::Error;
- async fn authenticate(
-    &self,
-    creds: Self::Credentials,
-) -> Result<Option<Self::User>, Self::Error> {
-    let user = query_as!(Worker, "select * from users where name = $1", creds.username)
-    .fetch_optional(&self.db)
-    .await?;
+    type User = Worker;
+    type Credentials = LoginForm;
+    type Error = sqlx::Error;
+    async fn authenticate(
+        &self,
+        creds: Self::Credentials,
+    ) -> Result<Option<Self::User>, Self::Error> {
+        let user = query_as!(
+            Worker,
+            "select * from users where name = $1",
+            creds.username
+        )
+        .fetch_optional(&self.db)
+        .await?;
 
-    Ok(user.filter(|user| {
-        let salt = &user.salt;
-        let saltstr: Result<SaltString, password_hash::Error> = SaltString::from_b64(salt.as_str());
-        let saltstr = if let Ok(s) = saltstr {
-            s
-        } else {
-            return false;
-        };
+        Ok(user.filter(|user| {
+            let salt = &user.salt;
+            let saltstr: Result<SaltString, password_hash::Error> =
+                SaltString::from_b64(salt.as_str());
+            let saltstr = if let Ok(s) = saltstr {
+                s
+            } else {
+                return false;
+            };
 
-        let challenge_hash = Scrypt
-        .hash_password(creds.password.as_bytes(), saltstr.as_salt())
-        .unwrap()
-        .to_string();
+            let challenge_hash = Scrypt
+                .hash_password(creds.password.as_bytes(), saltstr.as_salt())
+                .unwrap()
+                .to_string();
 
-        challenge_hash == user.hash
-    }))
-}
+            challenge_hash == user.hash
+        }))
+    }
 
-async fn get_user(&self, user_id: &UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
-    let user  = query_as!(Worker, "select * from users where id = $1", user_id)
-    .fetch_optional(&self.db)
-    .await?;
+    async fn get_user(&self, user_id: &UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
+        let user = query_as!(Worker, "select * from users where id = $1", user_id)
+            .fetch_optional(&self.db)
+            .await?;
 
-    Ok(user)
-}
-
+        Ok(user)
+    }
 }
 
 pub static TZ_OFFSET: OnceLock<UtcOffset> = OnceLock::new();
@@ -181,7 +189,6 @@ fn main() {
         "The timezone offset is {}",
         TZ_OFFSET.get_or_init(|| { OffsetDateTime::now_local().unwrap().offset() })
     );
-
 
     let rt = Builder::new_multi_thread().enable_all().build().unwrap();
 
@@ -193,11 +200,18 @@ fn setup_handlebars(hbs: &mut Handlebars) {
     use handlebars::DirectorySourceOptions;
 
     hbs.set_dev_mode(true);
-    hbs.register_templates_directory("./hb-templates", DirectorySourceOptions { tpl_extension: "".to_string(), hidden: false, temporary: false }).unwrap();
+    hbs.register_templates_directory(
+        "./hb-templates",
+        DirectorySourceOptions {
+            tpl_extension: "".to_string(),
+            hidden: false,
+            temporary: false,
+        },
+    )
+    .unwrap();
 }
 
 #[cfg(not(debug_assertions))]
-
 #[derive(RustEmbed)]
 #[folder = "hb-templates"]
 struct Templates;
@@ -222,7 +236,6 @@ async fn app() {
     hbs.register_helper("eq", Box::new(eq));
     hbs.register_helper("neq", Box::new(neq));
 
-
     let config = config::Config::new();
 
     let app_pool: Pool<Postgres> = config.create_pool().await;
@@ -238,16 +251,14 @@ async fn app() {
 
     let backend = Backend::new(auth_pool);
 
-
     let session_store = MemoryStore::default();
     let session_layer = SessionManagerLayer::new(session_store).with_secure(false);
 
-
-        // let auth_service = ServiceBuilder::new()
-        // .layer(HandleErrorLayer::new(|e: BoxError| async {
-        //     StatusCode::BAD_REQUEST
-        // }))
-        // .layer(AuthManagerLayerBuilder::new(backend, session_layer).build());
+    // let auth_service = ServiceBuilder::new()
+    // .layer(HandleErrorLayer::new(|e: BoxError| async {
+    //     StatusCode::BAD_REQUEST
+    // }))
+    // .layer(AuthManagerLayerBuilder::new(backend, session_layer).build());
 
     let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer).build();
 
@@ -282,7 +293,28 @@ async fn app() {
         .expect("Failed to insert default admin user");
     }
 
-    // build our application with a route
+    let admin_only = Router::new()
+        .route("/admin", get(admin::admin))
+        .route("/admin/worker-edit", get(workeredit::workeredit))
+        .route("/admin/worker-data", get(workerdata::workerdatapage))
+        .route("/admin/restore", get(restore::restorepage))
+        .route(
+            "/admin/api/v1/create-worker",
+            post(create_worker::create_worker),
+        )
+        .route("/admin/api/v1/edit-job", post(jobedit::jobedit))
+        .route("/admin/api/v1/delete-job", post(jobedit::jobdelete))
+        .route(
+            "/admin/api/v1/deactivate-worker",
+            post(deactivate::deactivate),
+        )
+        .route(
+            "/admin/api/v1/change-worker",
+            post(change_worker::change_worker),
+        )
+        .route("/admin/api/v1/restore-worker", post(restore::restore))
+        .route("/admin/api/v1/reset-pw", post(reset_pw::reset_pw));
+
     let app = Router::new()
         .route("/", get(index::index))
         .route("/joblist", get(joblist::joblistpage))
@@ -294,22 +326,12 @@ async fn app() {
         .route("/change-pw", get(change_pw::change_pw_page))
         .route("/api/v1/change-pw/:id", post(change_pw::change_pw))
         .route("/api/v1/checkinout", post(checkinout::checkinout))
-        .route("/admin", get(admin::admin))
-        .route("/admin/worker-edit", get(workeredit::workeredit))
-        .route("/admin/worker-data", get(workerdata::workerdatapage))
-        .route("/admin/restore", get(restore::restorepage))
-        .route("/admin/api/v1/create-worker", post(create_worker::create_worker))
-        .route("/admin/api/v1/edit-job", post(jobedit::jobedit))
-        .route("/admin/api/v1/delete-job", post(jobedit::jobdelete))
-        .route("/admin/api/v1/deactivate-worker", post(deactivate::deactivate))
-        .route("/admin/api/v1/change-worker",post(change_worker::change_worker))
-        .route("/admin/api/v1/restore-worker",post(restore::restore))
-        .route("/admin/api/v1/reset-pw", post(reset_pw::reset_pw))
+        .merge(admin_only)
         .fallback(error404::error404)
         .layer(auth_layer)
         .with_state(AppState {
             pool: app_pool,
-            engine: Engine::from(hbs)
+            engine: Engine::from(hbs),
         });
 
     // run it
@@ -342,10 +364,9 @@ where
     T::Err: fmt::Display,
 {
     let opt = Option::<String>::deserialize(de)?;
-    match opt.as_deref().map(|s|s.trim()) {
+    match opt.as_deref().map(|s| s.trim()) {
         None | Some("") => Ok(None),
-        
+
         Some(s) => FromStr::from_str(s).map_err(de::Error::custom).map(Some),
     }
 }
-
