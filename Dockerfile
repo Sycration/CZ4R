@@ -1,4 +1,4 @@
-FROM rust AS build
+FROM rust:bullseye AS build
 
 COPY . /code/
 
