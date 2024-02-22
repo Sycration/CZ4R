@@ -1,4 +1,4 @@
-FROM rust:1.70 AS development
+FROM rust:bullseye AS development
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -33,7 +33,7 @@ RUN groupadd --gid $USER_GID $USERNAME \
     
 USER $USERNAME
 
-RUN cargo install sqlx-cli --no-default-features --features rustls,postgres
+RUN cargo install sqlx-cli --no-default-features --features native-tls,postgres
 
 RUN sudo mkdir -p /workspace/target && \
  sudo chown $USERNAME:$USERNAME /workspace && \
