@@ -3,45 +3,82 @@
 <div class="container col-xxl-8 px-4 py-5">
   <div class="row flex-lg-row-reverse align-items-center g-3">
     {{!-- <div class="col-10 col-sm-8 col-lg-6">
-       <img
-        src='{{> CZ4R.svg}}'
-        class="d-block mx-md-auto img-fluid"
-        alt="CZ4R logo"
-        width="500"
-        height="500"
-        loading="lazy"
-      /> 
+      <img src='{{> CZ4R.svg}}' class="d-block mx-md-auto img-fluid" alt="CZ4R logo" width="500" height="500"
+        loading="lazy" />
     </div> --}}
 
-      <h1 class="display-1 fw-bold lh-1 mb-1">
-        CZ4R, a time tracking software by Sycration 
-      </h1>
-      <p class="lead mb-5">
-        Built using <a target="_blank" rel="noopener noreferrer" href="https://rust-lang.org">Rust</a> and <a target="_blank" rel="noopener noreferrer" href="https://htmx.org/">htmx</a>
-      </p>
-      <div class="d-grid gap-2 d-md-flex justify-content-md-start mt-5">
+    <h2 class="display-2 fw-bold lh-1 mb-1">
+      CZ4R
+    </h2>
 
-        {{#if logged_in}}
-        <a href="/joblist">
-          <button type="button" class="btn btn-primary btn-lg px-4 me-md-2">
-              Go to job list
-            </button>
+
+    <p class="lead mb-1">
+      A time tracking software by Sycration, built using <a target="_blank" rel="noopener noreferrer"
+        href="https://rust-lang.org">Rust</a> and <a target="_blank" rel="noopener noreferrer"
+        href="https://htmx.org/">htmx</a>
+    </p>
+    <div class="d-grid gap-2 d-sm-flex justify-content-sm-start mt-4">
+
+      {{#if logged_in}}
+      <a href="/joblist">
+        <button type="button" class="btn btn-primary btn-lg px-4 me-md-2">
+          Go to job list
+        </button>
       </a>
-         <form action="/logout" method="post">
-          <button type="submit" class="btn btn-outline-secondary btn-lg px-4">
-            Logout
-          </button>
-        </form>
-       {{else}}
+      <form action="/logout" method="post">
+        <button type="submit" class="btn btn-outline-secondary btn-lg px-4">
+          Logout
+        </button>
+      </form>
+      {{else}}
 
-        <form action="/loginpage">
-          <button type="submit" class="btn btn-outline-primary btn-lg px-4">
-            Login
-          </button>
-        </form>
-       {{/if}}
-        
+      <form action="/loginpage">
+        <button type="submit" class="btn btn-outline-primary btn-lg px-4">
+          Login
+        </button>
+      </form>
+      {{/if}}
+
+    </div>
+
+
+
+
+    <div id="stats" hx-get="/" hx-trigger="every 1s" hx-swap="outerHTML" hx-target="#stats" hx-select="#stats"
+      class="row container  justify-content-evenly mt-5">
+      <div class="col-lg-4 ">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">{{jobs}} jobs total</h5>
+            {{!-- <h6 class="card-subtitle mb-2 text-body-secondary">Card subtitle</h6> --}}
+            <p class="card-text">On average, one job is due every {{jobsavg}} days</p>
+            {{!-- <a href="#" class="card-link">Card link</a>
+            <a href="#" class="card-link">Another link</a> --}}
+          </div>
+        </div>
       </div>
+      <div class="col-lg-4 ">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">{{miles}} total miles driven</h5>
+            {{!-- <h6 class="card-subtitle mb-2 text-body-secondary">Card subtitle</h6> --}}
+            <p class="card-text">On average, {{milesavg}} miles are driven each day</p>
+            {{!-- <a href="#" class="card-link">Card link</a>
+            <a href="#" class="card-link">Another link</a> --}}
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">{{workers}} workers total</h5>
+            {{!-- <h6 class="card-subtitle mb-2 text-body-secondary">Card subtitle</h6> --}}
+            <p class="card-text">On average, one worker is added every {{workersavg}} months</p>
+
+          </div>
+        </div>
+      </div>
+    </div>
 
   </div>
 </div>
