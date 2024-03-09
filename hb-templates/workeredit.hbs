@@ -1,141 +1,141 @@
-{{!-- @(title: &str, admin: bool, creating: bool, selected:Option<i64>, workerlist: &[Worker], selectlist: &[(i64, &str)], own_id: i64) --}}
-{{#*inline "body"}}
+{{!-- @(title: &str, admin: bool, creating: bool, selected:Option<i64>, workerlist: &[Worker], selectlist: &[(i64,
+  &str)], own_id: i64) --}}
+  {{#*inline "body"}}
 
-<div id="worker-edit">
+  <div id="worker-edit">
 
-{{#if selected}}
+    {{#if selected}}
 
-  <div class="modal fade" id="DeactivateModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h1 class="modal-title fs-5" id="exampleModalLabel">Deactivate worker</h1>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          Are you sure you want to deactivate this worker? It will be accessible in the "Restore workers" section of the site admin page.
-        </div>
-        <div class="modal-footer">
-           <form action="/admin/api/v1/deactivate-worker" method="post">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-            <button type="submit" class="btn btn-danger">Deactivate</button>
-            <input type="hidden" id="hidden-user" name="user" value="{{selected}}">
-          </form>        
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal fade" id="ResetModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h1 class="modal-title fs-5" id="exampleModalLabel">Reset worker password</h1>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          Are you sure you want to reset this worker's password? They will have to set a new one on their next login.
-        </div>
-        <div class="modal-footer">
-          <form action="/admin/api/v1/reset-pw" method="post">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-            <button type="submit" class="btn btn-danger">Reset</button>
-            <input type="hidden" id="hidden-id" name="id" value="{{selected}}">
-          </form>          
+    <div class="modal fade" id="DeactivateModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="exampleModalLabel">Deactivate worker</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            Are you sure you want to deactivate this worker? It will be accessible in the "Restore workers" section of
+            the site admin page.
+          </div>
+          <div class="modal-footer">
+            <form action="/admin/api/v1/deactivate-worker" method="post">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-danger">Deactivate</button>
+              <input type="hidden" id="hidden-user" name="user" value="{{selected}}">
+            </form>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-{{/if}}
-  <div class="row row-cols-1 row-cols-md-2">
-    <div class="col col-md-4 pb-4">
-      <div class="d-grid gap-2 pb-4">
-        <a href="/admin/worker-edit?creating=true" class="btn btn-outline-primary" type="button">Add worker</a>
+
+    <div class="modal fade" id="ResetModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="exampleModalLabel">Reset worker password</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            Are you sure you want to reset this worker's password? They will have to set a new one on their next login.
+          </div>
+          <div class="modal-footer">
+            <form action="/admin/api/v1/reset-pw" method="post">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-danger">Reset</button>
+              <input type="hidden" id="hidden-id" name="id" value="{{selected}}">
+            </form>
+          </div>
+        </div>
       </div>
-      {{!-- @:userselect_html("worker-edit", selectlist, selected) --}}
-      {{> userselect.hbs array=selectlist selected=selected target=target}}
-
     </div>
-    <div class="col col-md-8">
-      {{!-- @if !creating && selected.is_none() { --}}
-      {{#unless creating}}
+    {{/if}}
+    <div class="row row-cols-1 row-cols-md-2">
+      <div class="col col-md-4 pb-4">
+        <div class="d-grid gap-2 pb-4">
+          <a href="/admin/worker-edit?creating=true" class="btn btn-outline-primary" type="button">Add worker</a>
+        </div>
+        {{!-- @:userselect_html("worker-edit", selectlist, selected) --}}
+        {{> userselect.hbs array=selectlist selected=selected target=target}}
 
-      
+      </div>
+      <div class="col col-md-8">
+        {{!-- @if !creating && selected.is_none() { --}}
+        {{#unless creating}}
 
-      {{!-- } else if !creating && selected.is_some() { --}}
+
+
+        {{!-- } else if !creating && selected.is_some() { --}}
         {{#if selected}}
-          
-        
 
-      <form method="post" id="edit" hx-post="/admin/api/v1/change-worker" hx-target="#worker-edit" hx-select="#worker-edit" hx-trigger="change delay:500ms">
-        <div class="input-group pb-2">
-          {{#each workerlist as |w|}}
-            
-          
-          {{#if (eq ../selected w.id)}}
-            
-          
-          
-          <span class="input-group-text">Name</span>
-          <input form="edit" type="text" aria-label="First name" placeholder="Name" id="Name" name="Name"
-            class="form-control" value="{{w.name}}">
+
+
+        <form method="post" id="edit" hx-post="/admin/api/v1/change-worker" hx-target="#worker-edit"
+          hx-select="#worker-edit" hx-trigger="change delay:500ms">
+          <div class="input-group pb-2">
+            {{#each workerlist as |w|}}
+
+
+            {{#if (eq ../selected w.id)}}
+
 
             <div class="input-group pb-2">
-              <span class="input-group-text">Address</span>
-              <textarea form="edit" class="form-control" id="Address" name="Address" aria-label="Address"
-                placeholder="Address">{{w.address}}</textarea>
+              <span class="input-group-text">Name</span>
+              <input form="edit" type="text" aria-label="First name" placeholder="Name" id="Name" name="Name"
+                class="form-control" value="{{w.name}}">
             </div>
-    
+            <div class="input-group pb-2">
+              <span class="input-group-text">Address</span>
+              <input form="edit" class="form-control" type="text" id="Address" name="Address" aria-label="Address"
+                placeholder="Address" value="{{w.address}}"></textarea>
+            </div>
+
             <div class="input-group pb-2">
               <span class="input-group-text">Phone</span>
               <input form="edit" type="tel" aria-label="Phone" placeholder="000-000-0000" id="Phone" name="Phone"
                 class="form-control" value="{{w.phone}}">
             </div>
-    
+
             <div class="input-group pb-3">
               <span class="input-group-text">Email</span>
-              <input form="edit" type="email" aria-label="Email" placeholder="example@example.com" id="Email" name="Email"
-                class="form-control" value="{{w.email}}">
+              <input form="edit" type="email" aria-label="Email" placeholder="example@example.com" id="Email"
+                name="Email" class="form-control" value="{{w.email}}">
             </div>
-    
+
             <p class="text-center fs-4 ">Rate</p>
             <div class="container-fluid bg-secondary-subtle border pb-4  rounded">
               <div class="input-group pb-3 pt-3">
                 <span class="input-group-text">Hourly $</span>
-                <input form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01" aria-label="Hourly"
-                  placeholder="0.00" id="Hourly" name="Hourly" class="form-control" value="{{w.rate_hourly_cents}}">
+                <input form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01"
+                  aria-label="Hourly" placeholder="0.00" id="Hourly" name="Hourly" class="form-control"
+                  value="{{w.rate_hourly_cents}}">
               </div>
-    
+
               <div class="input-group pb-3">
                 <span class="input-group-text">Mileage Rate $</span>
-                <input form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01" aria-label="Mileage"
-                  placeholder="0.00" id="Mileage" name="Mileage" class="form-control" value="{{w.rate_mileage_cents}}">
+                <input form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01"
+                  aria-label="Mileage" placeholder="0.00" id="Mileage" name="Mileage" class="form-control"
+                  value="{{w.rate_mileage_cents}}">
               </div>
-    
+
               <div class="input-group pb-3">
                 <span class="input-group-text">Drive time $</span>
-                <input form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01" aria-label="Drivetime"
-                  placeholder="0.00" id="Drivetime" name="Drivetime" class="form-control" value="{{w.rate_drive_hourly_cents}}">
+                <input form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01"
+                  aria-label="Drivetime" placeholder="0.00" id="Drivetime" name="Drivetime" class="form-control"
+                  value="{{w.rate_drive_hourly_cents}}">
               </div>
 
               <div class="input-group ">
                 <span class="input-group-text">Flat Rate $</span>
-                <input form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01" aria-label="Flatrate"
-                  placeholder="0.00" id="Flatrate" name="Flatrate" class="form-control" value="{{w.flat_rate_cents}}">
+                <input form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01"
+                  aria-label="Flatrate" placeholder="0.00" id="Flatrate" name="Flatrate" class="form-control"
+                  value="{{w.flat_rate_cents}}">
               </div>
             </div>
 
             <div class="form-check">
-              <input form="edit" class="form-check-input" type="checkbox" id="Admin" name="Admin" 
-                
-                {{#if w.admin}}
-                  checked="checked"
-                {{/if}}
-                
-                {{#if (eq w.id ../own_id)}}
-                  class="special" onclick="event.preventDefault();"
-                {{/if}}            
-                >
+              <input form="edit" class="form-check-input" type="checkbox" id="Admin" name="Admin" {{#if w.admin}}
+                checked="checked" {{/if}} {{#if (eq w.id ../own_id)}} class="special" onclick="event.preventDefault();"
+                {{/if}}>
               <label class="form-check-label" for="Admin">Admin</label>
             </div>
 
@@ -145,112 +145,115 @@
           <div class="row pt-3">
             <div class="col  ">
               <div class="d-grid gap-2 ">
-                <input type="hidden" id="id" name="id" value="{{w.id}}"/>
+                <input type="hidden" id="id" name="id" value="{{w.id}}" />
               </div>
-  
+
             </div>
             <div class="col">
               <div class="gap-2 pb-4 text-end">
                 {{#if (neq w.id ../own_id)}}
-                  <div class="pb-2">
-                  <a class="btn btn-outline-danger" type="button" data-bs-toggle="modal"
-                  data-bs-target="#ResetModal"> Reset password</a>
+                <div class="pb-2">
+                  <a class="btn btn-outline-danger" type="button" data-bs-toggle="modal" data-bs-target="#ResetModal">
+                    Reset password</a>
                 </div>
                 <div>
                   <a class="btn btn-outline-danger" type="button" data-bs-toggle="modal"
                     data-bs-target="#DeactivateModal">Deactivate</a>
                 </div>
-                {{/if}}    
-                
+                {{/if}}
+
               </div>
-              
+
             </div>
           </div>
           {{/if}}
 
           {{/each}}
 
-       
 
-      </form>
 
-      {{/if}}
+        </form>
 
-      {{/unless}}
-      {{#if creating}}
-        <form method="post" id="edit" hx-post="/admin/api/v1/create-worker" hx-target="#worker-edit" hx-select="#worker-edit" hx-trigger="change delay:500ms">
+        {{/if}}
+
+        {{/unless}}
+        {{#if creating}}
+        <form method="post" id="edit" hx-post="/admin/api/v1/create-worker" hx-target="#worker-edit"
+          hx-select="#worker-edit" hx-trigger="change delay:500ms">
           <div class="input-group pb-2">
             <span class="input-group-text">Name</span>
             <input required form="edit" type="text" aria-label="First name" placeholder="Name" id="Name" name="Name"
               class="form-control">
-  
-              <div class="input-group pb-2">
-                <span class="input-group-text">Address</span>
-                <textarea  form="edit" class="form-control" id="Address" name="Address" aria-label="Address"
-                  placeholder="Address"></textarea>
-              </div>
-      
-              <div class="input-group pb-2">
-                <span class="input-group-text">Phone</span>
-                <input  form="edit" type="tel" aria-label="Phone" placeholder="000-000-0000" id="Phone" name="Phone"
-                  class="form-control">
-              </div>
-      
-              <div class="input-group pb-3">
-                <span class="input-group-text">Email</span>
-                <input  form="edit" type="email" aria-label="Email" placeholder="example@example.com" id="Email" name="Email"
-                  class="form-control">
-              </div>
-      
-              <p class="text-center fs-4 ">Rate</p>
-              <div class="container-fluid bg-secondary-subtle border pb-4  rounded">
-                <div class="input-group pb-3 pt-3">
-                  <span class="input-group-text">Hourly $</span>
-                  <input required form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01" aria-label="Hourly"
-                    placeholder="0.00" value="0.00" id="Hourly" name="Hourly" class="form-control" >
-                </div>
-      
-                <div class="input-group pb-3">
-                  <span class="input-group-text">Mileage $</span>
-                  <input required form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01" aria-label="Mileage"
-                    placeholder="0.00" value="0.00" id="Mileage" name="Mileage" class="form-control">
-                </div>
-      
-                <div class="input-group pb-3">
-                  <span class="input-group-text">Drive time $</span>
-                  <input required form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01" aria-label="Drivetime"
-                    placeholder="0.00" value="0.00" id="Drivetime" name="Drivetime" class="form-control">
-                </div>
 
-                <div class="input-group ">
-                  <span class="input-group-text">Flat Rate $</span>
-                  <input required form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01" aria-label="Flatrate"
-                    placeholder="0.00" value="0.00" id="Flatrate" name="Flatrate" class="form-control">
-                </div>
+            <div class="input-group pb-2">
+              <span class="input-group-text">Address</span>
+              <textarea form="edit" class="form-control" id="Address" name="Address" aria-label="Address"
+                placeholder="Address"></textarea>
+            </div>
+
+            <div class="input-group pb-2">
+              <span class="input-group-text">Phone</span>
+              <input form="edit" type="tel" aria-label="Phone" placeholder="000-000-0000" id="Phone" name="Phone"
+                class="form-control">
+            </div>
+
+            <div class="input-group pb-3">
+              <span class="input-group-text">Email</span>
+              <input form="edit" type="email" aria-label="Email" placeholder="example@example.com" id="Email"
+                name="Email" class="form-control">
+            </div>
+
+            <p class="text-center fs-4 ">Rate</p>
+            <div class="container-fluid bg-secondary-subtle border pb-4  rounded">
+              <div class="input-group pb-3 pt-3">
+                <span class="input-group-text">Hourly $</span>
+                <input required form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01"
+                  aria-label="Hourly" placeholder="0.00" value="0.00" id="Hourly" name="Hourly" class="form-control">
               </div>
-              
-              <div class="form-check">
-                <input form="edit" class="form-check-input" type="checkbox" id="Admin" name="Admin">
-                <label class="form-check-label" for="Admin">Admin</label>
+
+              <div class="input-group pb-3">
+                <span class="input-group-text">Mileage $</span>
+                <input required form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01"
+                  aria-label="Mileage" placeholder="0.00" value="0.00" id="Mileage" name="Mileage" class="form-control">
               </div>
-  
+
+              <div class="input-group pb-3">
+                <span class="input-group-text">Drive time $</span>
+                <input required form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01"
+                  aria-label="Drivetime" placeholder="0.00" value="0.00" id="Drivetime" name="Drivetime"
+                  class="form-control">
+              </div>
+
+              <div class="input-group ">
+                <span class="input-group-text">Flat Rate $</span>
+                <input required form="edit" type="number" onchange="setTwoNumberDecimal()" min="0" step="0.01"
+                  aria-label="Flatrate" placeholder="0.00" value="0.00" id="Flatrate" name="Flatrate"
+                  class="form-control">
+              </div>
+            </div>
+
+            <div class="form-check">
+              <input form="edit" class="form-check-input" type="checkbox" id="Admin" name="Admin">
+              <label class="form-check-label" for="Admin">Admin</label>
+            </div>
+
 
           </div>
-  
-  
+
+
           <div class="row pt-3">
             <div class="col  ">
               <div class="d-grid gap-2 ">
-  
+
               </div>
-  
+
             </div>
           </div>
-  
+
         </form>
-      {{/if}}
+        {{/if}}
+      </div>
     </div>
-  </div>
 
 
 
@@ -263,8 +266,8 @@
       mileage.value = parseFloat(parseFloat(mileage.value).toFixed(2));
       var drivetime = document.getElementById("Drivetime");
       drivetime.value = parseFloat(parseFloat(drivetime.value).toFixed(2));
-}
+    }
   </script>
 
-{{/inline}}
-{{> base.hbs}}
+  {{/inline}}
+  {{> base.hbs}}

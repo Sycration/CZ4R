@@ -252,7 +252,6 @@ pub(crate) async fn jobedit(
             });
 
             let query = query_builder.build();
-            println!("{}", query.sql());
             let query = query.execute(&mut *tx).await;
             if let Err(e) = query {
                 return Err(CustomError::Database(e.to_string()));
@@ -304,7 +303,6 @@ pub(crate) async fn jobedit(
             });
 
             let query = query_builder.build();
-            println!("{}", query.sql());
             let query = query.execute(&mut *tx).await;
             if let Err(e) = query {
                 return Err(CustomError::Database(e.to_string()));
