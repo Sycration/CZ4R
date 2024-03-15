@@ -1,14 +1,9 @@
 {{!-- @(target: &str, array: &[(i64, &str)], selected: Option<i64>) --}}
 
-<div class="list-group">
+  <div class="list-group">
     {{#each array as |item|}}
-    <a {{#if ../selected}}
-         {{#if (neq ../selected item.[0])}}
-          href="/admin/{{../target}}?worker={{item.[0]}}" 
-         {{/if}}
-      
-      {{else}}
-      href="/admin/{{../target}}?worker={{item.[0]}}" {{/if}} class="list-group-item list-group-item-action d-flex justify-content-between align-items-center row
+    <a hx-push-url="true" hx-swap="outerHTML" hx-target="#{{../target}}" hx-select="#{{../target}}" {{#if ../selected}} {{#if (neq ../selected item.[0])}} hx-get="/admin/{{../target}}?worker={{item.[0]}}{{#if ../from}}&start_date={{../from}}{{/if}}{{#if ../to}}&end_date={{../to}}{{/if}}" {{/if}}
+      {{else}} hx-get="/admin/{{../target}}?worker={{item.[0]}}{{#if ../from}}&start_date={{../from}}{{/if}}{{#if ../to}}&end_date={{../to}}{{/if}}" {{/if}} class="list-group-item list-group-item-action d-flex justify-content-between align-items-center row
       
         {{#if ../selected}}
           {{#if (eq ../selected item.[0])}}

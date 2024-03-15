@@ -26,14 +26,14 @@
         </button>
       </a>
       <form action="/logout" method="post">
-        <button type="submit" class="btn btn-outline-secondary btn-lg px-4">
+        <button type="submit" class="btn btn-secondary btn-lg px-4">
           Logout
         </button>
       </form>
       {{else}}
 
       <form action="/loginpage">
-        <button type="submit" class="btn btn-outline-primary btn-lg px-4">
+        <button type="submit" class="btn btn-primary btn-lg px-4">
           Login
         </button>
       </form>
@@ -44,7 +44,7 @@
 
 
 
-    <div id="stats" hx-get="/" hx-trigger="every 1s" hx-swap="outerHTML" hx-target="#stats" hx-select="#stats"
+    <div id="stats" hx-get="/" hx-trigger="every 2m" hx-swap="outerHTML" hx-target="#stats" hx-select="#stats"
       class="row container  justify-content-evenly mt-5">
       <div class="col-lg-4 ">
         <div class="card">

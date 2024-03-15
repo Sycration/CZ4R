@@ -32,13 +32,13 @@ pub(crate) async fn workeredit(
         let users = sqlx::query_as!(
             Worker,
             "
-        select * from users where deactivated = false;
+        select * from users where deactivated = false order by id asc;
         "
         )
         .fetch_all(&pool)
         .await
         .unwrap();
-        let selectlist = users
+        let mut selectlist = users
             .iter()
             .map(|w| (w.id, w.name.as_str()))
             .collect::<Vec<_>>();

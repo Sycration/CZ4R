@@ -47,7 +47,7 @@ pub async fn restorepage(
 
     let workers = match query_as!(
         RestoreListItem,
-        "select id, name from users where users.deactivated = true"
+        "select id, name from users where users.deactivated = true order by id asc"
     )
     .fetch_all(&pool)
     .await

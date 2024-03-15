@@ -53,13 +53,13 @@
 
           <div class="d-none d-sm-block ">
            {{#if worker_id}}
-              <a href="/checkinout?id={{job_id}}&worker={{worker_id}}" class="btn btn-outline-primary">Open</a>
+              <a href="/checkinout?id={{job_id}}&worker={{worker_id}}" class="btn btn-primary">Open</a>
                 {{#if admin}}
-                    <a href="/jobedit?id={{job_id}}" class="btn btn-outline-secondary">Edit</a>
+                    <a href="/jobedit?id={{job_id}}" class="btn btn-secondary">Edit</a>
                 {{/if}}
             {{else}}
                 {{#if admin}}
-                    <a href="/jobedit?id={{job_id}}" class="btn btn-outline-secondary">Edit</a>
+                    <a href="/jobedit?id={{job_id}}" class="btn btn-secondary">Edit</a>
                 {{/if}}
             {{/if}}
 
@@ -75,13 +75,13 @@
         </div>
         <div class="d-sm-none">
            {{#if worker_id}}
-              <a href="/checkinout?id={{job_id}}&worker={{worker_id}}" class="btn btn-outline-primary">Open</a>
+              <a href="/checkinout?id={{job_id}}&worker={{worker_id}}" class="btn btn-primary">Open</a>
                 {{#if admin}}
-                    <a href="/jobedit?id={{job_id}}" class="btn btn-outline-secondary">Edit</a>
+                    <a href="/jobedit?id={{job_id}}" class="btn btn-secondary">Edit</a>
                 {{/if}}
             {{else}}
                 {{#if admin}}
-                    <a href="/jobedit?id={{job_id}}" class="btn btn-outline-secondary">Edit</a>
+                    <a href="/jobedit?id={{job_id}}" class="btn btn-secondary">Edit</a>
                 {{/if}}
             {{/if}}
       </div>

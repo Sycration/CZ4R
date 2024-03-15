@@ -19,7 +19,7 @@
           </div>
           <div class="modal-footer">
             <form action="/admin/api/v1/deactivate-worker" method="post">
-              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
               <button type="submit" class="btn btn-danger">Deactivate</button>
               <input type="hidden" id="hidden-user" name="user" value="{{selected}}">
             </form>
@@ -40,7 +40,7 @@
           </div>
           <div class="modal-footer">
             <form action="/admin/api/v1/reset-pw" method="post">
-              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
               <button type="submit" class="btn btn-danger">Reset</button>
               <input type="hidden" id="hidden-id" name="id" value="{{selected}}">
             </form>
@@ -52,7 +52,7 @@
     <div class="row row-cols-1 row-cols-md-2">
       <div class="col col-md-4 pb-4">
         <div class="d-grid gap-2 pb-4">
-          <a href="/admin/worker-edit?creating=true" class="btn btn-outline-primary" type="button">Add worker</a>
+          <a href="/admin/worker-edit?creating=true" class="btn btn-primary" type="button">Add worker</a>
         </div>
         {{!-- @:userselect_html("worker-edit", selectlist, selected) --}}
         {{> userselect.hbs array=selectlist selected=selected target=target}}
@@ -69,7 +69,7 @@
 
 
 
-        <form method="post" id="edit" hx-post="/admin/api/v1/change-worker" hx-target="#worker-edit"
+        <form method="post" id="edit" hx-push-url="true" hx-post="/admin/api/v1/change-worker" hx-target="#worker-edit"
           hx-select="#worker-edit" hx-trigger="change delay:500ms">
           <div class="input-group pb-2">
             {{#each workerlist as |w|}}
@@ -153,11 +153,11 @@
               <div class="gap-2 pb-4 text-end">
                 {{#if (neq w.id ../own_id)}}
                 <div class="pb-2">
-                  <a class="btn btn-outline-danger" type="button" data-bs-toggle="modal" data-bs-target="#ResetModal">
+                  <a class="btn btn-danger" type="button" data-bs-toggle="modal" data-bs-target="#ResetModal">
                     Reset password</a>
                 </div>
                 <div>
-                  <a class="btn btn-outline-danger" type="button" data-bs-toggle="modal"
+                  <a class="btn btn-danger" type="button" data-bs-toggle="modal"
                     data-bs-target="#DeactivateModal">Deactivate</a>
                 </div>
                 {{/if}}

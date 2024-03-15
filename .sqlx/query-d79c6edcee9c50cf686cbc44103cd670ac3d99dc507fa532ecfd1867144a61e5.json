@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "select id, name from users where users.deactivated = true",
+  "query": "select id, name from users where users.deactivated = true order by id asc",
   "describe": {
     "columns": [
       {
@@ -22,5 +22,5 @@
       false
     ]
   },
-  "hash": "839a98ffaff694b0ea2698f15ceeedce5f3dc430d3ad260456a4f0acf8dab4fe"
+  "hash": "d79c6edcee9c50cf686cbc44103cd670ac3d99dc507fa532ecfd1867144a61e5"
 }

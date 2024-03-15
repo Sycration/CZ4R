@@ -2,9 +2,9 @@
 
 {{#*inline "body"}}
 
-  <div class="row row-cols-1 row-cols-md-2">
+  <div id="worker-data" class="row row-cols-1 row-cols-md-2">
     <div class="col col-md-4 pb-4">
-      {{> userselect.hbs array=selectlist selected=selected target=target}}
+      {{> userselect.hbs array=selectlist selected=selected target=target start_date=from end_date=to}}
     </div>
     <div class="col col-md-8">
       {{#if selected}}
@@ -13,7 +13,7 @@
 
           <div id="card" class="card">
             <div class="card-header">
-              <form id="RangeForm" hx-get="/admin/worker-data" hx-target="#card" hx-select="#card"  hx-trigger="change delay:500ms" hx-push-url="true" class="form-inline row">
+              <form id="RangeForm" hx-swap="outerHTML" hx-get="/admin/worker-data" hx-target="#worker-data" hx-select="#worker-data"  hx-trigger="change delay:500ms" hx-push-url="true" class="form-inline row">
                 <div class="col">
                   From
                   <input form="RangeForm" type="date" class="form-control mx-2" id="start_date" name="start_date"  value="{{from}}"/>

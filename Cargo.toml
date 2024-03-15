@@ -11,7 +11,7 @@ tower = "0.4"
 tower-http = {version = "0.5", features = ["trace"]}
 #axum-login ={ version = "0.6", features = ["sqlx", "postgres"]}
 # axum-login = { git = "https://github.com/maxcountryman/axum-login", features = ["sqlx", "postgres"]}
-axum-login = "0.13"
+axum-login = "0.14"
 sqlx = { version = "0.7", features = [ "runtime-tokio-rustls" , "postgres", "time",] }
 time = {version = "*", features = ["serde", "local-offset"]}
 futures = "0.3"

@@ -34,6 +34,7 @@ RUN groupadd --gid $USER_GID $USERNAME \
 USER $USERNAME
 
 RUN cargo install sqlx-cli --no-default-features --features native-tls,postgres
+RUN rustup component add clippy
 
 RUN sudo mkdir -p /workspace/target && \
  sudo chown $USERNAME:$USERNAME /workspace && \

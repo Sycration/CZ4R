@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        select * from users where deactivated = false;\n        ",
+  "query": "\n        select * from users where deactivated = false order by id asc;\n        ",
   "describe": {
     "columns": [
       {
@@ -94,5 +94,5 @@
       false
     ]
   },
-  "hash": "afeb5a65216d2881f60fc817e75a6de36a37bce5f93d8ab12a6d723a960f2b54"
+  "hash": "ce17705479fbb8cc40585477f9286f19d866ff3827b560a94caff2a5dd3127f3"
 }
