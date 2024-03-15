@@ -120,8 +120,8 @@ pub(crate) async fn change_pw(
     )
     .execute(&pool)
     .await;
-    if res.is_err() {
-        return Err(CustomError::Database(res.unwrap_err().to_string()));
+    if let Err(err) = res {
+        return Err(CustomError::Database(err.to_string()));
     }
 
     Ok(Redirect::to("/loginpage"))

@@ -136,12 +136,12 @@ pub(crate) async fn jobedit(
     let to_assign = form
         .assigned
         .split('-')
-        .filter_map(|n| i64::from_str_radix(n, 10).ok())
+        .filter_map(|n| n.parse::<i64>().ok())
         .collect::<Vec<_>>();
     let to_flatrt = form
         .flatrate
         .split('-')
-        .filter_map(|n| i64::from_str_radix(n, 10).ok())
+        .filter_map(|n| n.parse::<i64>().ok())
         .collect::<Vec<_>>();
     let to_assign = to_assign
         .iter()

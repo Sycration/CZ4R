@@ -11,7 +11,7 @@ COPY .bash_aliases /home/vscode/.bash_aliases
 
 
 
-RUN apt-get update && apt-get install sudo lsb-release git -y  && apt-get autoremove -y \
+RUN apt-get update && apt-get install sudo lsb-release cmake git -y  && apt-get autoremove -y \
     && apt-get clean -y \
     && rm -r /var/cache/* /var/lib/apt/lists/*
 
