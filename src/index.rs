@@ -1,3 +1,5 @@
+use std::env;
+
 use crate::Backend;
 use crate::{errors::CustomError, AppEngine, AppState, Job, JobWorker};
 use axum::{
@@ -97,7 +99,8 @@ pub(crate) async fn index(
         "miles": format!("{:.2}", miles),
         "milesavg": format!("{:.2}", milesavg),
         "workers": workers,
-        "workersavg": format!("{:.2}", workersavg)
+        "workersavg": format!("{:.2}", workersavg),
+        "siteurl": env::var("SITE_URL").expect("SITE_URL not set")
     });
 
     Ok(RenderHtml("home.hbs", engine, data))

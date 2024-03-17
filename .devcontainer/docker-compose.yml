@@ -30,6 +30,7 @@ services:
     environment:
       DATABASE_URL:   ${DATABASE_URL}
       LOGIN_SECRET:   ${LOGIN_SECRET}
+      SITE_URL:       ${SITE_URL}
 
       ADMIN_USER:     ${ADMIN_USER}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
