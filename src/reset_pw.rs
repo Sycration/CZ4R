@@ -1,10 +1,12 @@
 //Name=&Address=&Phone=&Email=&Hourly=&Mileage=&Drivetime=
 
 use crate::errors::CustomError;
+use crate::AppState;
 use crate::Backend;
 use axum::extract::Path;
 use axum::extract::State;
 use axum::response::Html;
+use axum::response::IntoResponse;
 use axum::response::Redirect;
 use axum::Form;
 use axum_login::AuthSession;
@@ -21,11 +23,12 @@ pub(crate) struct ResetPwForm {
     id: i64,
 }
 
+
 pub(crate) async fn reset_pw(
-    State(pool): State<Pool<Postgres>>,
+State(AppState { pool, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<ResetPwForm>,
-) -> Result<Redirect, CustomError> {
+) -> Result<impl IntoResponse, impl IntoResponse> {
     if auth.user.map(|w| w.admin) == Some(true) {
         let res = query!(
             r#"
@@ -39,13 +42,13 @@ pub(crate) async fn reset_pw(
         .await;
 
         if let Err(e) = res {
-            return Err(CustomError::Database(e.to_string()));
+            return Err(CustomError::Database(e.to_string()).build(&engine));
         }
 
         Ok(Redirect::to(
             format!("/admin/worker-edit?worker={}", form.id).as_str(),
         ))
     } else {
-        Err(CustomError::Auth("Not logged in".to_string()))
+        Err(CustomError::Auth("Not logged in".to_string()).build(&engine))
     }
 }

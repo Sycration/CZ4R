@@ -29,14 +29,14 @@ pub struct DeactivateForm {
 
 pub(crate) async fn deactivate(
     mut auth: AuthSession<Backend>,
-    State(pool): State<Pool<Postgres>>,
+State(AppState { pool, engine }): State<AppState>,
     Form(deactivate_form): Form<DeactivateForm>, //Extension(worker): Extension<Worker>
-) -> Result<impl IntoResponse, CustomError> {
+) -> Result<impl IntoResponse, impl IntoResponse> {
     if let Some((true, my_id)) = auth.user.map(|u| (u.admin, u.id)) {
         if deactivate_form.user == my_id {
             return Err(CustomError::Auth(
-                "You cannot deactivate yourself".to_string(),
-            ));
+                "A user cannot deactivate themselves".to_string(),
+            ).build(&engine));
         }
 
         let mut _conn = pool.acquire().await.unwrap();
@@ -49,11 +49,11 @@ pub(crate) async fn deactivate(
         .await
         {
             Ok(_) => {}
-            Err(e) => return Err(CustomError::Database(e.to_string())),
+            Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
         }
 
         Ok(Redirect::to("/admin/worker-edit"))
     } else {
-        Err(CustomError::Auth("Not logged in as admin".to_string()))
+        Err(CustomError::Auth("Not logged in as admin".to_string()).build(&engine))
     }
 }

@@ -25,12 +25,12 @@ pub(crate) async fn jobeditpage(
     State(AppState { pool, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<JobEditPage>,
-) -> Result<impl IntoResponse, CustomError> {
+) -> Result<impl IntoResponse, impl IntoResponse> {
     let admin = auth.user.as_ref().map_or(false, |w| w.admin);
     let logged_in = auth.user.is_some();
 
     if !admin {
-        return Err(CustomError::Auth("Not logged in as admin".to_string()));
+        return Err(CustomError::Auth("Not logged in as admin".to_string()).build(&engine));
     }
 
     let this_job = match form.id {
@@ -39,7 +39,7 @@ pub(crate) async fn jobeditpage(
             .await
         {
             Ok(r) => Some(r),
-            Err(e) => return Err(CustomError::Database(e.to_string())),
+            Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
         },
         None => None,
     };
@@ -49,7 +49,7 @@ pub(crate) async fn jobeditpage(
         .await
     {
         Ok(r) => r.into_iter().map(|r| (r.id, r.name)).collect::<Vec<_>>(),
-        Err(e) => return Err(CustomError::Database(e.to_string())),
+        Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
     };
 
     let assigned_fr = match form.id {
@@ -69,7 +69,7 @@ pub(crate) async fn jobeditpage(
                 acc.entry(x.id).or_insert(x.using_flat_rate);
                 acc
             }),
-            Err(e) => return Err(CustomError::Database(e.to_string())),
+            Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
         },
         None => HashMap::new(),
     };
@@ -123,14 +123,14 @@ pub(crate) struct JobEditForm {
 }
 
 pub(crate) async fn jobedit(
-    State(pool): State<Pool<Postgres>>,
+State(AppState { pool, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<JobEditForm>,
-) -> Result<Redirect, CustomError> {
+) -> Result<impl IntoResponse, impl IntoResponse> {
     let admin = auth.user.as_ref().map_or(false, |w| w.admin);
 
     if !admin {
-        return Err(CustomError::Auth("Not logged in as admin".to_string()));
+        return Err(CustomError::Auth("Not logged in as admin".to_string()).build(&engine));
     }
 
     let to_assign = form
@@ -151,7 +151,7 @@ pub(crate) async fn jobedit(
     if let Some(job_id) = form.jobid {
         let mut tx = match pool.begin().await {
             Ok(tx) => tx,
-            Err(e) => return Err(CustomError::Database(e.to_string())),
+            Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
         };
 
         //update job itself
@@ -176,7 +176,7 @@ pub(crate) async fn jobedit(
         .execute(&mut *tx)
         .await;
         if let Err(e) = query {
-            return Err(CustomError::Database(e.to_string()));
+            return Err(CustomError::Database(e.to_string()).build(&engine));
         }
 
         let currently_assigned = query!(
@@ -195,7 +195,7 @@ pub(crate) async fn jobedit(
                 .into_iter()
                 .map(|v| (v.worker, v.using_flat_rate))
                 .collect::<Vec<_>>(),
-            Err(e) => return Err(CustomError::Database(e.to_string())),
+            Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
         };
 
         let flatrates_to_remove = currently_assigned
@@ -223,7 +223,7 @@ pub(crate) async fn jobedit(
         if !flatrates_to_remove.is_empty() {
             let query = query!("update jobworkers set using_flat_rate = false where job = $1 and worker = any($2);",job_id, flatrates_to_remove.as_slice()).execute(&mut *tx).await;
             if let Err(e) = query {
-                return Err(CustomError::Database(e.to_string()));
+                return Err(CustomError::Database(e.to_string()).build(&engine));
             }
         }
 
@@ -237,7 +237,7 @@ pub(crate) async fn jobedit(
             .execute(&mut *tx)
             .await;
             if let Err(e) = query {
-                return Err(CustomError::Database(e.to_string()));
+                return Err(CustomError::Database(e.to_string()).build(&engine));
             }
         }
 
@@ -254,20 +254,20 @@ pub(crate) async fn jobedit(
             let query = query_builder.build();
             let query = query.execute(&mut *tx).await;
             if let Err(e) = query {
-                return Err(CustomError::Database(e.to_string()));
+                return Err(CustomError::Database(e.to_string()).build(&engine));
             }
         }
 
         let res = tx.commit().await;
         if let Err(e) = res {
-            return Err(CustomError::Database(e.to_string()));
+            return Err(CustomError::Database(e.to_string()).build(&engine));
         }
 
         return Ok(Redirect::to(format!("/jobedit?id={}", job_id).as_str()));
     } else {
         let mut tx = match pool.begin().await {
             Ok(tx) => tx,
-            Err(e) => return Err(CustomError::Database(e.to_string())),
+            Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
         };
 
         //update job itself
@@ -288,7 +288,7 @@ pub(crate) async fn jobedit(
         let job_id = match query {
             Ok(v) => v.id,
             Err(e) => {
-                return Err(CustomError::Database(e.to_string()));
+                return Err(CustomError::Database(e.to_string()).build(&engine));
             }
         };
 
@@ -305,13 +305,13 @@ pub(crate) async fn jobedit(
             let query = query_builder.build();
             let query = query.execute(&mut *tx).await;
             if let Err(e) = query {
-                return Err(CustomError::Database(e.to_string()));
+                return Err(CustomError::Database(e.to_string()).build(&engine));
             }
         }
 
         let res = tx.commit().await;
         if let Err(e) = res {
-            return Err(CustomError::Database(e.to_string()));
+            return Err(CustomError::Database(e.to_string()).build(&engine));
         }
 
         return Ok(Redirect::to(format!("/jobedit?id={}", job_id).as_str()));
@@ -324,14 +324,14 @@ pub(crate) struct JobDeleteForm {
 }
 
 pub(crate) async fn jobdelete(
-    State(pool): State<Pool<Postgres>>,
+State(AppState { pool, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<JobDeleteForm>,
-) -> Result<Redirect, CustomError> {
+) -> Result<impl IntoResponse, impl IntoResponse> {
     let admin = auth.user.as_ref().map_or(false, |w| w.admin);
 
     if !admin {
-        return Err(CustomError::Auth("Not logged in as admin".to_string()));
+        return Err(CustomError::Auth("Not logged in as admin".to_string()).build(&engine));
     }
 
     query!(

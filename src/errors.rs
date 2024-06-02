@@ -2,9 +2,10 @@ use axum::{
     http::StatusCode,
     response::{Html, IntoResponse, Response},
 };
-use axum_template::{engine::Engine, RenderHtml};
+use axum_template::{engine::Engine, RenderHtml, TemplateEngine};
 use handlebars::Handlebars;
-use std::fmt;
+use tracing::warn;
+use std::{borrow::Borrow, fmt};
 
 use crate::{render, setup_handlebars};
 
@@ -16,6 +17,50 @@ pub enum CustomError {
     Auth(String),
     AdminReqd(String),
 }
+
+impl CustomError {
+    pub fn build(&self, hbs: &axum_template::engine::Engine<Handlebars<'static>> ) -> Response {
+
+
+        let (status, error_message) = match self {
+            CustomError::Database(message) => (StatusCode::UNPROCESSABLE_ENTITY, message),
+            CustomError::FaultySetup(message) => (StatusCode::UNPROCESSABLE_ENTITY, message),
+            CustomError::Auth(message) => (StatusCode::UNAUTHORIZED, message),
+            CustomError::ClientData(message) => (StatusCode::UNPROCESSABLE_ENTITY, message),
+            CustomError::AdminReqd(message) => (StatusCode::FORBIDDEN, message),
+        };
+
+        warn!("{}\tmessage = {}", status, error_message);
+
+
+
+        let data = serde_json::json!({
+            "admin": false,
+            "logged_in": false,
+            "title": "CZ4R Error 404",
+            "cause": error_message
+        });
+
+
+
+        let html = hbs.render("errorauth.hbs", data);
+
+
+        let mut html = if let Ok(html) = html {
+            html
+        } else {
+            format!("status = {}, message = {}", status, error_message)
+        };
+
+        let mut res = Html(html).into_response();
+        *res.status_mut() = status;
+         res
+
+    }
+}
+
+// #[derive(Debug)]
+// struct CustomErrorRendered(String);
 
 // Allow the use of "{}" format specifier
 impl fmt::Display for CustomError {
@@ -29,42 +74,6 @@ impl fmt::Display for CustomError {
             CustomError::AdminReqd(ref cause) => write!(f, "Admin Authentication Error: {}", cause),
             CustomError::ClientData(ref cause) => write!(f, "Invalid Client Data: {}", cause),
         }
-    }
-}
-
-// So that errors get printed to the browser?
-impl IntoResponse for CustomError {
-    fn into_response(self) -> Response {
-        let (status, error_message) = match self {
-            CustomError::Database(message) => (StatusCode::UNPROCESSABLE_ENTITY, message),
-            CustomError::FaultySetup(message) => (StatusCode::UNPROCESSABLE_ENTITY, message),
-            CustomError::Auth(message) => (StatusCode::UNAUTHORIZED, message),
-            CustomError::ClientData(message) => (StatusCode::UNPROCESSABLE_ENTITY, message),
-            CustomError::AdminReqd(message) => (StatusCode::FORBIDDEN, message),
-        };
-
-        let data = serde_json::json!({
-            "admin": false,
-            "logged_in": false,
-            "title": "CZ4R Error 404",
-            "cause": error_message
-        });
-
-        let mut hbs = Handlebars::new();
-        hbs.set_strict_mode(true);
-        setup_handlebars(&mut hbs);
-
-        let html = hbs.render("errorauth.hbs", &data);
-
-        let mut html = if let Ok(html) = html {
-            html
-        } else {
-            format!("status = {}, message = {}", status, error_message)
-        };
-
-        let mut res = Html(html).into_response();
-        *res.status_mut() = status;
-        res
     }
 }
 

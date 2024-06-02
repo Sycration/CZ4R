@@ -2,13 +2,16 @@
 
 use super::Worker;
 use crate::errors::CustomError;
+use crate::AppState;
 use crate::Backend;
 use axum::debug_handler;
 use axum::extract::Path;
 use axum::extract::State;
+use axum::response::IntoResponse;
 use axum::response::Redirect;
 use axum::Form;
 use axum_login::AuthSession;
+use axum_template::engine;
 use rust_decimal::prelude::*;
 use serde::Deserialize;
 use sqlx::query;
@@ -30,11 +33,13 @@ pub(crate) struct WorkerChangeForm {
     id: i64,
 }
 
+// Result<impl IntoResponse, impl IntoResponse>
+
 pub(crate) async fn change_worker(
-    State(pool): State<Pool<Postgres>>,
+    State(AppState { pool, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(workerdata): Form<WorkerChangeForm>,
-) -> Result<Redirect, CustomError> {
+) -> Result<impl IntoResponse, impl IntoResponse> {
     if let Some(true) = auth.user.map(|u| u.admin) {
         let hourly = Decimal::from_str_exact(&workerdata.Hourly);
         let hourly = if let Ok(v) = hourly {
@@ -43,7 +48,7 @@ pub(crate) async fn change_worker(
             return Err(CustomError::ClientData(format!(
                 "{} is not a number",
                 workerdata.Hourly
-            )));
+            )).build(&engine));
         };
         let mileage = Decimal::from_str_exact(&workerdata.Mileage);
         let mileage = if let Ok(v) = mileage {
@@ -52,7 +57,7 @@ pub(crate) async fn change_worker(
             return Err(CustomError::Database(format!(
                 "Nonsense data: {} is not a number",
                 workerdata.Mileage
-            )));
+            )).build(&engine));
         };
         let drivetime = Decimal::from_str_exact(&workerdata.Drivetime);
         let drivetime = if let Ok(v) = drivetime {
@@ -61,7 +66,7 @@ pub(crate) async fn change_worker(
             return Err(CustomError::Database(format!(
                 "Nonsense data: {} is not a number",
                 workerdata.Drivetime
-            )));
+            )).build(&engine));
         };
         let flatrate = Decimal::from_str_exact(&workerdata.Flatrate);
         let flatrate = if let Ok(v) = flatrate {
@@ -70,13 +75,13 @@ pub(crate) async fn change_worker(
             return Err(CustomError::Database(format!(
                 "Nonsense data: {} is not a number",
                 workerdata.Flatrate
-            )));
+            )).build(&engine));
         };
 
         let admin = match workerdata.Admin.as_deref() {
             Some("on" | "true" | "yes") => true,
             Some("off" | "false" | "no") | None => false,
-            _ => return Err(CustomError::Database("Not a boolean".to_string())),
+            _ => return Err(CustomError::Database("Not a boolean".to_string()).build(&engine)),
         };
         let res = query!(
             r#"update users 
@@ -107,12 +112,12 @@ pub(crate) async fn change_worker(
         .await;
 
         if let Err(e) = res {
-            return Err(CustomError::Database(e.to_string()));
+            return Err(CustomError::Database(e.to_string()).build(&engine));
         }
         Ok(Redirect::to(
             format!("/admin/worker-edit?worker={}", workerdata.id).as_str(),
         ))
     } else {
-        Err(CustomError::Auth("Not logged in as admin".to_string()))
+        Err(CustomError::Auth("Not logged in as admin".to_string()).build(&engine))
     }
 }

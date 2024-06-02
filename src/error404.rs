@@ -1,3 +1,5 @@
+use std::convert::Infallible;
+
 use crate::Backend;
 use crate::{errors::CustomError, AppEngine, AppState, Job, JobWorker};
 use axum::{
@@ -15,7 +17,7 @@ use sqlx::{query, query_as, Pool, Postgres};
 pub(crate) async fn error404(
     State(AppState { pool: _, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
-) -> Result<impl IntoResponse, CustomError> {
+) -> Result<impl IntoResponse, Infallible> {
     //let client = pool.get().await?;
 
     //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;

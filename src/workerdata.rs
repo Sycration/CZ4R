@@ -46,12 +46,12 @@ pub(crate) async fn workerdatapage(
     State(AppState { pool, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(worker): Form<WorkerDataForm>,
-) -> Result<impl IntoResponse, CustomError> {
+) -> Result<impl IntoResponse, impl IntoResponse> {
     let admin = auth.user.as_ref().map_or(false, |w| w.admin);
     let logged_in = auth.user.is_some();
 
     if !admin {
-        return Err(CustomError::Auth("Not logged in as admin".to_string()));
+        return Err(CustomError::Auth("Not logged in as admin".to_string()).build(&engine));
     }
 
     let users = sqlx::query_as!(
@@ -113,7 +113,7 @@ pub(crate) async fn workerdatapage(
         let data = match data {
             Ok(d) => d,
             Err(e) => {
-                return Err(CustomError::Database(e.to_string()));
+                return Err(CustomError::Database(e.to_string()).build(&engine));
             }
         };
 

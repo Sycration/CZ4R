@@ -20,7 +20,7 @@ pub(crate) async fn index(
     State(AppState { pool, engine }): State<AppState>,
 
     mut auth: AuthSession<Backend>,
-) -> Result<impl IntoResponse, CustomError> {
+) -> Result<impl IntoResponse, impl IntoResponse> {
     let admin = auth.user.as_ref().map_or(false, |w| w.admin);
     let logged_in = auth.user.is_some();
 
@@ -33,8 +33,8 @@ pub(crate) async fn index(
     .await;
     let jobs = match jobs {
         Ok(Some(v)) => v,
-        Ok(None) => return Err(CustomError::Database("Invalid number of jobs".to_string())),
-        Err(e) => return Err(CustomError::Database(e.to_string())),
+        Ok(None) => return Err(CustomError::Database("Invalid number of jobs".to_string()).build(&engine)),
+        Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
     };
 
 
@@ -51,9 +51,9 @@ pub(crate) async fn index(
         Ok(None) => {
             return Err(CustomError::Database(
                 "Invalid number of workers".to_string(),
-            ))
+            ).build(&engine))
         }
-        Err(e) => return Err(CustomError::Database(e.to_string())),
+        Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
     };
 
     let miles = query_scalar!(
@@ -68,9 +68,9 @@ pub(crate) async fn index(
         Ok(None) => {
             return Err(CustomError::Database(
                 "Invalid number of total miles driven".to_string(),
-            ))
+            ).build(&engine))
         }
-        Err(e) => return Err(CustomError::Database(e.to_string())),
+        Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
     };
 
     let earliest: Result<time::Date, sqlx::Error> = query_scalar!(
@@ -82,7 +82,7 @@ pub(crate) async fn index(
     .await;
     let earliest = match earliest {
         Ok(v) => v,
-        Err(e) => return Err(CustomError::Database(e.to_string())),
+        Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
     };
     let days = time::OffsetDateTime::now_utc().date() - earliest;
 

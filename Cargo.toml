@@ -11,21 +11,21 @@ tower = "0.4"
 tower-http = {version = "0.5", features = ["trace"]}
 #axum-login ={ version = "0.6", features = ["sqlx", "postgres"]}
 # axum-login = { git = "https://github.com/maxcountryman/axum-login", features = ["sqlx", "postgres"]}
-axum-login = "0.14"
+axum-login = "0.15"
 sqlx = { version = "0.7", features = [ "runtime-tokio-rustls" , "postgres", "time",] }
-time = {version = "*", features = ["serde", "local-offset"]}
+time = {version = "0.3", features = ["serde", "local-offset"]}
 futures = "0.3"
 rand = "0.8"
 rustls = "0.23"
 serde = { version = "1.0", features = ["derive"] }
-tokio = { version = "1.23", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 base64 = "0.22"
 webpki-roots = "0.26"
 tracing-subscriber = { version = "0.3"}
 tracing = "0.1"
 scrypt = "0.11"
 password-hash = {version = "0.5.0", features = ["rand_core"]}
-rust_decimal = "1.33"
+rust_decimal = "1"
 axum-template = {version = "2", features = ["handlebars"]}
 handlebars = {version = "5", features = ["dir_source", "rust-embed"]}
 rust-embed = "8"

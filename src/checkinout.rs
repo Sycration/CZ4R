@@ -24,12 +24,12 @@ pub(crate) async fn checkinoutpage(
     State(AppState { pool, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<CheckInOutPage>,
-) -> Result<impl IntoResponse, CustomError> {
+) -> Result<impl IntoResponse, impl IntoResponse> {
     let admin = auth.user.as_ref().map_or(false, |w| w.admin);
     let logged_in = auth.user.is_some();
 
     if !logged_in {
-        return Err(CustomError::Auth("Not logged in".to_string()));
+        return Err(CustomError::Auth("Not logged in".to_string()).build(&engine));
     }
 
     let worker = form.worker;
@@ -37,7 +37,7 @@ pub(crate) async fn checkinoutpage(
     if !admin && worker != auth.user.as_ref().unwrap().id {
         return Err(CustomError::Auth(
             "Attempted to check in for other worker".to_string(),
-        ));
+        ).build(&engine));
     }
 
     let jw = query_as!(
@@ -56,7 +56,7 @@ pub(crate) async fn checkinoutpage(
     .await;
     let jw = match jw {
         Ok(v) => v,
-        Err(e) => return Err(CustomError::Database(e.to_string())),
+        Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
     };
 
     let job = query_as!(
@@ -72,7 +72,7 @@ pub(crate) async fn checkinoutpage(
     .await;
     let job = match job {
         Ok(v) => v,
-        Err(e) => return Err(CustomError::Database(e.to_string())),
+        Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
     };
 
     let signin = jw.signin.map(|t| {
@@ -123,12 +123,12 @@ pub(crate) struct CheckInOutForm {
 }
 
 pub(crate) async fn checkinout(
-    State(pool): State<Pool<Postgres>>,
+State(AppState { pool, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<CheckInOutForm>,
-) -> Result<Redirect, CustomError> {
+) -> Result<impl IntoResponse, impl IntoResponse> {
     if auth.user.is_none() {
-        return Err(CustomError::Auth("Not logged in".to_string()));
+        return Err(CustomError::Auth("Not logged in".to_string()).build(&engine));
     }
     let admin = auth.user.as_ref().map_or(false, |w| w.admin);
 
@@ -137,7 +137,7 @@ pub(crate) async fn checkinout(
     if !admin && worker != auth.user.as_ref().unwrap().id {
         return Err(CustomError::Auth(
             "Attempted to check in for other worker".to_string(),
-        ));
+        ).build(&engine));
     }
 
     let signin = form.Signin.unwrap_or_default();
@@ -154,7 +154,7 @@ pub(crate) async fn checkinout(
         return Err(CustomError::ClientData(format!(
             "{} is not a number",
             extraexpenses
-        )));
+        )).build(&engine));
     };
 
     let signin = if signin.is_empty() {
@@ -166,7 +166,7 @@ pub(crate) async fn checkinout(
                 return Err(CustomError::ClientData(format!(
                     "{} is not a valid time in the format [hour]:[minute]",
                     signin
-                )));
+                )).build(&engine));
             }
         }
     };
@@ -180,7 +180,7 @@ pub(crate) async fn checkinout(
                 return Err(CustomError::ClientData(format!(
                     "{} is not a valid time in the format [hour]:[minute]",
                     signout
-                )));
+                )).build(&engine));
             }
         }
     };
@@ -210,7 +210,7 @@ pub(crate) async fn checkinout(
     .execute(&pool)
     .await;
     if let Err(e) = res {
-        return Err(CustomError::Database(e.to_string()));
+        return Err(CustomError::Database(e.to_string()).build(&engine));
     }
 
     Ok(Redirect::to(

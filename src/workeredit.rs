@@ -23,7 +23,7 @@ pub(crate) async fn workeredit(
     State(AppState { pool, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(worker): Form<WorkerEditForm>,
-) -> Result<impl IntoResponse, CustomError> {
+) -> Result<impl IntoResponse, impl IntoResponse> {
     //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
     let admin = auth.user.as_ref().map_or(false, |w| w.admin);
     let logged_in = auth.user.is_some();
@@ -71,8 +71,8 @@ pub(crate) async fn workeredit(
 
         Ok(RenderHtml("workeredit.hbs", engine, data))
     } else if logged_in {
-        Err(CustomError::AdminReqd("Not Logged in as Admin".to_string()))
+        Err(CustomError::AdminReqd("Not Logged in as Admin".to_string()).build(&engine))
     } else {
-        Err(CustomError::Auth("Not Logged In".to_string()))
+        Err(CustomError::Auth("Not Logged In".to_string()).build(&engine))
     }
 }

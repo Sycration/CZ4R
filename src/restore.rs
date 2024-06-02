@@ -35,12 +35,12 @@ struct RestoreListItem {
 pub async fn restorepage(
     State(AppState { pool, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
-) -> Result<impl IntoResponse, CustomError> {
+) -> Result<impl IntoResponse, impl IntoResponse> {
     let logged_in = auth.user.is_some();
     let admin = auth.user.as_ref().map_or(false, |w| w.admin);
 
     if !admin {
-        return Err(CustomError::Auth("Not logged in as admin".to_string()));
+        return Err(CustomError::Auth("Not logged in as admin".to_string()).build(&engine));
     }
 
     let mut _conn = pool.acquire().await.unwrap();
@@ -53,7 +53,7 @@ pub async fn restorepage(
     .await
     {
         Ok(w) => w,
-        Err(e) => return Err(CustomError::Database(e.to_string())),
+        Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
     };
 
     let data = serde_json::json!({
@@ -68,9 +68,9 @@ pub async fn restorepage(
 
 pub(crate) async fn restore(
     mut auth: AuthSession<Backend>,
-    State(pool): State<Pool<Postgres>>,
+State(AppState { pool, engine }): State<AppState>,
     Form(restore_form): Form<RestoreForm>, //Extension(worker): Extension<Worker>
-) -> Result<impl IntoResponse, CustomError> {
+) -> Result<impl IntoResponse, impl IntoResponse> {
     if let Some(true) = auth.user.map(|u| u.admin) {
         let mut _conn = pool.acquire().await.unwrap();
 
@@ -82,11 +82,11 @@ pub(crate) async fn restore(
         .await
         {
             Ok(_) => {}
-            Err(e) => return Err(CustomError::Database(e.to_string())),
+            Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
         }
 
         Ok(Redirect::to("/admin/restore"))
     } else {
-        Err(CustomError::Auth("Not logged in as admin".to_string()))
+        Err(CustomError::Auth("Not logged in as admin".to_string()).build(&engine))
     }
 }

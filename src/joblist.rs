@@ -134,12 +134,12 @@ pub(crate) async fn joblistpage(
     State(AppState { pool, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<JobListForm>,
-) -> Result<impl IntoResponse, CustomError> {
+) -> Result<impl IntoResponse, impl IntoResponse> {
     let admin = auth.user.as_ref().map_or(false, |w| w.admin);
     let logged_in = auth.user.is_some();
 
     if !logged_in {
-        return Err(CustomError::Auth("Not logged in".to_string()));
+        return Err(CustomError::Auth("Not logged in".to_string()).build(&engine));
     }
 
     let start_date = if let Some(d) = form.start_date {
@@ -262,7 +262,7 @@ pub(crate) async fn joblistpage(
             }
             r
         }
-        Err(e) => return Err(CustomError::Database(e.to_string())),
+        Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
     };
 
     let data = serde_json::json!({

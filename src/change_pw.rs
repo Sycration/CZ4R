@@ -31,7 +31,7 @@ pub(crate) async fn change_pw_page(
     State(AppState { pool: _, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<ChangePwPageForm>,
-) -> Result<impl IntoResponse, CustomError> {
+) -> Result<impl IntoResponse, impl IntoResponse> {
     let logged_in = auth.user.is_some();
 
     let admin = auth.user.as_ref().map_or(false, |w| w.admin);
@@ -43,7 +43,7 @@ pub(crate) async fn change_pw_page(
     } else {
         return Err(CustomError::Auth(
             "Not logged in and no ID selected.".to_string(),
-        ));
+        ).build(&engine));
     };
 
     let data = json!({
@@ -64,11 +64,11 @@ pub(crate) struct ChangePwForm {
 }
 
 pub(crate) async fn change_pw(
-    State(pool): State<Pool<Postgres>>,
+State(AppState { pool, engine }): State<AppState>,
     mut _auth: AuthSession<Backend>,
     Path(id): Path<i64>,
     Form(form): Form<ChangePwForm>,
-) -> Result<Redirect, CustomError> {
+) -> Result<impl IntoResponse, impl IntoResponse> {
     let must_change = query!(
         r#"
     select (must_change_pw) from users 
@@ -85,14 +85,14 @@ pub(crate) async fn change_pw(
         return Err(CustomError::Database(format!(
             "Nonsense data from database on user {}",
             id
-        )));
+        )).build(&engine));
     };
 
     if !must_change {
         return Err(CustomError::Auth(format!(
             "User {} cannot change their password right now. Nice try.",
             id
-        )));
+        )).build(&engine));
     }
 
     if form.password1 != form.password2 {
@@ -121,7 +121,7 @@ pub(crate) async fn change_pw(
     .execute(&pool)
     .await;
     if let Err(err) = res {
-        return Err(CustomError::Database(err.to_string()));
+        return Err(CustomError::Database(err.to_string()).build(&engine));
     }
 
     Ok(Redirect::to("/loginpage"))

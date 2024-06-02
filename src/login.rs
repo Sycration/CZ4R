@@ -1,3 +1,5 @@
+use std::convert::Infallible;
+
 use crate::errors::CustomError;
 use crate::AppState;
 
@@ -34,7 +36,7 @@ pub async fn loginpage(
     State(AppState { pool: _, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<LoginPageForm>,
-) -> Result<impl IntoResponse, CustomError> {
+) -> Result<impl IntoResponse, Infallible> {
     let logged_in = auth.user.is_some();
     let admin = auth.user.as_ref().map_or(false, |w| w.admin);
 
@@ -50,7 +52,7 @@ pub async fn loginpage(
 
 pub(crate) async fn login(
     mut auth: AuthSession<Backend>,
-    State(pool): State<Pool<Postgres>>,
+State(AppState { pool, engine }): State<AppState>,
     Form(login_form): Form<LoginForm>, //Extension(worker): Extension<Worker>
 ) -> Redirect {
     let LoginForm { username, password } = login_form;
