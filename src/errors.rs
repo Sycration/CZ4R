@@ -45,7 +45,6 @@ impl CustomError {
 
         let html = hbs.render("errorauth.hbs", data);
 
-
         let mut html = if let Ok(html) = html {
             html
         } else {

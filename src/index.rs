@@ -1,3 +1,4 @@
+use std::convert::Infallible;
 use std::env;
 
 use crate::Backend;
@@ -20,7 +21,7 @@ pub(crate) async fn index(
     State(AppState { pool, engine }): State<AppState>,
 
     mut auth: AuthSession<Backend>,
-) -> Result<impl IntoResponse, impl IntoResponse> {
+) -> Result<impl IntoResponse, Infallible> {
     let admin = auth.user.as_ref().map_or(false, |w| w.admin);
     let logged_in = auth.user.is_some();
 
@@ -33,8 +34,8 @@ pub(crate) async fn index(
     .await;
     let jobs = match jobs {
         Ok(Some(v)) => v,
-        Ok(None) => return Err(CustomError::Database("Invalid number of jobs".to_string()).build(&engine)),
-        Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
+        _ => 0,
+
     };
 
 
@@ -48,12 +49,7 @@ pub(crate) async fn index(
     .await;
     let workers = match workers {
         Ok(Some(v)) => v,
-        Ok(None) => {
-            return Err(CustomError::Database(
-                "Invalid number of workers".to_string(),
-            ).build(&engine))
-        }
-        Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
+        _ => 0,
     };
 
     let miles = query_scalar!(
@@ -65,12 +61,8 @@ pub(crate) async fn index(
     .await;
     let miles = match miles {
         Ok(Some(v)) => v,
-        Ok(None) => {
-            return Err(CustomError::Database(
-                "Invalid number of total miles driven".to_string(),
-            ).build(&engine))
-        }
-        Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
+        _ => 0.0,
+
     };
 
     let earliest: Result<time::Date, sqlx::Error> = query_scalar!(
@@ -80,15 +72,14 @@ pub(crate) async fn index(
     )
     .fetch_one(&pool)
     .await;
-    let earliest = match earliest {
-        Ok(v) => v,
-        Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
+    let days = match earliest {
+        Ok(v) => (time::OffsetDateTime::now_utc().date() - v).whole_days(),
+        _ => 0,
     };
-    let days = time::OffsetDateTime::now_utc().date() - earliest;
 
-    let jobsavg = days.whole_days() as f64 / jobs as f64;
-    let milesavg =  miles as f64/ days.whole_days() as f64;
-    let workersavg = (days.whole_days() as f64 / 30.437) / workers as f64;
+    let jobsavg = days as f64 / jobs as f64;
+    let milesavg =  miles as f64/ days as f64;
+    let workersavg = (days as f64 / 30.437) / workers as f64;
 
     let data = serde_json::json!({
         "admin": admin,
