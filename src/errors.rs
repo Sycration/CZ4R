@@ -58,10 +58,7 @@ impl CustomError {
     }
 }
 
-// #[derive(Debug)]
-// struct CustomErrorRendered(String);
 
-// Allow the use of "{}" format specifier
 impl fmt::Display for CustomError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {

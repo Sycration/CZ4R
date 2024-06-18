@@ -245,7 +245,7 @@ async fn app() {
         database_url: _,
         login_secret: _,
         port: _,
-        site_url,
+        site_url: _,
     } = config;
 
     sqlx::migrate!("./migrations").run(&app_pool).await.unwrap();

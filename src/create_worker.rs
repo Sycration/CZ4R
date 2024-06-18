@@ -80,6 +80,7 @@ State(AppState { pool, engine }): State<AppState>,
             Some("off" | "false" | "no") | None => false,
             _ => return Err(CustomError::Database("Not a boolean".to_string()).build(&engine)),
         };
+
         let id = query!(
             r#"insert into users (name, hash, salt, admin, address, phone, email, rate_hourly_cents, rate_mileage_cents, rate_drive_hourly_cents, flat_rate_cents, must_change_pw)
         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
