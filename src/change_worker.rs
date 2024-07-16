@@ -2,7 +2,9 @@
 
 use super::Worker;
 use crate::errors::CustomError;
+use crate::get_admin;
 use crate::AppState;
+use anyhow::anyhow;
 use crate::Backend;
 use axum::debug_handler;
 use axum::extract::Path;
@@ -40,50 +42,20 @@ pub(crate) async fn change_worker(
     mut auth: AuthSession<Backend>,
     Form(workerdata): Form<WorkerChangeForm>,
 ) -> Result<impl IntoResponse, impl IntoResponse> {
-    if let Some(true) = auth.user.map(|u| u.admin) {
-        let hourly = Decimal::from_str_exact(&workerdata.Hourly);
-        let hourly = if let Ok(v) = hourly {
-            v * Decimal::ONE_HUNDRED
-        } else {
-            return Err(CustomError::ClientData(format!(
-                "{} is not a number",
-                workerdata.Hourly
-            )).build(&engine));
-        };
-        let mileage = Decimal::from_str_exact(&workerdata.Mileage);
-        let mileage = if let Ok(v) = mileage {
-            v * Decimal::ONE_HUNDRED
-        } else {
-            return Err(CustomError::Database(format!(
-                "Nonsense data: {} is not a number",
-                workerdata.Mileage
-            )).build(&engine));
-        };
-        let drivetime = Decimal::from_str_exact(&workerdata.Drivetime);
-        let drivetime = if let Ok(v) = drivetime {
-            v * Decimal::ONE_HUNDRED
-        } else {
-            return Err(CustomError::Database(format!(
-                "Nonsense data: {} is not a number",
-                workerdata.Drivetime
-            )).build(&engine));
-        };
-        let flatrate = Decimal::from_str_exact(&workerdata.Flatrate);
-        let flatrate = if let Ok(v) = flatrate {
-            v * Decimal::ONE_HUNDRED
-        } else {
-            return Err(CustomError::Database(format!(
-                "Nonsense data: {} is not a number",
-                workerdata.Flatrate
-            )).build(&engine));
-        };
+        get_admin(auth)?;
+        let hourly = Decimal::from_str_exact(&workerdata.Hourly)? * Decimal::ONE_HUNDRED;
+
+        let mileage = Decimal::from_str_exact(&workerdata.Mileage)? * Decimal::ONE_HUNDRED;
+
+        let drivetime = Decimal::from_str_exact(&workerdata.Drivetime)? * Decimal::ONE_HUNDRED;
+        let flatrate = Decimal::from_str_exact(&workerdata.Flatrate)? * Decimal::ONE_HUNDRED;
 
         let admin = match workerdata.Admin.as_deref() {
             Some("on" | "true" | "yes") => true,
             Some("off" | "false" | "no") | None => false,
-            _ => return Err(CustomError::Database("Not a boolean".to_string()).build(&engine)),
+            _ => return Err(CustomError(anyhow!("Client didn't return a boolean string"))),
         };
-        let res = query!(
+        query!(
             r#"update users 
             set 
             name = $1, 
@@ -109,15 +81,10 @@ pub(crate) async fn change_worker(
             workerdata.id
         )
         .execute(&pool)
-        .await;
+        .await?;
 
-        if let Err(e) = res {
-            return Err(CustomError::Database(e.to_string()).build(&engine));
-        }
         Ok(Redirect::to(
             format!("/admin/worker-edit?worker={}", workerdata.id).as_str(),
         ))
-    } else {
-        Err(CustomError::Auth("Not logged in as admin".to_string()).build(&engine))
-    }
+
 }

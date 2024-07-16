@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+
+use std::result::Result::Ok;
 use axum::{
     debug_handler,
     extract::State,
@@ -12,8 +14,9 @@ use serde_json::{json, Value};
 use sqlx::{
     query, query_as, query_builder, types::time::Date, Execute, Pool, Postgres, QueryBuilder,
 };
+use tracing::info;
 
-use crate::Backend;
+use crate::{get_admin, Backend};
 use crate::{errors::CustomError, AppState, Job};
 use axum_login::AuthSession;
 #[derive(Deserialize)]
@@ -25,35 +28,22 @@ pub(crate) async fn jobeditpage(
     State(AppState { pool, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<JobEditPage>,
-) -> Result<impl IntoResponse, impl IntoResponse> {
-    let admin = auth.user.as_ref().map_or(false, |w| w.admin);
-    let logged_in = auth.user.is_some();
-
-    if !admin {
-        return Err(CustomError::Auth("Not logged in as admin".to_string()).build(&engine));
-    }
+) -> Result<impl IntoResponse, CustomError> {
+    get_admin(auth)?;
 
     let this_job = match form.id {
-        Some(id) => match query_as!(Job, "select * from jobs where id = $1", id)
+        Some(id) => Some(query_as!(Job, "select * from jobs where id = $1", id)
             .fetch_one(&pool)
-            .await
-        {
-            Ok(r) => Some(r),
-            Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
-        },
+            .await?),
         None => None,
     };
 
-    let workers = match query!("select id, name from users where users.deactivated = false;")
+    let workers = query!("select id, name from users where users.deactivated = false;")
         .fetch_all(&pool)
-        .await
-    {
-        Ok(r) => r.into_iter().map(|r| (r.id, r.name)).collect::<Vec<_>>(),
-        Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
-    };
+        .await?.into_iter().map(|r| (r.id, r.name)).collect::<Vec<_>>();
 
     let assigned_fr = match form.id {
-        Some(id) => match query!(
+        Some(id) => query!(
             r#"select users.id, jobworkers.using_flat_rate from users
         inner join jobworkers
         on users.id = jobworkers.worker
@@ -63,14 +53,10 @@ pub(crate) async fn jobeditpage(
             id
         )
         .fetch_all(&pool)
-        .await
-        {
-            Ok(r) => r.into_iter().fold(HashMap::new(), |mut acc, x| {
-                acc.entry(x.id).or_insert(x.using_flat_rate);
-                acc
-            }),
-            Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
-        },
+        .await?.into_iter().fold(HashMap::new(), |mut acc, x| {
+            acc.entry(x.id).or_insert(x.using_flat_rate);
+            acc
+        }),
         None => HashMap::new(),
     };
 
@@ -88,8 +74,8 @@ pub(crate) async fn jobeditpage(
 
     let data = json!({
         "title": "Job Edit",
-        "admin": admin,
-        "logged_in": logged_in,
+        "admin": true,
+        "logged_in": true,
         "job": ({if let Some(job) = this_job {
             json!({
                 "id": job.id,
@@ -126,12 +112,8 @@ pub(crate) async fn jobedit(
 State(AppState { pool, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<JobEditForm>,
-) -> Result<impl IntoResponse, impl IntoResponse> {
-    let admin = auth.user.as_ref().map_or(false, |w| w.admin);
-
-    if !admin {
-        return Err(CustomError::Auth("Not logged in as admin".to_string()).build(&engine));
-    }
+) -> Result<impl IntoResponse, CustomError> {
+    get_admin(auth)?;
 
     let to_assign = form
         .assigned
@@ -149,13 +131,10 @@ State(AppState { pool, engine }): State<AppState>,
         .collect::<Vec<_>>();
 
     if let Some(job_id) = form.jobid {
-        let mut tx = match pool.begin().await {
-            Ok(tx) => tx,
-            Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
-        };
+        let mut tx = pool.begin().await?;
 
         //update job itself
-        let query = query!(
+        query!(
             r#"
         update jobs set 
             sitename = $2,
@@ -174,10 +153,7 @@ State(AppState { pool, engine }): State<AppState>,
             form.notes
         )
         .execute(&mut *tx)
-        .await;
-        if let Err(e) = query {
-            return Err(CustomError::Database(e.to_string()).build(&engine));
-        }
+        .await?;
 
         let currently_assigned = query!(
             r#"
@@ -189,14 +165,10 @@ State(AppState { pool, engine }): State<AppState>,
             job_id
         )
         .fetch_all(&mut *tx)
-        .await;
-        let currently_assigned = match currently_assigned {
-            Ok(v) => v
-                .into_iter()
-                .map(|v| (v.worker, v.using_flat_rate))
-                .collect::<Vec<_>>(),
-            Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
-        };
+        .await?.into_iter()
+        .map(|v| (v.worker, v.using_flat_rate))
+        .collect::<Vec<_>>();
+
 
         let flatrates_to_remove = currently_assigned
             .iter()
@@ -221,24 +193,21 @@ State(AppState { pool, engine }): State<AppState>,
 
         //remove flatrates
         if !flatrates_to_remove.is_empty() {
-            let query = query!("update jobworkers set using_flat_rate = false where job = $1 and worker = any($2);",job_id, flatrates_to_remove.as_slice()).execute(&mut *tx).await;
-            if let Err(e) = query {
-                return Err(CustomError::Database(e.to_string()).build(&engine));
-            }
+            query!("update jobworkers set using_flat_rate = false where job = $1 and worker = any($2);",
+            job_id, 
+            flatrates_to_remove.as_slice())
+            .execute(&mut *tx).await?;
         }
 
         //remove assignments
         if !assignments_to_remove.is_empty() {
-            let query = query!(
+            query!(
                 "delete from jobworkers where job = $1 and worker = any($2);",
                 job_id,
                 assignments_to_remove.as_slice()
             )
             .execute(&mut *tx)
-            .await;
-            if let Err(e) = query {
-                return Err(CustomError::Database(e.to_string()).build(&engine));
-            }
+            .await?;
         }
 
         //create assignments w/ flatrates
@@ -252,26 +221,19 @@ State(AppState { pool, engine }): State<AppState>,
             });
 
             let query = query_builder.build();
-            let query = query.execute(&mut *tx).await;
-            if let Err(e) = query {
-                return Err(CustomError::Database(e.to_string()).build(&engine));
-            }
+            query.execute(&mut *tx).await?;
         }
 
-        let res = tx.commit().await;
-        if let Err(e) = res {
-            return Err(CustomError::Database(e.to_string()).build(&engine));
-        }
+        tx.commit().await?;
+  
+        info!("Updated job {job_id}");
 
         return Ok(Redirect::to(format!("/jobedit?id={}", job_id).as_str()));
     } else {
-        let mut tx = match pool.begin().await {
-            Ok(tx) => tx,
-            Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
-        };
+        let mut tx = pool.begin().await?;
 
-        //update job itself
-        let query = query!(
+        //create job
+        let job_id: i64 = query!(
             r#"
         insert into jobs (sitename, workorder, servicecode, address, date, notes) values
                 ($1, $2, $3, $4, $5, $6)
@@ -284,13 +246,7 @@ State(AppState { pool, engine }): State<AppState>,
             form.notes
         )
         .fetch_one(&mut *tx)
-        .await;
-        let job_id = match query {
-            Ok(v) => v.id,
-            Err(e) => {
-                return Err(CustomError::Database(e.to_string()).build(&engine));
-            }
-        };
+        .await?.id;
 
         //create assignments w/ flatrates
         if !to_assign.is_empty() {
@@ -303,17 +259,11 @@ State(AppState { pool, engine }): State<AppState>,
             });
 
             let query = query_builder.build();
-            let query = query.execute(&mut *tx).await;
-            if let Err(e) = query {
-                return Err(CustomError::Database(e.to_string()).build(&engine));
-            }
+            query.execute(&mut *tx).await?;
+
         }
 
-        let res = tx.commit().await;
-        if let Err(e) = res {
-            return Err(CustomError::Database(e.to_string()).build(&engine));
-        }
-
+        tx.commit().await?;
         return Ok(Redirect::to(format!("/jobedit?id={}", job_id).as_str()));
     }
 }
@@ -327,12 +277,8 @@ pub(crate) async fn jobdelete(
 State(AppState { pool, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<JobDeleteForm>,
-) -> Result<impl IntoResponse, impl IntoResponse> {
-    let admin = auth.user.as_ref().map_or(false, |w| w.admin);
-
-    if !admin {
-        return Err(CustomError::Auth("Not logged in as admin".to_string()).build(&engine));
-    }
+) -> Result<impl IntoResponse, CustomError> {
+    get_admin(auth);
 
     query!(
         r#"
@@ -343,8 +289,7 @@ State(AppState { pool, engine }): State<AppState>,
         form.jobid
     )
     .execute(&pool)
-    .await
-    .unwrap();
+    .await?;
 
     query!(
         r#"

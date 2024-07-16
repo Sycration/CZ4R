@@ -20,6 +20,7 @@ use serde::Deserialize;
 use sqlx::query_as;
 use sqlx::Pool;
 use sqlx::Postgres;
+use tracing::trace;
 
 #[derive(Deserialize, Clone)]
 pub struct LoginForm {

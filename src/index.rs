@@ -77,9 +77,15 @@ pub(crate) async fn index(
         _ => 0,
     };
 
-    let jobsavg = days as f64 / jobs as f64;
-    let milesavg =  miles as f64/ days as f64;
-    let workersavg = (days as f64 / 30.437) / workers as f64;
+    let mut jobsavg = days as f64 / jobs as f64;
+    if !jobsavg.is_finite() {jobsavg = 0.0};
+
+    let mut milesavg =  miles as f64/ days as f64;
+    if !milesavg.is_finite() {milesavg = 0.0};
+
+    let mut workersavg = (days as f64 / 30.437) / workers as f64;
+    if !workersavg.is_finite() {workersavg = 0.0};
+
 
     let data = serde_json::json!({
         "admin": admin,

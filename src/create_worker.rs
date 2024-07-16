@@ -2,8 +2,10 @@
 
 use super::Worker;
 use crate::errors::CustomError;
+use crate::get_admin;
 use crate::AppState;
 use crate::Backend;
+use anyhow::{bail, anyhow};
 use axum::debug_handler;
 use axum::extract::Path;
 use axum::extract::State;
@@ -37,48 +39,21 @@ State(AppState { pool, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(workerdata): Form<WorkerCreateForm>,
 ) -> Result<impl IntoResponse, impl IntoResponse> {
-    if let Some(true) = auth.user.map(|u| u.admin) {
-        let hourly = Decimal::from_str_exact(&workerdata.Hourly);
-        let hourly = if let Ok(v) = hourly {
-            v * Decimal::ONE_HUNDRED
-        } else {
-            return Err(CustomError::Database(format!(
-                "Nonsense data: {} is not a number",
-                workerdata.Hourly
-            )).build(&engine));
-        };
-        let mileage = Decimal::from_str_exact(&workerdata.Mileage);
-        let mileage = if let Ok(v) = mileage {
-            v * Decimal::ONE_HUNDRED
-        } else {
-            return Err(CustomError::Database(format!(
-                "Nonsense data: {} is not a number",
-                workerdata.Mileage
-            )).build(&engine));
-        };
-        let drivetime = Decimal::from_str_exact(&workerdata.Drivetime);
-        let drivetime = if let Ok(v) = drivetime {
-            v * Decimal::ONE_HUNDRED
-        } else {
-            return Err(CustomError::Database(format!(
-                "Nonsense data: {} is not a number",
-                workerdata.Drivetime
-            )).build(&engine));
-        };
-        let flatrate = Decimal::from_str_exact(&workerdata.Flatrate);
-        let flatrate = if let Ok(v) = flatrate {
-            v * Decimal::ONE_HUNDRED
-        } else {
-            return Err(CustomError::Database(format!(
-                "Nonsense data: {} is not a number",
-                workerdata.Flatrate
-            )).build(&engine));
-        };
+        get_admin(auth)?;
+
+        let hourly = Decimal::from_str_exact(&workerdata.Hourly) ? * Decimal::ONE_HUNDRED;
+
+        let mileage = Decimal::from_str_exact(&workerdata.Mileage)? * Decimal::ONE_HUNDRED;
+
+        let drivetime = Decimal::from_str_exact(&workerdata.Drivetime)? * Decimal::ONE_HUNDRED;
+
+        let flatrate = Decimal::from_str_exact(&workerdata.Flatrate)? * Decimal::ONE_HUNDRED;
+
 
         let admin = match workerdata.Admin.as_deref() {
             Some("on" | "true" | "yes") => true,
             Some("off" | "false" | "no") | None => false,
-            _ => return Err(CustomError::Database("Not a boolean".to_string()).build(&engine)),
+            _ => return Err(CustomError(anyhow!("Client didn't return a boolean string"))),
         };
 
         let id = query!(
@@ -98,21 +73,11 @@ State(AppState { pool, engine }): State<AppState>,
             drivetime.to_i32().unwrap(),
             flatrate.to_i32().unwrap(),
             true
-        ).fetch_one(&pool).await;
+        ).fetch_one(&pool).await?.id;
 
-        let id = if let Ok(id) = id {
-            id.id
-        } else {
-            return Err(CustomError::Database(format!(
-                "Nonsense data returned from database: {} is not a valid ID",
-                id.unwrap_err()
-            )).build(&engine));
-        };
 
         Ok(Redirect::to(
             format!("/admin/worker-edit?worker={}", id).as_str(),
         ))
-    } else {
-        Err(CustomError::Auth("Not logged in as admin".to_string()).build(&engine))
-    }
+
 }

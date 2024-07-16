@@ -1,5 +1,6 @@
 use super::Worker;
 use crate::errors::CustomError;
+use crate::get_admin;
 use crate::AppState;
 use crate::Backend;
 use crate::IntoResponse;
@@ -23,12 +24,10 @@ pub(crate) async fn workeredit(
     State(AppState { pool, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(worker): Form<WorkerEditForm>,
-) -> Result<impl IntoResponse, impl IntoResponse> {
-    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
-    let admin = auth.user.as_ref().map_or(false, |w| w.admin);
-    let logged_in = auth.user.is_some();
+) -> Result<impl IntoResponse, CustomError> {
+    let id = get_admin(auth)?;
 
-    if admin && logged_in {
+
         let users = sqlx::query_as!(
             Worker,
             "
@@ -44,14 +43,14 @@ pub(crate) async fn workeredit(
             .collect::<Vec<_>>();
 
         let data = serde_json::json!({
-            "admin": admin,
-            "logged_in": logged_in,
+            "admin": true,
+            "logged_in": true,
             "title": "CZ4R Worker Edit",
             "target": "worker-edit",
             "creating": worker.creating == Some(true),
             "selected": worker.worker,
             "selectlist": selectlist,
-            "own_id": auth.user.unwrap().id,
+            "own_id": id,
             "workerlist": (users.iter().map(|u|json!({
                 "id": u.id,
                 "name": u.name,
@@ -70,9 +69,5 @@ pub(crate) async fn workeredit(
         });
 
         Ok(RenderHtml("workeredit.hbs", engine, data))
-    } else if logged_in {
-        Err(CustomError::AdminReqd("Not Logged in as Admin".to_string()).build(&engine))
-    } else {
-        Err(CustomError::Auth("Not Logged In".to_string()).build(&engine))
-    }
+
 }

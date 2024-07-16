@@ -11,7 +11,7 @@ use sqlx::types::time::Date;
 use sqlx::{query, query_as, Pool, Postgres};
 use time::{OffsetDateTime, Time};
 
-use crate::Backend;
+use crate::{get_admin, Backend};
 use crate::{
     errors::{self, CustomError},
     now, AppState, Worker,
@@ -46,13 +46,8 @@ pub(crate) async fn workerdatapage(
     State(AppState { pool, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(worker): Form<WorkerDataForm>,
-) -> Result<impl IntoResponse, impl IntoResponse> {
-    let admin = auth.user.as_ref().map_or(false, |w| w.admin);
-    let logged_in = auth.user.is_some();
-
-    if !admin {
-        return Err(CustomError::Auth("Not logged in as admin".to_string()).build(&engine));
-    }
+) -> Result<impl IntoResponse, CustomError> {
+    get_admin(auth)?;
 
     let users = sqlx::query_as!(
         Worker,
@@ -62,8 +57,8 @@ pub(crate) async fn workerdatapage(
     "
     )
     .fetch_all(&pool)
-    .await
-    .unwrap();
+    .await?;
+
     let selectlist = users
         .iter()
         .map(|w| (w.id, w.name.as_str()))
@@ -109,13 +104,7 @@ pub(crate) async fn workerdatapage(
             end_date
         )
         .fetch_all(&pool)
-        .await;
-        let data = match data {
-            Ok(d) => d,
-            Err(e) => {
-                return Err(CustomError::Database(e.to_string()).build(&engine));
-            }
-        };
+        .await?;
 
         let hours_worked_total = data
             .iter()
@@ -179,8 +168,8 @@ pub(crate) async fn workerdatapage(
 
     let data = serde_json::json!({
         "title": "CZ4R Worker Data",
-        "admin": admin,
-        "logged_in": logged_in,
+        "admin": true,
+        "logged_in": true,
         "selected": worker.worker,
         "workerlist": users,
         "selectlist": selectlist,

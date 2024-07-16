@@ -1,5 +1,5 @@
 [package]
-name = "app"
+name = "cz4r"
 version = "1.1.2"
 edition = "2021"
 
@@ -21,7 +21,7 @@ serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 base64 = "0.22"
 webpki-roots = "0.26"
-tracing-subscriber = { version = "0.3"}
+tracing-subscriber = { version = "0.3", features = ["env-filter"]}
 tracing = "0.1"
 scrypt = "0.11"
 password-hash = {version = "0.5.0", features = ["rand_core"]}
@@ -31,5 +31,9 @@ handlebars = {version = "5", features = ["dir_source", "rust-embed"]}
 rust-embed = "8"
 serde_json = "1.0"
 secrecy = "0.8"
+anyhow = "1.0.86"
+thiserror = "1.0"
+
 [profile.dev.package."*"]
 opt-level = 3
+

@@ -3,6 +3,7 @@
 #![allow(non_snake_case)]
 
 use crate::{config::Config, login::loginpage};
+use anyhow::{bail, anyhow};
 use axum::async_trait;
 use axum::{
     debug_handler,
@@ -13,6 +14,8 @@ use axum::{
     routing::{get, post, put},
     BoxError, Form, Router,
 };
+use tracing::{trace, warn};
+use axum_login::AuthSession;
 use axum_login::{
     tower_sessions::{MemoryStore, SessionManagerLayer},
     AuthManagerLayerBuilder, AuthUser, AuthnBackend, UserId,
@@ -30,6 +33,9 @@ use serde::{de, Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use sqlx::types::time::Date;
 use sqlx::{query, query_as, Pool, Postgres};
+use tracing_subscriber::{filter, EnvFilter, Layer};
+use std::fs::File;
+use std::time::Instant;
 use std::{
     collections::{BTreeMap, HashMap},
     default, env, fmt,
@@ -196,7 +202,7 @@ fn main() {
 }
 #[cfg(debug_assertions)]
 
-fn setup_handlebars(hbs: &mut Handlebars) {
+pub fn setup_handlebars(hbs: &mut Handlebars) {
     use handlebars::DirectorySourceOptions;
 
     hbs.set_dev_mode(true);
@@ -218,7 +224,7 @@ struct Templates;
 
 #[cfg(not(debug_assertions))]
 
-fn setup_handlebars(hbs: &mut Handlebars) {
+pub fn setup_handlebars(hbs: &mut Handlebars) {
     hbs.set_dev_mode(false);
     hbs.register_embed_templates::<Templates>().unwrap();
 }
@@ -226,7 +232,13 @@ fn setup_handlebars(hbs: &mut Handlebars) {
 async fn app() {
     dbg!(now());
 
-    tracing_subscriber::fmt().pretty().init();
+    let stdout_log = tracing_subscriber::fmt::layer()
+        .pretty();
+
+    tracing_subscriber::registry()
+    .with(stdout_log.with_filter(filter::EnvFilter::from_default_env()))
+    .init();
+    trace!("huh");
 
     let mut hbs = Handlebars::new();
     hbs.set_strict_mode(true);
@@ -369,5 +381,24 @@ where
         None | Some("") => Ok(None),
 
         Some(s) => FromStr::from_str(s).map_err(de::Error::custom).map(Some),
+    }
+}
+
+pub fn get_user(auth: AuthSession<Backend>) -> Result<(i64, bool), CustomError> {
+    if let Some((id, admin)) = auth.user.map(|u| (u.id, u.admin))  {
+        Ok((id, admin))
+    } else {
+        Err(CustomError(anyhow!(
+            "Not logged in")))
+    }
+}
+
+pub fn get_admin(auth: AuthSession<Backend>) -> Result<i64, CustomError> {
+    let (id, admin) = get_user(auth)?;
+    if admin {
+        Ok(id)
+    }  else {
+        Err(CustomError(anyhow!(
+            "User {} does not have administrator privileges", id)))
     }
 }

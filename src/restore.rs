@@ -1,4 +1,5 @@
 use crate::errors::CustomError;
+use crate::get_admin;
 use crate::AppState;
 
 use super::Worker;
@@ -35,31 +36,21 @@ struct RestoreListItem {
 pub async fn restorepage(
     State(AppState { pool, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
-) -> Result<impl IntoResponse, impl IntoResponse> {
-    let logged_in = auth.user.is_some();
-    let admin = auth.user.as_ref().map_or(false, |w| w.admin);
+) -> Result<impl IntoResponse, CustomError> {
+    get_admin(auth)?;
 
-    if !admin {
-        return Err(CustomError::Auth("Not logged in as admin".to_string()).build(&engine));
-    }
 
-    let mut _conn = pool.acquire().await.unwrap();
-
-    let workers = match query_as!(
+    let workers = query_as!(
         RestoreListItem,
         "select id, name from users where users.deactivated = true order by id asc"
     )
     .fetch_all(&pool)
-    .await
-    {
-        Ok(w) => w,
-        Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
-    };
+    .await?;
 
     let data = serde_json::json!({
         "title": "CZ4R Restore Workers",
-        "admin": admin,
-        "logged_in": logged_in,
+        "admin": true,
+        "logged_in": true,
         "workers": workers
     });
 
@@ -68,25 +59,17 @@ pub async fn restorepage(
 
 pub(crate) async fn restore(
     mut auth: AuthSession<Backend>,
-State(AppState { pool, engine }): State<AppState>,
+    State(AppState { pool, engine }): State<AppState>,
     Form(restore_form): Form<RestoreForm>, //Extension(worker): Extension<Worker>
-) -> Result<impl IntoResponse, impl IntoResponse> {
-    if let Some(true) = auth.user.map(|u| u.admin) {
-        let mut _conn = pool.acquire().await.unwrap();
+) -> Result<impl IntoResponse, CustomError> {
+    get_admin(auth)?;
 
-        match query!(
-            "update users set deactivated = false where id = $1",
-            restore_form.user
-        )
-        .execute(&pool)
-        .await
-        {
-            Ok(_) => {}
-            Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
-        }
+    query!(
+        "update users set deactivated = false where id = $1",
+        restore_form.user
+    )
+    .execute(&pool)
+    .await?;
 
-        Ok(Redirect::to("/admin/restore"))
-    } else {
-        Err(CustomError::Auth("Not logged in as admin".to_string()).build(&engine))
-    }
+    Ok(Redirect::to("/admin/restore"))
 }

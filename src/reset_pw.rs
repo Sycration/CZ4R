@@ -1,6 +1,7 @@
 //Name=&Address=&Phone=&Email=&Hourly=&Mileage=&Drivetime=
 
 use crate::errors::CustomError;
+use crate::get_admin;
 use crate::AppState;
 use crate::Backend;
 use axum::extract::Path;
@@ -28,9 +29,9 @@ pub(crate) async fn reset_pw(
 State(AppState { pool, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<ResetPwForm>,
-) -> Result<impl IntoResponse, impl IntoResponse> {
-    if auth.user.map(|w| w.admin) == Some(true) {
-        let res = query!(
+) -> Result<impl IntoResponse, CustomError> {
+    get_admin(auth)?;
+        query!(
             r#"
         update users
         set must_change_pw = true
@@ -39,16 +40,10 @@ State(AppState { pool, engine }): State<AppState>,
             form.id
         )
         .execute(&pool)
-        .await;
-
-        if let Err(e) = res {
-            return Err(CustomError::Database(e.to_string()).build(&engine));
-        }
+        .await?;
 
         Ok(Redirect::to(
             format!("/admin/worker-edit?worker={}", form.id).as_str(),
         ))
-    } else {
-        Err(CustomError::Auth("Not logged in".to_string()).build(&engine))
-    }
+ 
 }

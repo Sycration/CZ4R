@@ -1,8 +1,10 @@
 //Name=&Address=&Phone=&Email=&Hourly=&Mileage=&Drivetime=
 
 use crate::errors::CustomError;
+use crate::get_user;
 use crate::AppState;
 use crate::Backend;
+use anyhow::anyhow;
 use axum::extract::Path;
 use axum::extract::State;
 use axum::response::Html;
@@ -32,24 +34,18 @@ pub(crate) async fn change_pw_page(
     mut auth: AuthSession<Backend>,
     Form(form): Form<ChangePwPageForm>,
 ) -> Result<impl IntoResponse, impl IntoResponse> {
-    let logged_in = auth.user.is_some();
-
-    let admin = auth.user.as_ref().map_or(false, |w| w.admin);
-
-    let id = if let Some(id) = auth.user.map(|u| u.id) {
-        id
+    let (id, admin) = if let Some((id, admin)) = auth.user.map(|u| (u.id, u.admin)) {
+        (id, admin)
     } else if let Some(id) = form.id {
-        id
+        (id, false)
     } else {
-        return Err(CustomError::Auth(
-            "Not logged in and no ID selected.".to_string(),
-        ).build(&engine));
+        return Err(CustomError(anyhow!("Not logged in and no ID selected.")));
     };
 
     let data = json!({
         "title": "CZ4R Login",
         "admin": admin,
-        "logged_in": logged_in,
+        "logged_in": true,
         "failure": form.no_match == Some(true),
         "chg_id": id
     });
@@ -64,7 +60,7 @@ pub(crate) struct ChangePwForm {
 }
 
 pub(crate) async fn change_pw(
-State(AppState { pool, engine }): State<AppState>,
+    State(AppState { pool, engine }): State<AppState>,
     mut _auth: AuthSession<Backend>,
     Path(id): Path<i64>,
     Form(form): Form<ChangePwForm>,
@@ -78,21 +74,14 @@ State(AppState { pool, engine }): State<AppState>,
         id
     )
     .fetch_one(&pool)
-    .await;
-    let must_change = if let Ok(m) = must_change {
-        m.must_change_pw
-    } else {
-        return Err(CustomError::Database(format!(
-            "Nonsense data from database on user {}",
-            id
-        )).build(&engine));
-    };
+    .await?
+    .must_change_pw;
 
     if !must_change {
-        return Err(CustomError::Auth(format!(
+        return Err(CustomError(anyhow!(
             "User {} cannot change their password right now. Nice try.",
             id
-        )).build(&engine));
+        )));
     }
 
     if form.password1 != form.password2 {
@@ -106,7 +95,7 @@ State(AppState { pool, engine }): State<AppState>,
         .unwrap()
         .to_string();
 
-    let res = query!(
+    query!(
         r#"
     update users
     set
@@ -119,10 +108,8 @@ State(AppState { pool, engine }): State<AppState>,
         id
     )
     .execute(&pool)
-    .await;
-    if let Err(err) = res {
-        return Err(CustomError::Database(err.to_string()).build(&engine));
-    }
+    .await?;
+
 
     Ok(Redirect::to("/loginpage"))
 }

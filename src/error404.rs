@@ -18,9 +18,7 @@ pub(crate) async fn error404(
     State(AppState { pool: _, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
 ) -> Result<impl IntoResponse, Infallible> {
-    //let client = pool.get().await?;
 
-    //let fortunes = queries::fortunes::fortunes().bind(&client).all().await?;
     let admin = auth.user.as_ref().map_or(false, |w| w.admin);
     let logged_in = auth.user.is_some();
 

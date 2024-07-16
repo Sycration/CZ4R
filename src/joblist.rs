@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::Backend;
+use crate::{get_user, Backend};
 use crate::{empty_string_as_none, errors::CustomError, now, AppState, TZ_OFFSET};
 use axum::{
     extract::State,
@@ -134,13 +134,8 @@ pub(crate) async fn joblistpage(
     State(AppState { pool, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<JobListForm>,
-) -> Result<impl IntoResponse, impl IntoResponse> {
-    let admin = auth.user.as_ref().map_or(false, |w| w.admin);
-    let logged_in = auth.user.is_some();
-
-    if !logged_in {
-        return Err(CustomError::Auth("Not logged in".to_string()).build(&engine));
-    }
+) -> Result<impl IntoResponse, CustomError> {
+    let (id, admin) = get_user(auth)?;
 
     let start_date = if let Some(d) = form.start_date {
         d
@@ -190,7 +185,7 @@ pub(crate) async fn joblistpage(
 
     if !admin {
         query_builder.push(" and jobworkers.worker = ");
-        query_builder.push_bind(auth.user.as_ref().unwrap().id);
+        query_builder.push_bind(id);
     }
 
     if let Some(site_name) = &form.site_name {
@@ -228,10 +223,9 @@ pub(crate) async fn joblistpage(
 
     let query = query_builder.build_query_as();
 
-    let query = query.fetch_all(&pool).await;
+    let mut r = query.fetch_all(&pool).await?;
 
-    let jobs = match query {
-        Ok(mut r) => {
+    let jobs = {
             let query = query_as!(
                 JobQueryOutput,
                 r#"
@@ -261,14 +255,13 @@ pub(crate) async fn joblistpage(
                 }
             }
             r
-        }
-        Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
-    };
+        };
+
 
     let data = serde_json::json!({
         "title": "CZ4R Job List",
         "admin": admin,
-        "logged_in": logged_in,
+        "logged_in": true,
         "job_datas": JobData::from_outputs(jobs, assigned, started, completed),
         "params": SearchParams {
             start: start_date.to_string(),

@@ -1,5 +1,6 @@
-use crate::Backend;
+use crate::{get_user, Backend};
 use crate::{errors::CustomError, AppState, Job, JobWorker};
+use anyhow::anyhow;
 use axum::{
     extract::{Path, State},
     response::{Html, IntoResponse, Redirect},
@@ -25,19 +26,13 @@ pub(crate) async fn checkinoutpage(
     mut auth: AuthSession<Backend>,
     Form(form): Form<CheckInOutPage>,
 ) -> Result<impl IntoResponse, impl IntoResponse> {
-    let admin = auth.user.as_ref().map_or(false, |w| w.admin);
-    let logged_in = auth.user.is_some();
-
-    if !logged_in {
-        return Err(CustomError::Auth("Not logged in".to_string()).build(&engine));
-    }
+    let (my_id, admin) = get_user(auth)?;
 
     let worker = form.worker;
 
-    if !admin && worker != auth.user.as_ref().unwrap().id {
-        return Err(CustomError::Auth(
-            "Attempted to check in for other worker".to_string(),
-        ).build(&engine));
+    if !admin && worker != my_id {
+        return Err(CustomError(anyhow!(
+            "Attempted to check in for other worker")));
     }
 
     let jw = query_as!(
@@ -53,11 +48,8 @@ pub(crate) async fn checkinoutpage(
         worker
     )
     .fetch_one(&pool)
-    .await;
-    let jw = match jw {
-        Ok(v) => v,
-        Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
-    };
+    .await?;
+
 
     let job = query_as!(
         Job,
@@ -69,11 +61,7 @@ pub(crate) async fn checkinoutpage(
         form.id
     )
     .fetch_one(&pool)
-    .await;
-    let job = match job {
-        Ok(v) => v,
-        Err(e) => return Err(CustomError::Database(e.to_string()).build(&engine)),
-    };
+    .await?;
 
     let signin = jw.signin.map(|t| {
         t.format(&format_description::parse("[hour]:[minute]").unwrap())
@@ -87,7 +75,7 @@ pub(crate) async fn checkinoutpage(
     let data = json!({
         "title": "CZ4R Time Tracking",
         "admin": admin,
-        "logged_in": logged_in,
+        "logged_in": true,
         "job_id": form.id,
         "worker_id": form.worker,
         "work_order": job.workorder.as_str(),
@@ -127,17 +115,14 @@ State(AppState { pool, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<CheckInOutForm>,
 ) -> Result<impl IntoResponse, impl IntoResponse> {
-    if auth.user.is_none() {
-        return Err(CustomError::Auth("Not logged in".to_string()).build(&engine));
-    }
-    let admin = auth.user.as_ref().map_or(false, |w| w.admin);
+    let (my_id, admin) = get_user(auth)?;
 
     let worker = form.WorkerId;
 
-    if !admin && worker != auth.user.as_ref().unwrap().id {
-        return Err(CustomError::Auth(
-            "Attempted to check in for other worker".to_string(),
-        ).build(&engine));
+
+    if !admin && worker != my_id {
+        return Err(CustomError(anyhow!(
+            "Attempted to check in for other worker")));
     }
 
     let signin = form.Signin.unwrap_or_default();
@@ -147,45 +132,21 @@ State(AppState { pool, engine }): State<AppState>,
     let minutesdriven = form.MinutesDriven.unwrap_or_default();
     let extraexpenses = form.ExtraExpenses.unwrap_or_default();
 
-    let extraexp = Decimal::from_str_exact(&extraexpenses);
-    let extraexp = if let Ok(v) = extraexp {
-        v * Decimal::ONE_HUNDRED
-    } else {
-        return Err(CustomError::ClientData(format!(
-            "{} is not a number",
-            extraexpenses
-        )).build(&engine));
-    };
+    let extraexp = Decimal::from_str_exact(&extraexpenses)? * Decimal::ONE_HUNDRED;
 
     let signin = if signin.is_empty() {
         None
     } else {
-        match Time::parse(&signin, format_description!("[hour]:[minute]")) {
-            Ok(t) => Some(t),
-            Err(_) => {
-                return Err(CustomError::ClientData(format!(
-                    "{} is not a valid time in the format [hour]:[minute]",
-                    signin
-                )).build(&engine));
-            }
-        }
+        Some(Time::parse(&signin, format_description!("[hour]:[minute]"))?)
     };
 
     let signout = if signout.is_empty() {
         None
     } else {
-        match Time::parse(&signout, format_description!("[hour]:[minute]")) {
-            Ok(t) => Some(t),
-            Err(_) => {
-                return Err(CustomError::ClientData(format!(
-                    "{} is not a valid time in the format [hour]:[minute]",
-                    signout
-                )).build(&engine));
-            }
-        }
+        Some(Time::parse(&signout, format_description!("[hour]:[minute]"))?)
     };
 
-    let res = query!(
+query!(
         r#"
     update jobworkers
     set
@@ -208,10 +169,7 @@ State(AppState { pool, engine }): State<AppState>,
         form.JobId
     )
     .execute(&pool)
-    .await;
-    if let Err(e) = res {
-        return Err(CustomError::Database(e.to_string()).build(&engine));
-    }
+    .await?;
 
     Ok(Redirect::to(
         format!("/checkinout?id={}&worker={}", form.JobId, worker).as_str(),
