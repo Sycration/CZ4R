@@ -13,8 +13,8 @@ FROM debian:bullseye-slim AS run
 
 RUN mkdir /app
 
-COPY --from=build /code/target/release/app /app/
+COPY --from=build /code/target/release/cz4r /app/
 
 WORKDIR /app 
 
-CMD [ "/app/app" ]
+CMD [ "/app/cz4r" ]
