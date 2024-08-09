@@ -262,6 +262,7 @@ pub(crate) async fn joblistpage(
         "title": "CZ4R Job List",
         "admin": admin,
         "logged_in": true,
+        "count": &jobs.len(),
         "job_datas": JobData::from_outputs(jobs, assigned, started, completed),
         "params": SearchParams {
             start: start_date.to_string(),
