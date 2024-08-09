@@ -257,13 +257,13 @@ pub(crate) async fn joblistpage(
             r
         };
 
-
+        let job_datas = JobData::from_outputs(jobs, assigned, started, completed);
     let data = serde_json::json!({
         "title": "CZ4R Job List",
         "admin": admin,
         "logged_in": true,
-        "count": &jobs.len(),
-        "job_datas": JobData::from_outputs(jobs, assigned, started, completed),
+        "count": &job_datas.len(),
+        "job_datas": job_datas,
         "params": SearchParams {
             start: start_date.to_string(),
             end: end_date.to_string(),
