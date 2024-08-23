@@ -2,19 +2,39 @@
 {{#*inline "body"}}
 
 
+
+
 {{#if admin}}
-<div class="mt-1 mb-2 input-group d-flex justify-content-center">
+
+<style>
+  .shadow-lg {
+  --bs-shadow-rgb: 0, 0, 0;
+  box-shadow: 0 1rem 3rem rgba(var(--bs-shadow-rgb), 0.4) !important;
+}
+</style>
+
+
+
+<div class="z-3 position-fixed bottom-0 end-0 rounded-circle m-5">
+  <div class=" my-3 py-2">
   <a href="/jobedit">
-    <button type="button" class="btn btn-primary">Create new job</button>
-  </a>
+  <button class=" shadow-lg btn btn-success btn">
+  
+    Create job
+  </button>
+</a>
 </div>
+ </div>
+
 {{/if}}
 
+<div class="mt-1 mb-2 input-group d-flex ">
 
-<button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse" aria-expanded="false"
+<button class="btn btn-primary" type="btn btn-lg" data-bs-toggle="collapse" data-bs-target="#collapse" aria-expanded="false"
   aria-controls="collapse">
-  Filters
+  show / hide filters
 </button>
+</div>
 
 
 
@@ -97,7 +117,8 @@
 
 <ul id="list" class="list-group list-group-flush">
   <div class="row justify-content-center">
-    {{#if (eq count 0)}} no {{/if}} {{#if (neq count 0)}} {{count}} {{/if}} job{{#if (neq count 1)}}s{{/if}} matching query
+    {{#if (eq count 0)}} no {{/if}} {{#if (neq count 0)}} {{count}} {{/if}} job assignment{{#if (neq count 1)}}s{{/if}} matching
+    filters
   </div>
   {{#each job_datas as |d|}}
   <li class="list-group-item">
@@ -119,6 +140,10 @@
 
 
 </ul>
+
+
+
+
 
 <script>
 

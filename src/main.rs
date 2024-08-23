@@ -204,15 +204,13 @@ fn main() {
 
 pub fn setup_handlebars(hbs: &mut Handlebars) {
     use handlebars::DirectorySourceOptions;
+    let mut dso = DirectorySourceOptions::default();
+    dso.tpl_extension = "".to_string();
 
     hbs.set_dev_mode(true);
     hbs.register_templates_directory(
         "./hb-templates",
-        DirectorySourceOptions {
-            tpl_extension: "".to_string(),
-            hidden: false,
-            temporary: false,
-        },
+        dso
     )
     .unwrap();
 }
