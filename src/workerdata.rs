@@ -173,6 +173,7 @@ pub(crate) async fn workerdatapage(
         "selected": worker.worker,
         "workerlist": users,
         "selectlist": selectlist,
+        "num_jobs": entries.len(),
         "entries": entries,
         "totals": totals,
         "from": from,
