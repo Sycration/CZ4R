@@ -142,7 +142,10 @@
           value="{{params.work_order}}" />
       </div>
 
-      <div class="row">
+
+    </div>
+
+          <div class="row">
 
         <div class="col-sm-6">
           Address
@@ -158,10 +161,10 @@
       </div>
       {{#if admin}}
       <div class="row">
-        <div>
+        <div class="col-sm-12 mb-2">
           <div>Assigned to</div>
           <div class="">
-            <select form="notreal" class="form-select" onchange="updateSet()" multiple>
+            <select form="notreal" class=" mx-2 form-select" onchange="updateSet()" multiple>
               {{#each params.workers as |workers| }}
               <option class="select-option" {{#if workers.[2]}}selected{{/if}} value="{{ workers.[0] }}">{{workers.[1]}}
               </option>
@@ -173,7 +176,6 @@
         </div>
       </div>
       {{/if}}
-    </div>
 
   </form>
 </div>
