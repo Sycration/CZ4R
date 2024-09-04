@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
-use crate::{get_user, Backend};
 use crate::{empty_string_as_none, errors::CustomError, now, AppState, TZ_OFFSET};
+use crate::{get_user, Backend};
 use axum::{
     extract::State,
     response::{Html, IntoResponse},
@@ -9,6 +9,8 @@ use axum::{
 };
 use axum_login::AuthSession;
 use axum_template::RenderHtml;
+use itertools::Itertools;
+use password_hash::rand_core::le;
 use serde::{Deserialize, Serialize};
 use sqlx::{
     query, query_as, query_builder, types::time::Date, Execute, FromRow, Pool, Postgres,
@@ -112,6 +114,7 @@ pub(crate) struct JobListForm {
     pub assigned: Option<bool>,
     pub started: Option<bool>,
     pub completed: Option<bool>,
+    pub workers: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -128,6 +131,7 @@ pub struct SearchParams {
     pub work_order: String,
     pub address: String,
     pub fieldnotes: String,
+    pub workers: Vec<(i64, String, bool)>,
 }
 
 pub(crate) async fn joblistpage(
@@ -165,6 +169,12 @@ pub(crate) async fn joblistpage(
         true
     };
 
+    let parsed_workers = if let Some(w) = &form.workers {
+        w.split('-').filter_map(|x|x.parse::<i64>().ok()).collect()
+    } else {
+        vec![]
+    };
+
     let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new(
         r#"select users.name, jobs.id, jobworkers.worker, 
         jobworkers.notes as workernotes, jobworkers.signin, 
@@ -183,7 +193,12 @@ pub(crate) async fn joblistpage(
     query_builder.push(" and date <= ");
     query_builder.push_bind(end_date);
 
-    if !admin {
+    if admin &&  form.workers.is_some() {
+        query_builder.push(" and jobworkers.worker = any(");
+     
+        query_builder.push_bind(&parsed_workers);
+        query_builder.push(") ");
+    } else {
         query_builder.push(" and jobworkers.worker = ");
         query_builder.push_bind(id);
     }
@@ -220,15 +235,15 @@ pub(crate) async fn joblistpage(
             query_builder.push(" order by date desc;");
         }
     }
-
+    
     let query = query_builder.build_query_as();
 
     let mut r = query.fetch_all(&pool).await?;
 
     let jobs = {
-            let query = query_as!(
-                JobQueryOutput,
-                r#"
+        let query = query_as!(
+            JobQueryOutput,
+            r#"
             select '' as "name!", NULL::bigint as worker, jobs.id,
             jobs.sitename, jobs.address, jobs.date, NULL::time as signin, 
             NULL::time as signout, NULL::varchar as workernotes,
@@ -243,21 +258,38 @@ pub(crate) async fn joblistpage(
             and date >= $1 and date <= $2
             order by date desc;
             "#,
-                start_date,
-                end_date
-            )
-            .fetch_all(&pool)
-            .await;
-            if let Ok(mut orphans) = query {
-                r = {
-                    orphans.append(&mut r);
-                    orphans
-                }
+            start_date,
+            end_date
+        )
+        .fetch_all(&pool)
+        .await;
+        if let Ok(mut orphans) = query {
+            r = {
+                orphans.append(&mut r);
+                orphans
             }
-            r
-        };
+        }
+        r
+    };
 
-        let job_datas = JobData::from_outputs(jobs, assigned, started, completed);
+    let workers = query!(
+        r#"
+            select id, name from users where users.deactivated = false
+        "#
+    )
+    .fetch_all(&pool)
+    .await?
+    .iter()
+    .map(|w| {
+        (
+            w.id,
+            w.name.clone(),
+            if form.workers.is_some() { parsed_workers.contains(&w.id) } else {true}
+        )
+    })
+    .collect();
+
+    let job_datas = JobData::from_outputs(jobs, assigned, started, completed);
     let data = serde_json::json!({
         "title": "CZ4R Job List",
         "admin": admin,
@@ -271,6 +303,7 @@ pub(crate) async fn joblistpage(
             work_order: form.work_order.unwrap_or_default(),
             address: form.address.unwrap_or_default(),
             fieldnotes: form.notes.unwrap_or_default(),
+            workers
         },
         "order": form.order.unwrap_or(Order::Latest),
         "assigned": assigned,

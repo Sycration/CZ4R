@@ -41,4 +41,6 @@ RUN sudo mkdir -p /workspace/target && \
  sudo chown -hR $USERNAME:$USERNAME /workspace/* && \
  sudo chown -hR $USERNAME:$USERNAME /home/vscode
 
+RUN rustup component add rustfmt
+
 RUN sudo echo 'git config core.hooksPath /vscode/.devcontainer/.githooks' >> ~/.bashrc

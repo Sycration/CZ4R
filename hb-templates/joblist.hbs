@@ -2,38 +2,79 @@
 {{#*inline "body"}}
 
 
+<script>
+  ///TODO reload on back arrow, or get htmx to do it
+
+  var perfEntries = performance.getEntriesByType("navigation");
+
+  if (perfEntries[0].type === "back_forward") {
+    //location.reload();
+  }
+
+  // setup assigned-array
+ // {{ #if admin }}
+
+  var assignedSet = new Set();
+
+  var firstAssigned = document.querySelectorAll('.select-option');
+
+  for (var i = 0; i < firstAssigned.length; ++i) {
+    var item = firstAssigned[i];
+    if ("selected" in item) {
+      assignedSet.add(item.value);
+    }
+  }
+
+  function updateSet() {
+    assignedSet = new Set();
+    var Assigned = document.querySelectorAll('.select-option');
+    for (var i = 0; i < Assigned.length; ++i) {
+      var item = Assigned[i];
+      if (item.selected) {
+        assignedSet.add(item.value);
+      }
+    }
+
+    document.getElementById("workers").value = Array.from(assignedSet).join("-");
+  }
+
+
+
+ // {{/if }}
+</script>
+
 
 
 {{#if admin}}
 
 <style>
   .shadow-lg {
-  --bs-shadow-rgb: 0, 0, 0;
-  box-shadow: 0 1rem 3rem rgba(var(--bs-shadow-rgb), 0.4) !important;
-}
+    --bs-shadow-rgb: 0, 0, 0;
+    box-shadow: 0 1rem 3rem rgba(var(--bs-shadow-rgb), 0.4) !important;
+  }
 </style>
 
 
 
 <div class="z-3 position-fixed bottom-0 end-0 rounded-circle m-5">
   <div class=" my-3 py-2">
-  <a href="/jobedit">
-  <button class=" shadow-lg btn btn-success btn">
-  
-    Create job
-  </button>
-</a>
+    <a href="/jobedit">
+      <button class=" shadow-lg btn btn-success btn">
+
+        Create job
+      </button>
+    </a>
+  </div>
 </div>
- </div>
 
 {{/if}}
 
 <div class="mt-1 mb-2 input-group d-flex ">
 
-<button class="btn btn-primary" type="btn btn-lg" data-bs-toggle="collapse" data-bs-target="#collapse" aria-expanded="false"
-  aria-controls="collapse">
-  show / hide filters
-</button>
+  <button class="btn btn-primary" type="btn btn-lg" data-bs-toggle="collapse" data-bs-target="#collapse"
+    aria-expanded="false" aria-controls="collapse">
+    show / hide filters
+  </button>
 </div>
 
 
@@ -90,7 +131,7 @@
     </div>
 
     <div class="row">
-      <div class="col-sm-6">
+      <div class="col-sm-6 ">
         Site name
         <input form="filter" type="text" class="form-control mx-2" id="site_name" name="site_name"
           value="{{params.site_name}}" />
@@ -100,16 +141,38 @@
         <input form="filter" type="text" class="form-control mx-2" id="work_order" name="work_order"
           value="{{params.work_order}}" />
       </div>
-      <div class="col-sm">
-        Address
-        <input form="filter" type="text" class="form-control mx-2" id="address" name="address"
-          value="{{params.address}}" />
+
+      <div class="row">
+
+        <div class="col-sm-6">
+          Address
+          <input form="filter" type="text" class="form-control mx-2" id="address" name="address"
+            value="{{params.address}}" />
+        </div>
+
+        <div class="col-sm-6 mb-2">
+          Field notes
+          <input form="filter" type="text" class="form-control mx-2" id="notes" name="notes"
+            value="{{params.fieldnotes}}" />
+        </div>
       </div>
-      <div class="col-sm mb-2">
-        Field notes
-        <input form="filter" type="text" class="form-control mx-2" id="notes" name="notes"
-          value="{{params.fieldnotes}}" />
+      {{#if admin}}
+      <div class="row">
+        <div>
+          <div>Assigned to</div>
+          <div class="">
+            <select form="notreal" class="form-select" onchange="updateSet()" multiple>
+              {{#each params.workers as |workers| }}
+              <option class="select-option" {{#if workers.[2]}}selected{{/if}} value="{{ workers.[0] }}">{{workers.[1]}}
+              </option>
+
+              {{/each}}
+            </select>
+            <input type="hidden" name="workers" id="workers">
+          </div>
+        </div>
       </div>
+      {{/if}}
     </div>
 
   </form>
@@ -117,7 +180,8 @@
 
 <ul id="list" class="list-group list-group-flush">
   <div class="row justify-content-center">
-    {{#if (eq count 0)}} no {{/if}} {{#if (neq count 0)}} {{count}} {{/if}} job assignment{{#if (neq count 1)}}s{{/if}} matching
+    {{#if (eq count 0)}} no {{/if}} {{#if (neq count 0)}} {{count}} {{/if}} job assignment{{#if (neq count 1)}}s{{/if}}
+    matching
     filters
   </div>
   {{#each job_datas as |d|}}
@@ -142,19 +206,10 @@
 </ul>
 
 
+<script>  updateSet(); </script>
 
 
 
-<script>
-
-  ///TODO reload on back arrow, or get htmx to do it
-
-  var perfEntries = performance.getEntriesByType("navigation");
-
-  if (perfEntries[0].type === "back_forward") {
-    location.reload();
-  }
-</script>
 
 {{/inline}}
 {{> base.hbs}}
