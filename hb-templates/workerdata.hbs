@@ -32,7 +32,7 @@
               <table class="table table-hover table-striped">
                 <thead>
                   <tr>
-                    <th>Date</th>
+                    <th>Date </th>
                     <th>Location</th>
                     <th>Flat rate?</th>
                     <th>Hours worked</th>
@@ -42,17 +42,16 @@
                   </tr>
                 </thead>
                 <tbody>
-                  
                   {{#each entries as |entry|}}
                     
-                      <tr class="position-relative">
-                        <td>{{entry.Date}} </td>
-                        <td><a href="/checkinout?id={{entry.JobId}}&worker={{entry.WorkerId}}">{{entry.Location}}</a></td>
-                        <td>{{#if entry.FlatRate}} ✅ {{/if}}</td>
-                        <td>{{entry.HoursWorked}}</td>
-                        <td>{{entry.HoursDriven}}</td>
-                        <td>{{entry.MilesDriven}}</td>
-                        <td>${{entry.ExtraExpCents}}</td>
+                      <tr class="position-relative {{#if entry.Completed}} {{else}} bg-danger text-black {{/if}}">
+                        <td class="{{#if entry.Completed}} {{else}} bg-danger text-black {{/if}}">{{entry.Date}} </td>
+                        <td class="{{#if entry.Completed}} {{else}} bg-danger text-black {{/if}}"><a class="{{#if entry.Completed}} {{else}} link-dark {{/if}}" href="/checkinout?id={{entry.JobId}}&worker={{entry.WorkerId}}">{{entry.Location}}</a></td>
+                        <td class="{{#if entry.Completed}} {{else}} bg-danger text-black {{/if}}">{{#if entry.FlatRate}} ✅ {{/if}}</td>
+                        <td class="{{#if entry.Completed}} {{else}} bg-danger text-black {{/if}}">{{entry.HoursWorked}}</td>
+                        <td class="{{#if entry.Completed}} {{else}} bg-danger text-black {{/if}}">{{entry.HoursDriven}}</td>
+                        <td class="{{#if entry.Completed}} {{else}} bg-danger text-black {{/if}}">{{entry.MilesDriven}}</td>
+                        <td class="{{#if entry.Completed}} {{else}} bg-danger text-black {{/if}}">${{entry.ExtraExpCents}}</td>
                       </tr>
 
                   {{/each}}
@@ -60,12 +59,17 @@
                   
                 </tbody>
                 <tfoot>
-                  <tr class="table-group-divider" >
-                    <td colspan="3"><b> Totals  </b> ({{num_jobs}} jobs) </td>
+                  <tr class="table-group-divider {{#if totals.Completed}} {{else}} bg-danger text-black {{/if}}" >
+                    {{#if totals.Completed}} <td colspan="3"><b>  Totals ({{num_jobs}} jobs) 
+                      
                     <td>{{totals.HoursWorked}}</td>
                     <td>{{totals.HoursDriven}}</td>
                     <td>{{totals.MilesDriven}}</td>
                     <td>${{totals.ExtraExpCents}}</td>
+                      
+                      
+                      {{else}} <td colspan="7"><b> Incomplete jobs! {{/if}}  </b>  </td>
+                    
                   </tr>
                 </tfoot>
               </table>
