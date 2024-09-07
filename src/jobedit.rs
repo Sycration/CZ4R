@@ -278,7 +278,7 @@ State(AppState { pool, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<JobDeleteForm>,
 ) -> Result<impl IntoResponse, CustomError> {
-    get_admin(auth);
+    get_admin(auth)?;
 
     query!(
         r#"
