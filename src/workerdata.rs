@@ -8,7 +8,7 @@ use axum_template::RenderHtml;
 use password_hash::{rand_core::le, PasswordHasher, Salt, SaltString};
 use serde::{Deserialize, Serialize};
 use sqlx::types::time::Date;
-use sqlx::{query, query_as, Pool, Postgres};
+use sqlx::{query, query_as, Pool};
 use time::{OffsetDateTime, Time};
 
 use crate::{
@@ -90,7 +90,7 @@ pub(crate) async fn workerdatapage(
 
         let data = sqlx::query!(
             r#"
-        select jobworkers.*, jobs.date, jobs.sitename from jobworkers
+        select jobworkers.*, date(jobs.date) as date, jobs.sitename from jobworkers
             inner join jobs
             on jobs.id = jobworkers.job
             

@@ -2,7 +2,6 @@
 #![allow(unused_imports)]
 #![allow(non_snake_case)]
 
-use crate::{config::Config, login::loginpage};
 use anyhow::{bail, anyhow};
 use axum::async_trait;
 use axum::{
@@ -14,6 +13,8 @@ use axum::{
     routing::{get, post, put},
     BoxError, Form, Router,
 };
+use config::Config;
+use login::LoginForm;
 use tracing::{trace, warn};
 use axum_login::AuthSession;
 use axum_login::{
@@ -23,7 +24,6 @@ use axum_login::{
 use axum_template::{engine::Engine, Key, RenderHtml};
 use errors::CustomError;
 use handlebars::{handlebars_helper, Handlebars};
-use login::LoginForm;
 use password_hash::{PasswordHasher, Salt, SaltString};
 use rand::{thread_rng, Rng};
 use rust_embed::RustEmbed;
@@ -32,7 +32,7 @@ use secrecy::SecretVec;
 use serde::{de, Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use sqlx::types::time::Date;
-use sqlx::{query, query_as, Pool, Postgres};
+use sqlx::{query, query_as, Pool, Sqlite};
 use tracing_subscriber::{filter, EnvFilter, Layer};
 use std::fs::File;
 use std::time::Instant;
@@ -81,7 +81,6 @@ pub struct Job {
 }
 
 #[derive(Debug, Default, Clone, sqlx::FromRow, Serialize)]
-
 pub struct Worker {
     id: i64,
     name: String,
@@ -91,10 +90,10 @@ pub struct Worker {
     address: String,
     phone: String,
     email: String,
-    rate_hourly_cents: i32,
-    rate_mileage_cents: i32,
-    rate_drive_hourly_cents: i32,
-    flat_rate_cents: i32,
+    rate_hourly_cents: i64,
+    rate_mileage_cents: i64,
+    rate_drive_hourly_cents: i64,
+    flat_rate_cents: i64,
     must_change_pw: bool,
     deactivated: bool,
 }
@@ -108,7 +107,7 @@ pub struct JobWorker {
     signout: Option<Time>,
     miles_driven: f32,
     hours_driven: f32,
-    extraexpcents: i32,
+    extraexpcents: i64,
     notes: String,
     using_flat_rate: bool,
 }
@@ -117,7 +116,7 @@ type AppEngine = Engine<Handlebars<'static>>;
 
 #[derive(Clone, FromRef)]
 pub struct AppState {
-    pool: Pool<Postgres>,
+    pool: Pool<Sqlite>,
     engine: AppEngine,
 }
 
@@ -134,11 +133,11 @@ impl AuthUser for Worker {
 
 #[derive(Debug, Clone)]
 pub struct Backend {
-    db: Pool<Postgres>,
+    db: Pool<Sqlite>,
 }
 
 impl Backend {
-    fn new(db: Pool<Postgres>) -> Self {
+    fn new(db: Pool<Sqlite>) -> Self {
         Self { db }
     }
 }
@@ -246,9 +245,9 @@ async fn app() {
     hbs.register_helper("eq", Box::new(eq));
     hbs.register_helper("neq", Box::new(neq));
 
-    let config = config::Config::new();
+    let config = config::Config::new().await;
 
-    let app_pool: Pool<Postgres> = config.create_pool().await;
+    let app_pool: Pool<Sqlite> = config.create_pool().await;
     let auth_pool = config.create_pool().await;
 
     let Config {
@@ -265,78 +264,72 @@ async fn app() {
     let session_store = MemoryStore::default();
     let session_layer = SessionManagerLayer::new(session_store).with_secure(false);
 
-    // let auth_service = ServiceBuilder::new()
-    // .layer(HandleErrorLayer::new(|e: BoxError| async {
-    //     StatusCode::BAD_REQUEST
-    // }))
-    // .layer(AuthManagerLayerBuilder::new(backend, session_layer).build());
-
-    let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer).build();
+  let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer).build();
 
     //check if no users, create it from env vars otherwise
     let mut conn = app_pool.acquire().await.unwrap();
-    let a = query!("select count(*) from users")
-        .fetch_one(&mut *conn)
-        .await
-        .unwrap()
-        .count
-        .unwrap();
+    let a = query!("select count(id) as count from users;")
+    .fetch_one(&mut *conn)
+    .await
+    .unwrap()
+    .count;
     if a == 0 {
-        let admin_uname = env::var("ADMIN_USER").expect("ADMIN_USER not set");
-        let admin_pw = env::var("ADMIN_PASSWORD").expect("ADMIN_PASSWORD not set");
+    let admin_uname = env::var("ADMIN_USER").expect("ADMIN_USER not set");
+    let admin_pw = env::var("ADMIN_PASSWORD").expect("ADMIN_PASSWORD not set");
 
         let salt = SaltString::generate(&mut thread_rng());
-
+    
         let hash = Scrypt
             .hash_password(admin_pw.as_bytes(), salt.as_salt())
             .unwrap()
             .to_string();
 
-        query!(
-            "insert into users (name, hash, salt, admin) values ($1, $2, $3, $4);",
-            admin_uname,
-            hash,
-            salt.as_str(),
-            true
-        )
-        .execute(&mut *conn)
-        .await
-        .expect("Failed to insert default admin user");
+            let salt_str = salt.as_str();
+            query!(
+                "insert into users (name, hash, salt, admin) values ($1, $2, $3, $4);",
+                admin_uname,
+                hash,
+                salt_str,
+                true
+            )
+            .execute(&mut *conn)
+            .await
+            .expect("Failed to insert default admin user");
     }
-
-    let admin_only = Router::new()
-        .route("/admin", get(admin::admin))
-        .route("/admin/worker-edit", get(workeredit::workeredit))
-        .route("/admin/worker-data", get(workerdata::workerdatapage))
-        .route("/admin/restore", get(restore::restorepage))
-        .route(
-            "/admin/api/v1/create-worker",
-            post(create_worker::create_worker),
-        )
-        .route("/admin/api/v1/edit-job", post(jobedit::jobedit))
-        .route("/admin/api/v1/delete-job", post(jobedit::jobdelete))
-        .route(
-            "/admin/api/v1/deactivate-worker",
-            post(deactivate::deactivate),
-        )
-        .route(
-            "/admin/api/v1/change-worker",
-            post(change_worker::change_worker),
-        )
-        .route("/admin/api/v1/restore-worker", post(restore::restore))
-        .route("/admin/api/v1/reset-pw", post(reset_pw::reset_pw));
-
+    
+    let admin_only = Router::new();
+        //.route("/admin", get(admin::admin))
+        //.route("/admin/worker-edit", get(workeredit::workeredit))
+        //.route("/admin/worker-data", get(workerdata::workerdatapage))
+        //.route("/admin/restore", get(restore::restorepage))
+        //.route(
+        //    "/admin/api/v1/create-worker",
+        //    post(create_worker::create_worker),
+        //)
+        //.route("/admin/api/v1/edit-job", post(jobedit::jobedit))
+        //.route("/admin/api/v1/delete-job", post(jobedit::jobdelete))
+        //.route(
+        //    "/admin/api/v1/deactivate-worker",
+        //    post(deactivate::deactivate),
+        //)
+        //.route(
+        //    "/admin/api/v1/change-worker",
+        //    post(change_worker::change_worker),
+        //)
+        //.route("/admin/api/v1/restore-worker", post(restore::restore))
+        //.route("/admin/api/v1/reset-pw", post(reset_pw::reset_pw));
+    
     let app = Router::new()
-        .route("/", get(index::index))
-        .route("/joblist", get(joblist::joblistpage))
-        .route("/jobedit", get(jobedit::jobeditpage))
-        .route("/loginpage", get(loginpage))
-        .route("/login", post(login::login))
-        .route("/logout", post(login::logout))
-        .route("/checkinout", get(checkinout::checkinoutpage))
-        .route("/change-pw", get(change_pw::change_pw_page))
-        .route("/api/v1/change-pw/:id", post(change_pw::change_pw))
-        .route("/api/v1/checkinout", post(checkinout::checkinout))
+        //.route("/", get(index::index))
+        //.route("/joblist", get(joblist::joblistpage))
+        //.route("/jobedit", get(jobedit::jobeditpage))
+        //.route("/loginpage", get(loginpage))
+        //.route("/login", post(login::login))
+        //.route("/logout", post(login::logout))
+        //.route("/checkinout", get(checkinout::checkinoutpage))
+        //.route("/change-pw", get(change_pw::change_pw_page))
+        //.route("/api/v1/change-pw/:id", post(change_pw::change_pw))
+        //.route("/api/v1/checkinout", post(checkinout::checkinout))
         .merge(admin_only)
         .fallback(error404::error404)
         .layer(auth_layer)
@@ -344,9 +337,9 @@ async fn app() {
             pool: app_pool,
             engine: Engine::from(hbs),
         });
-
+    
     // run it
-
+    
     let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     println!("listening on {}", addr);

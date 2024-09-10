@@ -18,7 +18,7 @@ use serde::Deserialize;
 use sqlx::query;
 use sqlx::query_as;
 use sqlx::Pool;
-use sqlx::Postgres;
+
 
 #[derive(Deserialize)]
 pub(crate) struct WorkerCreateForm {

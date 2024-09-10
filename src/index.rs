@@ -14,7 +14,7 @@ use rust_decimal::prelude::*;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use serde_json::json;
-use sqlx::{query, query_as, query_scalar, Pool, Postgres};
+use sqlx::{query, query_as, query_scalar, Pool};
 use time::Date;
 
 pub(crate) async fn index(

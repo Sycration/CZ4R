@@ -30,10 +30,13 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && useradd -s /bin/bash --uid $USER_UID --gid $USER_GID -m $USERNAME \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME\
     && chmod 0440 /etc/sudoers.d/$USERNAME 
-    
+
+RUN mkdir /database
+RUN chmod 777 /database 
+
 USER $USERNAME
 
-RUN cargo install sqlx-cli --no-default-features --features native-tls,postgres
+RUN cargo install sqlx-cli --no-default-features --features native-tls,sqlite
 RUN rustup component add clippy
 
 RUN sudo mkdir -p /workspace/target && \
@@ -42,5 +45,7 @@ RUN sudo mkdir -p /workspace/target && \
  sudo chown -hR $USERNAME:$USERNAME /home/vscode
 
 RUN rustup component add rustfmt
+
+
 
 RUN sudo echo 'git config core.hooksPath /vscode/.devcontainer/.githooks' >> ~/.bashrc

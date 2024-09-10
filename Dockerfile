@@ -17,4 +17,7 @@ COPY --from=build /code/target/release/cz4r /app/
 
 WORKDIR /app 
 
+RUN mkdir /database
+RUN chmod 777 /database
+
 CMD [ "/app/cz4r" ]

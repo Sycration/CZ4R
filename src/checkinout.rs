@@ -12,7 +12,7 @@ use rust_decimal::prelude::*;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use serde_json::json;
-use sqlx::{query, query_as, Pool, Postgres};
+use sqlx::{query, query_as, Pool};
 use time::{format_description, macros::format_description, Time};
 
 #[derive(Deserialize)]

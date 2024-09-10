@@ -23,7 +23,7 @@ use scrypt::Scrypt;
 use serde::Deserialize;
 use serde::Serialize;
 use sqlx::Pool;
-use sqlx::Postgres;
+
 
 #[derive(Deserialize)]
 pub struct DeactivateForm {

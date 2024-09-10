@@ -18,7 +18,7 @@ use scrypt::Scrypt;
 use serde::Deserialize;
 use sqlx::query;
 use sqlx::Pool;
-use sqlx::Postgres;
+
 #[derive(Deserialize)]
 pub(crate) struct ResetPwForm {
     id: i64,

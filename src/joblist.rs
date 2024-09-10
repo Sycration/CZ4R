@@ -12,8 +12,9 @@ use axum_template::RenderHtml;
 use itertools::Itertools;
 use password_hash::rand_core::le;
 use serde::{Deserialize, Serialize};
+use sqlx::Sqlite;
 use sqlx::{
-    query, query_as, query_builder, types::time::Date, Execute, FromRow, Pool, Postgres,
+    query, query_as, query_builder, types::time::Date, Execute, FromRow, Pool,
     QueryBuilder,
 };
 use time::{Duration, OffsetDateTime, Time};
@@ -29,12 +30,12 @@ struct JobQueryOutput {
     notes: String,
     workorder: String,
     servicecode: String,
-    signin: Option<Time>,
-    signout: Option<Time>,
+    signin: Option<String>,
+    signout: Option<String>,
     workernotes: Option<String>,
-    miles_driven: Option<f32>,
-    hours_driven: Option<f32>,
-    extraexpcents: Option<i32>,
+    miles_driven: Option<f64>,
+    hours_driven: Option<f64>,
+    extraexpcents: Option<i64>,
 }
 
 #[derive(Serialize, Deserialize, FromRow)]
@@ -175,7 +176,7 @@ pub(crate) async fn joblistpage(
         vec![]
     };
 
-    let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new(
+    let mut query_builder: QueryBuilder<Sqlite> = QueryBuilder::new(
         r#"select users.name, jobs.id, jobworkers.worker, 
         jobworkers.notes as workernotes, jobworkers.signin, 
         jobworkers.miles_driven, jobworkers.hours_driven,
@@ -194,9 +195,10 @@ pub(crate) async fn joblistpage(
     query_builder.push_bind(end_date);
 
     if admin &&  form.workers.is_some() {
-        query_builder.push(" and jobworkers.worker = any(");
-     
-        query_builder.push_bind(&parsed_workers);
+        query_builder.push(" and jobworkers.worker in (");
+        
+        let csl = parsed_workers.iter().join(",");
+        query_builder.push_bind(csl);
         query_builder.push(") ");
     } else {
         query_builder.push(" and jobworkers.worker = ");
@@ -244,11 +246,11 @@ pub(crate) async fn joblistpage(
         let query = query_as!(
             JobQueryOutput,
             r#"
-            select '' as "name!", NULL::bigint as worker, jobs.id,
-            jobs.sitename, jobs.address, jobs.date, NULL::time as signin, 
-            NULL::time as signout, NULL::varchar as workernotes,
-            jobs.notes, jobs.workorder, jobs.servicecode, NULL::real as miles_driven,
-            NULL::real as hours_driven, NULL::integer as extraexpcents from jobs 
+            select '' as "name!", 0 as worker, jobs.id,
+            jobs.sitename, jobs.address, jobs.date, time(0) as signin, 
+            time(0) as signout, '' as workernotes,
+            jobs.notes, jobs.workorder, jobs.servicecode, 0.0 as miles_driven,
+            0.0 as hours_driven, 0 as extraexpcents from jobs 
 
             where not exists (
                 select *

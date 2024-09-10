@@ -9,10 +9,11 @@ use axum::{
     Form,
 };
 use axum_template::RenderHtml;
+use itertools::Itertools;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use sqlx::{
-    query, query_as, query_builder, types::time::Date, Execute, Pool, Postgres, QueryBuilder,
+    query, query_as, query_builder, types::time::Date, Execute, Pool,  QueryBuilder, Sqlite,
 };
 use tracing::info;
 
@@ -192,27 +193,29 @@ State(AppState { pool, engine }): State<AppState>,
             .collect::<Vec<_>>();
 
         //remove flatrates
-        if !flatrates_to_remove.is_empty() {
-            query!("update jobworkers set using_flat_rate = false where job = $1 and worker = any($2);",
-            job_id, 
-            flatrates_to_remove.as_slice())
+        let csl = flatrates_to_remove.iter().join(",");
+        let query = QueryBuilder::new("update jobworkers set using_flat_rate = false where job = ")
+            .push_bind(job_id)
+            .push(" and worker in (")
+            .push_bind(csl)
+            .push(")")
+            .build()
             .execute(&mut *tx).await?;
-        }
 
         //remove assignments
-        if !assignments_to_remove.is_empty() {
-            query!(
-                "delete from jobworkers where job = $1 and worker = any($2);",
-                job_id,
-                assignments_to_remove.as_slice()
-            )
-            .execute(&mut *tx)
-            .await?;
-        }
+        let csl = assignments_to_remove.iter().join(",");
+        let query = QueryBuilder::new("delete from jobworkers where job = ")
+            .push_bind(job_id)
+            .push(" and worker in (")
+            .push_bind(csl)
+            .push(")")
+            .build()
+            .execute(&mut *tx).await?;
+
 
         //create assignments w/ flatrates
         if !assignments_to_add.is_empty() {
-            let mut query_builder: QueryBuilder<Postgres> =
+            let mut query_builder: QueryBuilder<Sqlite> =
                 QueryBuilder::new("insert into jobworkers (job, worker, using_flat_rate) ");
             query_builder.push_values(assignments_to_add.iter().take(250), |mut b, assignment| {
                 b.push_bind(job_id)
@@ -250,7 +253,7 @@ State(AppState { pool, engine }): State<AppState>,
 
         //create assignments w/ flatrates
         if !to_assign.is_empty() {
-            let mut query_builder: QueryBuilder<Postgres> =
+            let mut query_builder: QueryBuilder<Sqlite> =
                 QueryBuilder::new("insert into jobworkers (job, worker, using_flat_rate) ");
             query_builder.push_values(to_assign.iter().take(250), |mut b, assignment| {
                 b.push_bind(job_id)

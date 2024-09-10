@@ -12,7 +12,7 @@ use axum_template::RenderHtml;
 use serde::Deserialize;
 use serde_json::json;
 use sqlx::Pool;
-use sqlx::Postgres;
+
 
 #[derive(Deserialize)]
 pub(crate) struct WorkerEditForm {

@@ -11,7 +11,7 @@ use rust_decimal::prelude::*;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use serde_json::json;
-use sqlx::{query, query_as, Pool, Postgres};
+use sqlx::{query, query_as, Pool};
 
 pub(crate) async fn admin(
     State(AppState { pool: _, engine }): State<AppState>,
