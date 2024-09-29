@@ -197,6 +197,9 @@
             defaultDate: "{{signout}}",
       });
 
+      document.getElementById("SigninInput").setAttribute("type", "time");
+      document.getElementById("SignoutInput").setAttribute("type", "time");
+
       document.addEventListener('htmx:afterRequest', function(evt) {
         signin_instance.close();
         signout_instance.close();
