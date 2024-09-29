@@ -28,7 +28,6 @@ use password_hash::{PasswordHasher, Salt, SaltString};
 use rand::{thread_rng, Rng};
 use rust_embed::RustEmbed;
 use scrypt::Scrypt;
-use secrecy::SecretVec;
 use serde::{de, Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use sqlx::types::time::Date;

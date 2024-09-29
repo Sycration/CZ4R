@@ -50,7 +50,7 @@
     
         <div class="input-group px-3 mb-3">
           <span class="input-group-text d-none d-md-block">Sign-in time</span>
-          <input 
+          {{!-- <input 
             name="Signin"
             type="time"
             class="form-control"
@@ -64,7 +64,22 @@
             id="SignoutInput"
             value="{{signout}}"
 
+          /> --}}
+
+          <input 
+            name="Signin"
+            id="SigninInput"
+            class="form-control"
+            type="time"
           />
+
+          <input 
+            name="Signout"
+            id="SignoutInput"
+            class="form-control"
+            type="time"
+          />
+
           <span class="input-group-text d-none d-md-block">Sign-out time</span>
         </div>
 
@@ -165,6 +180,26 @@
 
       </form>
         <script>
+
+      var signin_instance = flatpickr("#SigninInput", {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "H:i",
+            defaultDate: "{{signin}}",
+      });
+
+      var signout_instance = flatpickr("#SignoutInput", {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "H:i",
+            defaultDate: "{{signout}}",
+      });
+
+      document.addEventListener('htmx:afterRequest', function(evt) {
+        signin_instance.close();
+        signout_instance.close();
+      });
+
 
       var extraexpct = document.getElementById("ExtraExpenses");
       extraexpct.value = parseFloat(parseFloat(extraexpct.value).toFixed(2));
