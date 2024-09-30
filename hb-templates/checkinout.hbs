@@ -37,7 +37,7 @@
           </tr>
         </tbody>
       </table>
-      <form id="checkinoutform" hx-post="/api/v1/checkinout" hx-target="#cio" hx-select="#cio"  hx-trigger="change delay:500ms"  >
+      <form id="checkinoutform" hx-post="/api/v1/checkinout" {{!hx-target="#cio" hx-select="#cio"--}} hx-swap="none"  hx-trigger="changed,keyup"  >
 
         <div class="row d-md-none text-center" style="margin: 0">
           <div class="col">
@@ -50,7 +50,7 @@
     
         <div class="input-group px-3 mb-3">
           <span class="input-group-text d-none d-md-block">Sign-in time</span>
-          {{!-- <input 
+          <input 
             name="Signin"
             type="time"
             class="form-control"
@@ -64,22 +64,7 @@
             id="SignoutInput"
             value="{{signout}}"
 
-          /> --}}
-
-          <input 
-            name="Signin"
-            id="SigninInput"
-            class="form-control"
-            type="time"
           />
-
-          <input 
-            name="Signout"
-            id="SignoutInput"
-            class="form-control"
-            type="time"
-          />
-
           <span class="input-group-text d-none d-md-block">Sign-out time</span>
         </div>
 
@@ -181,29 +166,7 @@
       </form>
         <script>
 
-      var signin_instance = flatpickr("#SigninInput", {
-            enableTime: true,
-            noCalendar: true,
-            dateFormat: "H:i",
-            minuteIncrement: 1,
-            defaultDate: "{{signin}}",
-      });
 
-      var signout_instance = flatpickr("#SignoutInput", {
-            enableTime: true,
-            noCalendar: true,
-            dateFormat: "H:i",
-            minuteIncrement: 1,
-            defaultDate: "{{signout}}",
-      });
-
-      document.getElementById("SigninInput").setAttribute("type", "time");
-      document.getElementById("SignoutInput").setAttribute("type", "time");
-
-      document.addEventListener('htmx:afterRequest', function(evt) {
-        signin_instance.close();
-        signout_instance.close();
-      });
 
 
       var extraexpct = document.getElementById("ExtraExpenses");
