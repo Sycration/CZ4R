@@ -3,6 +3,7 @@
 {{#*inline "body"}}
 
   <div id="worker-data" class="row row-cols-1 row-cols-md-2">
+
     <div class="col col-md-4 pb-4">
       {{> userselect.hbs array=selectlist selected=selected target=target start_date=from end_date=to}}
     </div>
@@ -94,6 +95,18 @@
         
       
     </div>
+      <script>
+
+        if (typeof bootstrap !== 'undefined') {
+          popoverList = [];
+          popoverTriggerList = [];
+          popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
+          popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl));
+        }
+
+
+
+    </script>
   </div>
 
 {{/inline}}

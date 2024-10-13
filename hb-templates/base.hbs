@@ -62,8 +62,8 @@
 
 </html>
 <script>
-  const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
-  const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl));
+  popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
+  popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl));
 
     /*!
  * Color mode toggler for Bootstrap's docs (https://getbootstrap.com/)
