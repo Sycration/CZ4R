@@ -3,6 +3,7 @@
 {{#*inline "body"}}
 
   <div id="worker-data" class="row row-cols-1 row-cols-md-2">
+
     <div class="col col-md-4 pb-4">
       {{> userselect.hbs array=selectlist selected=selected target=target start_date=from end_date=to}}
     </div>
@@ -46,7 +47,21 @@
                     
                       <tr class="position-relative {{#if entry.Completed}} {{else}} bg-danger text-black {{/if}}">
                         <td class="{{#if entry.Completed}} {{else}} bg-danger text-black {{/if}}">{{entry.Date}} </td>
-                        <td class="{{#if entry.Completed}} {{else}} bg-danger text-black {{/if}}"><a class="{{#if entry.Completed}} {{else}} link-dark {{/if}}" href="/checkinout?id={{entry.JobId}}&worker={{entry.WorkerId}}">{{entry.Location}}</a></td>
+                        {{!--  href="/checkinout?id={{entry.JobId}}&worker={{entry.WorkerId}}" --}}
+                        <td class="{{#if entry.Completed}} {{else}} bg-danger text-black {{/if}}">
+                        <a tabindex="0" 
+                        class="{{#if entry.Completed}} {{else}} link-dark {{/if}}"
+                        role="button" 
+                        data-bs-toggle="popover" 
+                        data-bs-trigger="focus" 
+                        data-bs-html="true"
+                        data-bs-content="
+                        <a href='/checkinout?id={{entry.JobId}}&worker={{entry.WorkerId}}' class='btn btn-primary'> Open</a>
+                        <a href='/jobedit?id={{entry.JobId}}' class='btn btn-secondary'> Edit</a>"
+                        
+                        >{{entry.Location}}
+                        
+                        </a></td>
                         <td class="{{#if entry.Completed}} {{else}} bg-danger text-black {{/if}}">{{#if entry.FlatRate}} ✅ {{/if}}</td>
                         <td class="{{#if entry.Completed}} {{else}} bg-danger text-black {{/if}}">{{entry.HoursWorked}}</td>
                         <td class="{{#if entry.Completed}} {{else}} bg-danger text-black {{/if}}">{{entry.HoursDriven}}</td>
@@ -80,6 +95,18 @@
         
       
     </div>
+      <script>
+
+        if (typeof bootstrap !== 'undefined') {
+          popoverList = [];
+          popoverTriggerList = [];
+          popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
+          popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl));
+        }
+
+
+
+    </script>
   </div>
 
 {{/inline}}

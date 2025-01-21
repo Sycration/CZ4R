@@ -31,20 +31,17 @@ pub(crate) struct ChangePwPageForm {
 
 pub(crate) async fn change_pw_page(
     State(AppState { pool: _, engine }): State<AppState>,
-    mut auth: AuthSession<Backend>,
+    mut _auth: AuthSession<Backend>, //never logged in
     Form(form): Form<ChangePwPageForm>,
 ) -> Result<impl IntoResponse, impl IntoResponse> {
-    let (id, admin) = if let Some((id, admin)) = auth.user.map(|u| (u.id, u.admin)) {
-        (id, admin)
-    } else if let Some(id) = form.id {
-        (id, false)
-    } else {
-        return Err(CustomError(anyhow!("Not logged in and no ID selected.")));
+    let id = if let Some(id) = form.id {id
+    } else  {
+        return Err(CustomError(anyhow!("No ID selected.")));
     };
 
     let data = json!({
         "title": "CZ4R Login",
-        "admin": admin,
+        "admin": false,
         "logged_in": true,
         "failure": form.no_match == Some(true),
         "chg_id": id
@@ -55,6 +52,7 @@ pub(crate) async fn change_pw_page(
 
 #[derive(Deserialize)]
 pub(crate) struct ChangePwForm {
+    id: i64,
     password1: String,
     password2: String,
 }
@@ -62,7 +60,6 @@ pub(crate) struct ChangePwForm {
 pub(crate) async fn change_pw(
     State(AppState { pool, engine }): State<AppState>,
     mut _auth: AuthSession<Backend>,
-    Path(id): Path<i64>,
     Form(form): Form<ChangePwForm>,
 ) -> Result<impl IntoResponse, impl IntoResponse> {
     let must_change = query!(
@@ -71,7 +68,7 @@ pub(crate) async fn change_pw(
     where id = $1
     and users.deactivated = false;
     "#,
-        id
+        form.id
     )
     .fetch_one(&pool)
     .await?
@@ -80,12 +77,12 @@ pub(crate) async fn change_pw(
     if !must_change {
         return Err(CustomError(anyhow!(
             "User {} cannot change their password right now. Nice try.",
-            id
+            form.id
         )));
     }
 
     if form.password1 != form.password2 {
-        return Ok(Redirect::to("/change-pw?no_match=true"));
+        return Ok(Redirect::to(&format!("/change-pw?id={}&no_match=true", form.id)));
     }
 
     let salt = SaltString::generate(&mut thread_rng());
@@ -105,7 +102,7 @@ pub(crate) async fn change_pw(
     where id = $3;"#,
         hash,
         salt.as_str(),
-        id
+        form.id
     )
     .execute(&pool)
     .await?;

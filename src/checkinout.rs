@@ -1,6 +1,7 @@
 use crate::{get_user, Backend};
 use crate::{errors::CustomError, AppState, Job, JobWorker};
 use anyhow::anyhow;
+use axum::http::StatusCode;
 use axum::{
     extract::{Path, State},
     response::{Html, IntoResponse, Redirect},
@@ -171,7 +172,9 @@ query!(
     .execute(&pool)
     .await?;
 
-    Ok(Redirect::to(
-        format!("/checkinout?id={}&worker={}", form.JobId, worker).as_str(),
-    ))
+    // Ok(Redirect::to(
+    //     format!("/checkinout?id={}&worker={}", form.JobId, worker).as_str(),
+    // ))
+    Ok(StatusCode::OK.into_response())
+
 }

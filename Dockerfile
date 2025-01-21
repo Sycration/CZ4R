@@ -1,4 +1,4 @@
-FROM rust:bullseye AS build
+FROM rust:bookworm AS build
 
 COPY . /code/
 
@@ -7,9 +7,11 @@ WORKDIR /code
 RUN apt-get update
 RUN apt-get install cmake -y
 
+RUN cargo --version
+
 RUN cargo build --release
 
-FROM debian:bullseye-slim AS run
+FROM debian:bookworm-slim AS run
 
 RUN mkdir /app
 

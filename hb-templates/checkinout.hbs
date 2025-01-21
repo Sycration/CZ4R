@@ -37,7 +37,7 @@
           </tr>
         </tbody>
       </table>
-      <form id="checkinoutform" hx-post="/api/v1/checkinout" hx-target="#cio" hx-select="#cio"  hx-trigger="change delay:500ms"  >
+      <form id="checkinoutform" hx-post="/api/v1/checkinout" {{!hx-target="#cio" hx-select="#cio"--}} hx-swap="none"  hx-trigger="change,keyup"  >
 
         <div class="row d-md-none text-center" style="margin: 0">
           <div class="col">
@@ -165,6 +165,9 @@
 
       </form>
         <script>
+
+
+
 
       var extraexpct = document.getElementById("ExtraExpenses");
       extraexpct.value = parseFloat(parseFloat(extraexpct.value).toFixed(2));

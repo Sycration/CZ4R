@@ -3,7 +3,7 @@
 #![allow(non_snake_case)]
 
 use anyhow::{bail, anyhow};
-use axum::async_trait;
+use async_trait::async_trait;
 use axum::{
     debug_handler,
     error_handling::HandleErrorLayer,
@@ -28,7 +28,6 @@ use password_hash::{PasswordHasher, Salt, SaltString};
 use rand::{thread_rng, Rng};
 use rust_embed::RustEmbed;
 use scrypt::Scrypt;
-use secrecy::SecretVec;
 use serde::{de, Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use sqlx::types::time::Date;
@@ -320,16 +319,16 @@ async fn app() {
         //.route("/admin/api/v1/reset-pw", post(reset_pw::reset_pw));
     
     let app = Router::new()
-        //.route("/", get(index::index))
-        //.route("/joblist", get(joblist::joblistpage))
-        //.route("/jobedit", get(jobedit::jobeditpage))
-        //.route("/loginpage", get(loginpage))
-        //.route("/login", post(login::login))
-        //.route("/logout", post(login::logout))
-        //.route("/checkinout", get(checkinout::checkinoutpage))
-        //.route("/change-pw", get(change_pw::change_pw_page))
-        //.route("/api/v1/change-pw/:id", post(change_pw::change_pw))
-        //.route("/api/v1/checkinout", post(checkinout::checkinout))
+        .route("/", get(index::index))
+        .route("/joblist", get(joblist::joblistpage))
+        .route("/jobedit", get(jobedit::jobeditpage))
+        .route("/loginpage", get(loginpage))
+        .route("/login", post(login::login))
+        .route("/logout", post(login::logout))
+        .route("/checkinout", get(checkinout::checkinoutpage))
+        .route("/change-pw", get(change_pw::change_pw_page))
+        .route("/api/v1/change-pw", post(change_pw::change_pw))
+        .route("/api/v1/checkinout", post(checkinout::checkinout))
         .merge(admin_only)
         .fallback(error404::error404)
         .layer(auth_layer)
