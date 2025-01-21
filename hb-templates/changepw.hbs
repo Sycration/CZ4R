@@ -4,7 +4,8 @@
 {{#*inline "body"}}
 
   <div class="d-flex flex-column align-items-center">
-    <form class="d-flex flex-column justify-content-center" method="post" action="/api/v1/change-pw/{{chg_id}}">
+    <form class="d-flex flex-column justify-content-center" method="post" action="/api/v1/change-pw">
+      <input type="hidden" name="id" id="id" value={{chg_id}} >
         <div class="mb-3 p-2 flex-fill">
           <label for="password1" class="form-label">Password</label>
           <input type="password" class="form-control" id="password1" name="password1">
@@ -15,8 +16,8 @@
         </div>
         <button type="submit" class="btn btn-primary p-2 flex-fill">Change Password</button>
       </form>
-      {{#if condition}}        
-        <div class="alert alert-warning" role="alert">
+      {{#if failure}}        
+        <div class="alert alert-warning mt-3" role="alert">
           Passwords do not match
         </div>
       {{/if}}

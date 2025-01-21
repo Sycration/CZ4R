@@ -6,10 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axum = {version = "0.7", features = ["form", "macros"]}
+axum = {version = "0.8", features = ["form", "macros"]}
+async-trait="0.1"
 tower = "0.5"
 tower-http = {version = "0.6", features = ["trace"]}
-axum-login = "0.16"
+axum-login = "0.17"
 sqlx = { version = "0.8", features = [ "runtime-tokio-rustls" , "postgres", "time",] }
 time = {version = "0.3", features = ["serde", "local-offset"]}
 futures = "0.3"
@@ -24,14 +25,14 @@ tracing = "0.1"
 scrypt = "0.11"
 password-hash = {version = "0.5.0", features = ["rand_core"]}
 rust_decimal = "1"
-axum-template = {version = "2", features = ["handlebars"]}
+axum-template = {version = "3", features = ["handlebars"]}
 handlebars = {version = "6", features = ["dir_source", "rust-embed"]}
 rust-embed = "8"
 serde_json = "1.0"
 secrecy = "0.10"
 anyhow = "1.0"
-thiserror = "1.0"
-itertools = "0.13.0"
+thiserror = "2"
+itertools = "0.14"
 
 [profile.dev.package."*"]
 opt-level = 3

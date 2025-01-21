@@ -4,7 +4,7 @@
 
 use crate::{config::Config, login::loginpage};
 use anyhow::{bail, anyhow};
-use axum::async_trait;
+use async_trait::async_trait;
 use axum::{
     debug_handler,
     error_handling::HandleErrorLayer,
@@ -334,7 +334,7 @@ async fn app() {
         .route("/logout", post(login::logout))
         .route("/checkinout", get(checkinout::checkinoutpage))
         .route("/change-pw", get(change_pw::change_pw_page))
-        .route("/api/v1/change-pw/:id", post(change_pw::change_pw))
+        .route("/api/v1/change-pw", post(change_pw::change_pw))
         .route("/api/v1/checkinout", post(checkinout::checkinout))
         .merge(admin_only)
         .fallback(error404::error404)
