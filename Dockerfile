@@ -7,6 +7,8 @@ WORKDIR /code
 RUN apt-get update
 RUN apt-get install cmake -y
 
+RUN cargo --version
+
 RUN cargo build --release
 
 FROM debian:bullseye-slim AS run
