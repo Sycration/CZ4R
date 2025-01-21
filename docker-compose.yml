@@ -1,18 +1,5 @@
 version: '3.4'
 services:
-
-  db:
-    restart: always 
-    image: postgres:14-alpine
-    env_file:
-      - ./.devcontainer/.env
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    volumes:
-      - pgdata:/var/lib/postgresql/data
   app:
     restart: always 
     build: 
@@ -20,11 +7,10 @@ services:
       dockerfile: Dockerfile
     env_file:
       - ./.devcontainer/.env
-    
+    volumes:
+      - database:/database
     ports:
       - 3000:3000
-    depends_on:
-      - db
 
 volumes:
-  pgdata:
+  database:
