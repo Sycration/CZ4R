@@ -1,0 +1,104 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select '' as \"name!\", 0 as worker, jobs.id,\n            jobs.sitename, jobs.address, jobs.date, time(0) as signin, \n            time(0) as signout, '' as workernotes,\n            jobs.notes, jobs.workorder, jobs.servicecode, 0.0 as miles_driven,\n            0.0 as hours_driven, 0 as extraexpcents from jobs \n\n            where not exists (\n                select *\n                from jobworkers\n                where jobworkers.job = jobs.id\n            )\n            and date >= $1 and date <= $2\n            order by date desc;\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "name!",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "worker",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "id",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "sitename",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "address",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "date",
+        "ordinal": 5,
+        "type_info": "Date"
+      },
+      {
+        "name": "signin",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "signout",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "workernotes",
+        "ordinal": 8,
+        "type_info": "Text"
+      },
+      {
+        "name": "notes",
+        "ordinal": 9,
+        "type_info": "Text"
+      },
+      {
+        "name": "workorder",
+        "ordinal": 10,
+        "type_info": "Text"
+      },
+      {
+        "name": "servicecode",
+        "ordinal": 11,
+        "type_info": "Text"
+      },
+      {
+        "name": "miles_driven",
+        "ordinal": 12,
+        "type_info": "Float"
+      },
+      {
+        "name": "hours_driven",
+        "ordinal": 13,
+        "type_info": "Float"
+      },
+      {
+        "name": "extraexpcents",
+        "ordinal": 14,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "7da38b13b9633502eb3a4e951d2374197737cab7812f9ba671e84c17f284d70a"
+}

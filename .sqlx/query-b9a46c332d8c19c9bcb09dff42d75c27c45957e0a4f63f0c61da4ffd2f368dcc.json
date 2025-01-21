@@ -1,16 +1,16 @@
 {
-  "db_name": "PostgreSQL",
+  "db_name": "SQLite",
   "query": "\n        select date from jobs order by date asc;   \n    ",
   "describe": {
     "columns": [
       {
-        "ordinal": 0,
         "name": "date",
+        "ordinal": 0,
         "type_info": "Date"
       }
     ],
     "parameters": {
-      "Left": []
+      "Right": 0
     },
     "nullable": [
       false

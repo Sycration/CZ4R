@@ -1,18 +1,10 @@
 {
-  "db_name": "PostgreSQL",
+  "db_name": "SQLite",
   "query": "\n        update jobs set \n            sitename = $2,\n            workorder = $3,\n            servicecode = $4,\n            address = $5,\n            date = $6,\n            notes = $7\n        where id = $1;",
   "describe": {
     "columns": [],
     "parameters": {
-      "Left": [
-        "Int8",
-        "Varchar",
-        "Varchar",
-        "Varchar",
-        "Varchar",
-        "Date",
-        "Varchar"
-      ]
+      "Right": 7
     },
     "nullable": []
   },

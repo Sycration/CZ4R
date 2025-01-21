@@ -1,15 +1,10 @@
 {
-  "db_name": "PostgreSQL",
+  "db_name": "SQLite",
   "query": "insert into users (name, hash, salt, admin) values ($1, $2, $3, $4);",
   "describe": {
     "columns": [],
     "parameters": {
-      "Left": [
-        "Varchar",
-        "Varchar",
-        "Varchar",
-        "Bool"
-      ]
+      "Right": 4
     },
     "nullable": []
   },

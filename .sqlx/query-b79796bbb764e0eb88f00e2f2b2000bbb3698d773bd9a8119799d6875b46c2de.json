@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n        select * from jobworkers\n            where \n            job = $1 \n                and\n            worker = $2;            \n    ",
+  "query": "\n        select jobworkers.*, date(jobs.date) as date, jobs.sitename from jobworkers\n            inner join jobs\n            on jobs.id = jobworkers.job\n            \n        where\n            jobworkers.worker = $1\n        and\n            jobs.date >= $2 and jobs.date <= $3\n        order by date desc;\n    ",
   "describe": {
     "columns": [
       {
@@ -47,10 +47,20 @@
         "name": "hours_driven",
         "ordinal": 8,
         "type_info": "Float"
+      },
+      {
+        "name": "date",
+        "ordinal": 9,
+        "type_info": "Text"
+      },
+      {
+        "name": "sitename",
+        "ordinal": 10,
+        "type_info": "Text"
       }
     ],
     "parameters": {
-      "Right": 2
+      "Right": 3
     },
     "nullable": [
       false,
@@ -61,8 +71,10 @@
       false,
       false,
       false,
+      false,
+      true,
       false
     ]
   },
-  "hash": "88daa2cc4300c1b17640c6c3dbcdb8f82803b9ace2c7e04d41ed3d12ca09d0f8"
+  "hash": "b79796bbb764e0eb88f00e2f2b2000bbb3698d773bd9a8119799d6875b46c2de"
 }

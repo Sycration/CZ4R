@@ -1,12 +1,10 @@
 {
-  "db_name": "PostgreSQL",
+  "db_name": "SQLite",
   "query": "update users set deactivated = true where id = $1;",
   "describe": {
     "columns": [],
     "parameters": {
-      "Left": [
-        "Int8"
-      ]
+      "Right": 1
     },
     "nullable": []
   },

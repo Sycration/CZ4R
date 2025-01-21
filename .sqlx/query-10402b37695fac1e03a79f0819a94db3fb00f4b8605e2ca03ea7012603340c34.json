@@ -1,19 +1,10 @@
 {
-  "db_name": "PostgreSQL",
+  "db_name": "SQLite",
   "query": "\n    update jobworkers\n    set\n        signin = $1,\n        signout = $2,\n        miles_driven = $3,\n        hours_driven = $4,\n        extraexpcents = $5,\n        notes = $6\n    where worker = $7\n    and job = $8;\n    ",
   "describe": {
     "columns": [],
     "parameters": {
-      "Left": [
-        "Time",
-        "Time",
-        "Float4",
-        "Float4",
-        "Int4",
-        "Text",
-        "Int8",
-        "Int8"
-      ]
+      "Right": 8
     },
     "nullable": []
   },

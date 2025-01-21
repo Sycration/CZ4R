@@ -1,19 +1,19 @@
 {
-  "db_name": "PostgreSQL",
+  "db_name": "SQLite",
   "query": "\n        select sum(miles_driven) from jobworkers;   \n    ",
   "describe": {
     "columns": [
       {
+        "name": "sum(miles_driven)",
         "ordinal": 0,
-        "name": "sum",
-        "type_info": "Float4"
+        "type_info": "Float"
       }
     ],
     "parameters": {
-      "Left": []
+      "Right": 0
     },
     "nullable": [
-      null
+      true
     ]
   },
   "hash": "3a9eaafec98c37585261f20d1dcf58077bb69980185f6dd0ae0ae486185fd511"

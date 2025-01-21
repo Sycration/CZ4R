@@ -115,6 +115,7 @@ pub(crate) struct JobListForm {
     pub assigned: Option<bool>,
     pub started: Option<bool>,
     pub completed: Option<bool>,
+    #[serde(default, deserialize_with = "empty_string_as_none")]
     pub workers: Option<String>,
 }
 
@@ -146,12 +147,15 @@ pub(crate) async fn joblistpage(
         d
     } else {
         now().date()
-    };
+    }.to_string();
     let end_date = if let Some(d) = form.end_date {
         d
     } else {
         (now() + Duration::days(15)).date()
-    };
+    }.to_string();
+
+    dbg!(&start_date);
+    dbg!(&end_date);
 
     //testing form.order because that is always sent on form submit
     let assigned = if form.order.is_some() {
@@ -189,16 +193,19 @@ pub(crate) async fn joblistpage(
                  "#,
     );
 
-    query_builder.push("where date >= ");
-    query_builder.push_bind(start_date);
-    query_builder.push(" and date <= ");
-    query_builder.push_bind(end_date);
+    query_builder.push("where date(jobs.date) >= ");
+    query_builder.push_bind(&start_date);
+    query_builder.push(" and date(jobs.date) <= ");
+    query_builder.push_bind(&end_date);
 
     if admin &&  form.workers.is_some() {
         query_builder.push(" and jobworkers.worker in (");
-        
-        let csl = parsed_workers.iter().join(",");
-        query_builder.push_bind(csl);
+        for (idx, id) in parsed_workers.iter().enumerate() {
+            query_builder.push_bind(id);
+            if idx != parsed_workers.len() - 1 {
+                query_builder.push(',');
+            }
+        }
         query_builder.push(") ");
     } else {
         query_builder.push(" and jobworkers.worker = ");
@@ -237,10 +244,13 @@ pub(crate) async fn joblistpage(
             query_builder.push(" order by date desc;");
         }
     }
+
+    dbg!(&query_builder.sql());
     
     let query = query_builder.build_query_as();
 
     let mut r = query.fetch_all(&pool).await?;
+
 
     let jobs = {
         let query = query_as!(

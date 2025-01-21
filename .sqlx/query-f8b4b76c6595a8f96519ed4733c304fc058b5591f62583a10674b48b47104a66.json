@@ -1,10 +1,10 @@
 {
   "db_name": "SQLite",
-  "query": "\n        select count(*) from users where admin = false and deactivated = false;   \n    ",
+  "query": "select count(id) as count from users;",
   "describe": {
     "columns": [
       {
-        "name": "count(*)",
+        "name": "count",
         "ordinal": 0,
         "type_info": "Integer"
       }
@@ -16,5 +16,5 @@
       false
     ]
   },
-  "hash": "d432764c31234838de704d133dd0d8bc8589c4ae164f0a75e49e75f133c03cf4"
+  "hash": "f8b4b76c6595a8f96519ed4733c304fc058b5591f62583a10674b48b47104a66"
 }
