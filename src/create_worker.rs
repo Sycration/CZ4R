@@ -49,13 +49,16 @@ State(AppState { pool, engine }): State<AppState>,
 
         let flatrate = Decimal::from_str_exact(&workerdata.Flatrate)? * Decimal::ONE_HUNDRED;
 
-
         let admin = match workerdata.Admin.as_deref() {
             Some("on" | "true" | "yes") => true,
             Some("off" | "false" | "no") | None => false,
             _ => return Err(CustomError(anyhow!("Client didn't return a boolean string"))),
         };
 
+        let hourly = hourly.to_i32().unwrap();
+        let mileage = mileage.to_i32().unwrap();
+        let drivetime = drivetime.to_i32().unwrap();
+        let flatrate = flatrate.to_i32().unwrap();
         let id = query!(
             r#"insert into users (name, hash, salt, admin, address, phone, email, rate_hourly_cents, rate_mileage_cents, rate_drive_hourly_cents, flat_rate_cents, must_change_pw)
         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
@@ -68,12 +71,13 @@ State(AppState { pool, engine }): State<AppState>,
             workerdata.Address,
             workerdata.Phone,
             workerdata.Email,
-            hourly.to_i32().unwrap(),
-            mileage.to_i32().unwrap(),
-            drivetime.to_i32().unwrap(),
-            flatrate.to_i32().unwrap(),
+            hourly,
+            mileage,
+            drivetime,
+            flatrate,
             true
         ).fetch_one(&pool).await?.id;
+
 
 
         Ok(Redirect::to(

@@ -62,6 +62,7 @@ pub(crate) async fn change_pw(
     mut _auth: AuthSession<Backend>,
     Form(form): Form<ChangePwForm>,
 ) -> Result<impl IntoResponse, impl IntoResponse> {
+    
     let must_change = query!(
         r#"
     select (must_change_pw) from users 
@@ -91,6 +92,8 @@ pub(crate) async fn change_pw(
         .hash_password(form.password1.as_bytes(), salt.as_salt())
         .unwrap()
         .to_string();
+    
+    let salt = salt.as_str();
 
     query!(
         r#"
@@ -101,7 +104,7 @@ pub(crate) async fn change_pw(
     must_change_pw = false
     where id = $3;"#,
         hash,
-        salt.as_str(),
+        salt,
         form.id
     )
     .execute(&pool)

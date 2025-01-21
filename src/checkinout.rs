@@ -14,6 +14,7 @@ use rust_decimal::Decimal;
 use serde::Deserialize;
 use serde_json::json;
 use sqlx::{query, query_as, Pool};
+use time::format_description::well_known::Iso8601;
 use time::{format_description, macros::format_description, Time};
 
 #[derive(Deserialize)]
@@ -36,8 +37,7 @@ pub(crate) async fn checkinoutpage(
             "Attempted to check in for other worker")));
     }
 
-    let jw = query_as!(
-        JobWorker,
+    let jw = query!(
         r#"
         select * from jobworkers
             where 
@@ -50,7 +50,6 @@ pub(crate) async fn checkinoutpage(
     )
     .fetch_one(&pool)
     .await?;
-
 
     let job = query_as!(
         Job,
@@ -65,11 +64,17 @@ pub(crate) async fn checkinoutpage(
     .await?;
 
     let signin = jw.signin.map(|t| {
-        t.format(&format_description::parse("[hour]:[minute]").unwrap())
+        Time::parse(
+            &t,
+            &Iso8601::TIME
+        ).unwrap().format(&format_description::parse("[hour]:[minute]").unwrap())
             .unwrap()
     });
     let signout = jw.signout.map(|t| {
-        t.format(&format_description::parse("[hour]:[minute]").unwrap())
+        Time::parse(
+            &t,
+            &Iso8601::TIME
+        ).unwrap().format(&format_description::parse("[hour]:[minute]").unwrap())
             .unwrap()
     });
 
@@ -84,8 +89,8 @@ pub(crate) async fn checkinoutpage(
         "site_name": job.sitename.as_str(),
         "address": job.address.as_str(),
         "date": format!("{} {}, {}", job.date.month(), job.date.day(),  job.date.year()),
-        "signin": signin.unwrap_or_default().as_str(),
-        "signout": signout.unwrap_or_default().as_str(),
+        "signin": signin.unwrap_or_default(),
+        "signout": signout.unwrap_or_default(),
         "miles": jw.miles_driven,
         "hours": jw.hours_driven.floor(),
         "minutes": 60. * (jw.hours_driven - jw.hours_driven.floor()),
@@ -147,6 +152,10 @@ State(AppState { pool, engine }): State<AppState>,
         Some(Time::parse(&signout, format_description!("[hour]:[minute]"))?)
     };
 
+
+    let true_hours_driven = (hoursdriven + (minutesdriven / 60.));
+    let true_extra_exp = extraexp.to_i32().unwrap();
+
 query!(
         r#"
     update jobworkers
@@ -163,8 +172,8 @@ query!(
         signin,
         signout,
         milesdriven,
-        (hoursdriven + (minutesdriven / 60.)),
-        extraexp.to_i32().unwrap(),
+        true_hours_driven,
+        true_extra_exp,
         form.Notes,
         worker,
         form.JobId

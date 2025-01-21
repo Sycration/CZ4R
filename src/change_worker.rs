@@ -55,6 +55,12 @@ pub(crate) async fn change_worker(
             Some("off" | "false" | "no") | None => false,
             _ => return Err(CustomError(anyhow!("Client didn't return a boolean string"))),
         };
+
+        let hourly = hourly.to_i32().unwrap();
+        let mileage = mileage.to_i32().unwrap();
+        let drivetime = drivetime.to_i32().unwrap();
+        let flatrate = flatrate.to_i32().unwrap();
+
         query!(
             r#"update users 
             set 
@@ -74,10 +80,10 @@ pub(crate) async fn change_worker(
             workerdata.Address,
             workerdata.Phone,
             workerdata.Email,
-            hourly.to_i32().unwrap(),
-            mileage.to_i32().unwrap(),
-            drivetime.to_i32().unwrap(),
-            flatrate.to_i32().unwrap(),
+            hourly,
+            mileage,
+            drivetime,
+            flatrate,
             workerdata.id
         )
         .execute(&pool)

@@ -33,7 +33,7 @@ pub(crate) async fn index(
     .fetch_one(&pool)
     .await;
     let jobs = match jobs {
-        Ok(Some(v)) => v,
+        Ok(v) => v,
         _ => 0,
 
     };
@@ -48,7 +48,7 @@ pub(crate) async fn index(
     .fetch_one(&pool)
     .await;
     let workers = match workers {
-        Ok(Some(v)) => v,
+        Ok(v) => v,
         _ => 0,
     };
 

@@ -33,91 +33,90 @@ pub struct LoginPageForm {
     failure: Option<bool>,
 }
 
-//pub async fn loginpage(
-//    State(AppState { pool: _, engine }): State<AppState>,
-//    mut auth: AuthSession<Backend>,
-//    Form(form): Form<LoginPageForm>,
-//) -> Result<impl IntoResponse, Infallible> {
-//    let logged_in = auth.user.is_some();
-//    let admin = auth.user.as_ref().map_or(false, |w| w.admin);
-//
-//    let data = serde_json::json!({
-//        "title": "CZ4R Login",
-//        "admin": admin,
-//        "logged_in": logged_in,
-//        "failure": form.failure == Some(true)
-//    });
-//
-//    Ok(RenderHtml("login.hbs", engine, data))
-//}
-//
-//pub(crate) async fn login(
-//    mut auth: AuthSession<Backend>,
-//State(AppState { pool, engine: _ }): State<AppState>,
-//    Form(login_form): Form<LoginForm>, //Extension(worker): Extension<Worker>
-//) -> Redirect {
-//    let LoginForm { username, password } = login_form;
-//
-//    let mut conn = pool.acquire().await.unwrap();
-//
-//    let worker = query_as!(Worker, "select * from users where name = $1", username)
-//        .fetch_one(&mut *conn)
-//        .await;
-//
-//    let worker = if let Ok(w) = worker {
-//        w
-//    } else {
-//        return Redirect::to("/loginpage?failure=true");
-//    };
-//
-//    if worker.deactivated {
-//        return Redirect::to("/loginpage?failure=true");
-//    }
-//
-//    if worker.must_change_pw {
-//        return Redirect::to(format!("/change-pw?id={}", worker.id).as_str());
-//    }
-//
-//    let salt = &worker.salt;
-//    let saltstr: Result<SaltString, password_hash::Error> = SaltString::from_b64(salt.as_str());
-//    let saltstr = if let Ok(s) = saltstr {
-//        s
-//    } else {
-//        return Redirect::to("/loginpage?failure=true");
-//    };
-//
-//    let hash = Scrypt
-//        .hash_password(password.as_bytes(), saltstr.as_salt())
-//        .unwrap()
-//        .to_string();
-//
-//    let mut failure = false;
-//
-//    if worker.hash == hash {
-//        if worker.must_change_pw {
-//            //do not log in
-//            return Redirect::to(format!("/change-pw?id={}", worker.id).as_str());
-//        }
-//        auth.login(&worker).await.unwrap();
-//    } else {
-//        failure = true;
-//    }
-//
-//    if failure {
-//        Redirect::to("/loginpage?failure=true")
-//    } else {
-//        Redirect::to("/")
-//    }
-//}
-//
-//pub(crate) async fn logout(
-//    mut auth: AuthSession<Backend>,
-//    State(_pool): State<Pool<Sqlite>>,
-//) -> Redirect {
-//    if (auth.logout().await).is_ok() {
-//        Redirect::to("/")
-//    } else {
-//        Redirect::to("/loginpage?failure=true")
-//    }
-//}
-//
+pub async fn loginpage(
+    State(AppState { pool: _, engine }): State<AppState>,
+    mut auth: AuthSession<Backend>,
+    Form(form): Form<LoginPageForm>,
+) -> Result<impl IntoResponse, Infallible> {
+    let logged_in = auth.user.is_some();
+    let admin = auth.user.as_ref().map_or(false, |w| w.admin);
+
+    let data = serde_json::json!({
+        "title": "CZ4R Login",
+        "admin": admin,
+        "logged_in": logged_in,
+        "failure": form.failure == Some(true)
+    });
+
+    Ok(RenderHtml("login.hbs", engine, data))
+}
+
+pub(crate) async fn login(
+    mut auth: AuthSession<Backend>,
+State(AppState { pool, engine: _ }): State<AppState>,
+    Form(login_form): Form<LoginForm>, //Extension(worker): Extension<Worker>
+) -> Redirect {
+    let LoginForm { username, password } = login_form;
+
+    let mut conn = pool.acquire().await.unwrap();
+
+    let worker = query_as!(Worker, "select * from users where name = $1", username)
+        .fetch_one(&mut *conn)
+        .await;
+
+    let worker = if let Ok(w) = worker {
+        w
+    } else {
+        return Redirect::to("/loginpage?failure=true");
+    };
+
+    if worker.deactivated {
+        return Redirect::to("/loginpage?failure=true");
+    }
+
+    if worker.must_change_pw {
+        return Redirect::to(format!("/change-pw?id={}", worker.id).as_str());
+    }
+
+    let salt = &worker.salt;
+    let saltstr: Result<SaltString, password_hash::Error> = SaltString::from_b64(salt.as_str());
+    let saltstr = if let Ok(s) = saltstr {
+        s
+    } else {
+        return Redirect::to("/loginpage?failure=true");
+    };
+
+    let hash = Scrypt
+        .hash_password(password.as_bytes(), saltstr.as_salt())
+        .unwrap()
+        .to_string();
+
+    let mut failure = false;
+
+    if worker.hash == hash {
+        if worker.must_change_pw {
+            //do not log in
+            return Redirect::to(format!("/change-pw?id={}", worker.id).as_str());
+        }
+        auth.login(&worker).await.unwrap();
+    } else {
+        failure = true;
+    }
+
+    if failure {
+        Redirect::to("/loginpage?failure=true")
+    } else {
+        Redirect::to("/")
+    }
+}
+
+pub(crate) async fn logout(
+    mut auth: AuthSession<Backend>,
+    State(_pool): State<Pool<Sqlite>>,
+) -> Redirect {
+    if (auth.logout().await).is_ok() {
+        Redirect::to("/")
+    } else {
+        Redirect::to("/loginpage?failure=true")
+    }
+}

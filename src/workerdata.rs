@@ -9,7 +9,7 @@ use password_hash::{rand_core::le, PasswordHasher, Salt, SaltString};
 use serde::{Deserialize, Serialize};
 use sqlx::types::time::Date;
 use sqlx::{query, query_as, Pool};
-use time::{OffsetDateTime, Time};
+use time::{format_description::well_known::Iso8601, macros::format_description, OffsetDateTime, Time};
 
 use crate::{
     errors::{self, CustomError},
@@ -110,8 +110,23 @@ pub(crate) async fn workerdatapage(
         let hours_worked_total = data
             .iter()
             .filter(|d| d.signin.is_some() && d.signout.is_some())
-            .fold(0.0, |acc, x| {
-                acc + hours_worked(x.signin.unwrap(), x.signout.unwrap())
+            .map(|x| {
+                let signin = Some(Time::parse(
+                    &x.signin.clone().unwrap(),
+                    &Iso8601::TIME,
+                ));
+                let signout = Some(Time::parse(
+                    &x.signout.clone().unwrap(),
+                    &Iso8601::TIME,
+                ));
+                (signin, signout)
+            })
+            .filter(|(signin, signout)|signin.is_some() && signout.is_some())
+            .map(|(signin, signout)| (signin.unwrap(), signout.unwrap()))
+            .filter(|(signin, signout)|signin.is_ok() && signout.is_ok())
+            .map(|(signin, signout)| (signin.unwrap(), signout.unwrap()))
+            .fold(0.0, |acc, (signin, signout)| {
+                acc + hours_worked(signin, signout)
             });
         let hours_driven_total = data
             .iter()
@@ -137,49 +152,71 @@ pub(crate) async fn workerdatapage(
         let entries = data
             .into_iter()
             .map(|d| {
-                
                 let Completed = d.signin.is_some() && d.signout.is_some();
-                
                 WDEntry {
-                Date: d.date.to_string(),
-                Location: d.sitename,
-                FlatRate: d.using_flat_rate,
-                HoursWorked: {
-                    if Completed {
-                        let val = hours_worked(d.signin.unwrap(), d.signout.unwrap());
-                        format!("{:.2}", val)
+                    Date: d.date.unwrap(),
+                    Location: d.sitename,
+                    FlatRate: d.using_flat_rate,
+                    HoursWorked: {
+                        if Completed {
+
+                            let signin = Time::parse(
+                                &d.signin.clone().unwrap(),
+                                &Iso8601::TIME
+                            ).unwrap();
+                            let signout = Time::parse(
+                                &d.signout.clone().unwrap(),
+                                &Iso8601::TIME
+                            ).unwrap();
+                            let val = hours_worked(signin, signout);
+                            format!("{:.2}", val)
+                        } else {
+                            String::from("N/A")
+                        }
+                    },
+                    TrueHoursWorked: if Completed {
+                        {
+                            let signin = Time::parse(
+                                &d.signin.unwrap(),
+                                &Iso8601::TIME
+                            ).unwrap();
+                            let signout = Time::parse(
+                                &d.signout.unwrap(),
+                                &Iso8601::TIME
+                            ).unwrap();
+                            let val =
+                                (signout - signin).as_seconds_f32() / 3600.;
+                            format!("{:.2}", val)
+                        }
                     } else {
                         String::from("N/A")
-                    }
-                    
-                },
-                TrueHoursWorked:  if Completed { {
-                    let val = (d.signout.unwrap() - d.signin.unwrap()).as_seconds_f32() / 3600.;
-                    format!("{:.2}", val)
-                } } else {
-                    String::from("N/A")
-                },
-                HoursDriven: format!("{:.2}", d.hours_driven),
-                MilesDriven: format!("{:.2}", d.miles_driven),
-                ExtraExpCents: format!("{:.2}", (d.extraexpcents as f64 / 100.)),
-                WorkerId: d.worker,
-                JobId: d.job,
-                Completed
-            }})
+                    },
+                    HoursDriven: format!("{:.2}", d.hours_driven),
+                    MilesDriven: format!("{:.2}", d.miles_driven),
+                    ExtraExpCents: format!("{:.2}", (d.extraexpcents as f64 / 100.)),
+                    WorkerId: d.worker,
+                    JobId: d.job,
+                    Completed,
+                }
+            })
             .collect::<Vec<_>>();
 
         let totals = WDEntry {
             Date: String::new(),
             Location: String::new(),
             FlatRate: false,
-            HoursWorked: if all_complete {format!("{:.2}", hours_worked_total) } else {String::from("N/A")},
+            HoursWorked: if all_complete {
+                format!("{:.2}", hours_worked_total)
+            } else {
+                String::from("N/A")
+            },
             TrueHoursWorked: String::new(),
             HoursDriven: format!("{:.2}", hours_driven_total),
             MilesDriven: format!("{:.2}", miles_driven_total),
             ExtraExpCents: format!("{:.2}", (extra_exp_total as f64 / 100.)),
             JobId: -1,
             WorkerId: -1,
-            Completed: all_complete
+            Completed: all_complete,
         };
 
         (entries, totals)

@@ -24,7 +24,6 @@ pub(crate) struct ResetPwForm {
     id: i64,
 }
 
-
 pub(crate) async fn reset_pw(
 State(AppState { pool, engine }): State<AppState>,
     mut auth: AuthSession<Backend>,

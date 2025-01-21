@@ -14,7 +14,7 @@ use axum::{
     BoxError, Form, Router,
 };
 use config::Config;
-use login::LoginForm;
+use login::{loginpage, LoginForm};
 use tracing::{trace, warn};
 use axum_login::AuthSession;
 use axum_login::{
@@ -79,6 +79,7 @@ pub struct Job {
     notes: String,
 }
 
+
 #[derive(Debug, Default, Clone, sqlx::FromRow, Serialize)]
 pub struct Worker {
     id: i64,
@@ -141,7 +142,9 @@ impl Backend {
     }
 }
 
+
 #[async_trait]
+
 impl AuthnBackend for Backend {
     type User = Worker;
     type Credentials = LoginForm;
@@ -260,6 +263,7 @@ async fn app() {
 
     let backend = Backend::new(auth_pool);
 
+    
     let session_store = MemoryStore::default();
     let session_layer = SessionManagerLayer::new(session_store).with_secure(false);
 
@@ -296,27 +300,27 @@ async fn app() {
             .expect("Failed to insert default admin user");
     }
     
-    let admin_only = Router::new();
-        //.route("/admin", get(admin::admin))
-        //.route("/admin/worker-edit", get(workeredit::workeredit))
-        //.route("/admin/worker-data", get(workerdata::workerdatapage))
-        //.route("/admin/restore", get(restore::restorepage))
-        //.route(
-        //    "/admin/api/v1/create-worker",
-        //    post(create_worker::create_worker),
-        //)
-        //.route("/admin/api/v1/edit-job", post(jobedit::jobedit))
-        //.route("/admin/api/v1/delete-job", post(jobedit::jobdelete))
-        //.route(
-        //    "/admin/api/v1/deactivate-worker",
-        //    post(deactivate::deactivate),
-        //)
-        //.route(
-        //    "/admin/api/v1/change-worker",
-        //    post(change_worker::change_worker),
-        //)
-        //.route("/admin/api/v1/restore-worker", post(restore::restore))
-        //.route("/admin/api/v1/reset-pw", post(reset_pw::reset_pw));
+    let admin_only = Router::new()
+        .route("/admin", get(admin::admin))
+        .route("/admin/worker-edit", get(workeredit::workeredit))
+        .route("/admin/worker-data", get(workerdata::workerdatapage))
+        .route("/admin/restore", get(restore::restorepage))
+        .route(
+            "/admin/api/v1/create-worker",
+            post(create_worker::create_worker),
+        )
+        .route("/admin/api/v1/edit-job", post(jobedit::jobedit))
+        .route("/admin/api/v1/delete-job", post(jobedit::jobdelete))
+        .route(
+            "/admin/api/v1/deactivate-worker",
+            post(deactivate::deactivate),
+        )
+        .route(
+            "/admin/api/v1/change-worker",
+            post(change_worker::change_worker),
+        )
+        .route("/admin/api/v1/restore-worker", post(restore::restore))
+        .route("/admin/api/v1/reset-pw", post(reset_pw::reset_pw));
     
     let app = Router::new()
         .route("/", get(index::index))
