@@ -1,4 +1,4 @@
-FROM rust:bullseye AS development
+FROM rust:bookworm AS development
 
 ENV DEBIAN_FRONTEND=noninteractive
 

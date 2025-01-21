@@ -1,4 +1,4 @@
-FROM rust:bullseye AS build
+FROM rust:bookworm AS build
 
 COPY . /code/
 
