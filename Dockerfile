@@ -11,7 +11,7 @@ RUN cargo --version
 
 RUN cargo build --release
 
-FROM debian:bullseye-slim AS run
+FROM debian:bookworm-slim AS run
 
 RUN mkdir /app
 
