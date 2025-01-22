@@ -21,7 +21,7 @@ pub(crate) struct WorkerEditForm {
 }
 
 pub(crate) async fn workeredit(
-    State(AppState { pool, engine }): State<AppState>,
+    State(AppState { pool, engine, .. }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(worker): Form<WorkerEditForm>,
 ) -> Result<impl IntoResponse, CustomError> {

@@ -15,7 +15,7 @@ use serde::Deserialize;
 use serde_json::json;
 use sqlx::{query, query_as, Pool, Postgres};
 pub(crate) async fn error404(
-    State(AppState { pool: _, engine }): State<AppState>,
+    State(AppState { pool: _, engine, .. }): State<AppState>,
     mut auth: AuthSession<Backend>,
 ) -> Result<impl IntoResponse, Infallible> {
 

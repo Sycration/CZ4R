@@ -26,7 +26,7 @@ pub(crate) struct ResetPwForm {
 
 
 pub(crate) async fn reset_pw(
-State(AppState { pool, engine }): State<AppState>,
+State(AppState { pool, engine, .. }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<ResetPwForm>,
 ) -> Result<impl IntoResponse, CustomError> {

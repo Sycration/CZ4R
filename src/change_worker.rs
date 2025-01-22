@@ -38,7 +38,7 @@ pub(crate) struct WorkerChangeForm {
 // Result<impl IntoResponse, impl IntoResponse>
 
 pub(crate) async fn change_worker(
-    State(AppState { pool, engine }): State<AppState>,
+    State(AppState { pool, engine, .. }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(workerdata): Form<WorkerChangeForm>,
 ) -> Result<impl IntoResponse, impl IntoResponse> {

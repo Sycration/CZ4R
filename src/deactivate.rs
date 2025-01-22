@@ -32,7 +32,7 @@ pub struct DeactivateForm {
 
 pub(crate) async fn deactivate(
     mut auth: AuthSession<Backend>,
-    State(AppState { pool, engine }): State<AppState>,
+    State(AppState { pool, engine, .. }): State<AppState>,
     Form(deactivate_form): Form<DeactivateForm>, //Extension(worker): Extension<Worker>
 ) -> Result<impl IntoResponse, impl IntoResponse> {
     let my_id = get_admin(auth)?;

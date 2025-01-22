@@ -34,7 +34,7 @@ struct RestoreListItem {
 }
 
 pub async fn restorepage(
-    State(AppState { pool, engine }): State<AppState>,
+    State(AppState { pool, engine, .. }): State<AppState>,
     mut auth: AuthSession<Backend>,
 ) -> Result<impl IntoResponse, CustomError> {
     get_admin(auth)?;
@@ -59,7 +59,7 @@ pub async fn restorepage(
 
 pub(crate) async fn restore(
     mut auth: AuthSession<Backend>,
-    State(AppState { pool, engine }): State<AppState>,
+    State(AppState { pool, engine, .. }): State<AppState>,
     Form(restore_form): Form<RestoreForm>, //Extension(worker): Extension<Worker>
 ) -> Result<impl IntoResponse, CustomError> {
     get_admin(auth)?;

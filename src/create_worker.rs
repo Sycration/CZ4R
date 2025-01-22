@@ -34,7 +34,7 @@ pub(crate) struct WorkerCreateForm {
 }
 
 pub(crate) async fn create_worker(
-State(AppState { pool, engine }): State<AppState>,
+State(AppState { pool, engine, .. }): State<AppState>,
     //Path(id): Path<i64>,
     mut auth: AuthSession<Backend>,
     Form(workerdata): Form<WorkerCreateForm>,

@@ -135,7 +135,7 @@ pub struct SearchParams {
 }
 
 pub(crate) async fn joblistpage(
-    State(AppState { pool, engine }): State<AppState>,
+    State(AppState { pool, engine, .. }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<JobListForm>,
 ) -> Result<impl IntoResponse, CustomError> {

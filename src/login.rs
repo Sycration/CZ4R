@@ -34,7 +34,7 @@ pub struct LoginPageForm {
 }
 
 pub async fn loginpage(
-    State(AppState { pool: _, engine }): State<AppState>,
+    State(AppState { pool: _, engine, .. }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<LoginPageForm>,
 ) -> Result<impl IntoResponse, Infallible> {
@@ -53,7 +53,7 @@ pub async fn loginpage(
 
 pub(crate) async fn login(
     mut auth: AuthSession<Backend>,
-State(AppState { pool, engine: _ }): State<AppState>,
+State(AppState { pool, engine: _, .. }): State<AppState>,
     Form(login_form): Form<LoginForm>, //Extension(worker): Extension<Worker>
 ) -> Redirect {
     let LoginForm { username, password } = login_form;

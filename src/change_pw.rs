@@ -30,7 +30,7 @@ pub(crate) struct ChangePwPageForm {
 }
 
 pub(crate) async fn change_pw_page(
-    State(AppState { pool: _, engine }): State<AppState>,
+    State(AppState { pool: _, engine , ..}): State<AppState>,
     mut _auth: AuthSession<Backend>, //never logged in
     Form(form): Form<ChangePwPageForm>,
 ) -> Result<impl IntoResponse, impl IntoResponse> {
@@ -58,7 +58,7 @@ pub(crate) struct ChangePwForm {
 }
 
 pub(crate) async fn change_pw(
-    State(AppState { pool, engine }): State<AppState>,
+    State(AppState { pool, .. }): State<AppState>,
     mut _auth: AuthSession<Backend>,
     Form(form): Form<ChangePwForm>,
 ) -> Result<impl IntoResponse, impl IntoResponse> {

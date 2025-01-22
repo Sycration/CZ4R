@@ -25,7 +25,7 @@ pub(crate) struct JobEditPage {
 }
 
 pub(crate) async fn jobeditpage(
-    State(AppState { pool, engine }): State<AppState>,
+    State(AppState { pool, engine, .. }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<JobEditPage>,
 ) -> Result<impl IntoResponse, CustomError> {
@@ -109,7 +109,7 @@ pub(crate) struct JobEditForm {
 }
 
 pub(crate) async fn jobedit(
-State(AppState { pool, engine }): State<AppState>,
+State(AppState { pool, engine, .. }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<JobEditForm>,
 ) -> Result<impl IntoResponse, CustomError> {
@@ -274,7 +274,7 @@ pub(crate) struct JobDeleteForm {
 }
 
 pub(crate) async fn jobdelete(
-State(AppState { pool, engine }): State<AppState>,
+State(AppState { pool, engine, .. }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<JobDeleteForm>,
 ) -> Result<impl IntoResponse, CustomError> {
