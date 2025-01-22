@@ -23,15 +23,16 @@ pub(crate) async fn export_db(
 ) -> Result<impl IntoResponse, CustomError> {
     get_admin(auth)?;
 
+    let url = url::Url::parse(&db_url)?;
+    let path = url.path();
+
     Ok(
-    Command::new("pg_dump")
-    .arg("--inserts")
-    .arg(db_url)
+    Command::new("sqlite3")
+    .arg(path)
+    .arg(".dump")
     .output()
     .await?.stdout
 
     )
-
-    
 
 }

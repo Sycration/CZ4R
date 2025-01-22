@@ -33,6 +33,7 @@ secrecy = "0.10"
 anyhow = "1.0"
 thiserror = "2"
 itertools = "0.14"
+url = "2"
 
 [profile.dev.package."*"]
 opt-level = 3
