@@ -154,9 +154,6 @@ pub(crate) async fn joblistpage(
         (now() + Duration::days(15)).date()
     }.to_string();
 
-    dbg!(&start_date);
-    dbg!(&end_date);
-
     //testing form.order because that is always sent on form submit
     let assigned = if form.order.is_some() {
         form.assigned.unwrap_or(false)
@@ -245,7 +242,6 @@ pub(crate) async fn joblistpage(
         }
     }
 
-    dbg!(&query_builder.sql());
     
     let query = query_builder.build_query_as();
 
