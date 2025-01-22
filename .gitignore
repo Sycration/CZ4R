@@ -1,4 +1,5 @@
 target
 .devcontainer/.env
+.env
 tmp
 work-log.md

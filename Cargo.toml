@@ -34,6 +34,8 @@ anyhow = "1.0"
 thiserror = "2"
 itertools = "0.14"
 url = "2"
+dotenvy = "0.15.7"
+aws-sdk-s3 = "1.70.0"
 
 [profile.dev.package."*"]
 opt-level = 3

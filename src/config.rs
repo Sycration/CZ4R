@@ -17,6 +17,7 @@ pub struct Config {
 
 impl Config {
     pub async fn new() -> Config {
+        dotenvy::dotenv();
         let database_url = env::var("DATABASE_URL").expect("DATABASE_URL not set");
 
         if !sqlx::Sqlite::database_exists(&database_url).await.expect("Could not check if database exists") {
