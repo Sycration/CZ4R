@@ -67,6 +67,7 @@ mod reset_pw;
 mod restore;
 mod workerdata;
 mod workeredit;
+mod export_db;
 
 #[derive(Debug, Clone, sqlx::FromRow, Serialize)]
 pub struct Job {
@@ -118,6 +119,7 @@ type AppEngine = Engine<Handlebars<'static>>;
 pub struct AppState {
     pool: Pool<Sqlite>,
     engine: AppEngine,
+    db_url: String
 }
 
 impl AuthUser for Worker {
@@ -202,7 +204,6 @@ fn main() {
     rt.block_on(app());
 }
 #[cfg(debug_assertions)]
-
 pub fn setup_handlebars(hbs: &mut Handlebars) {
     use handlebars::DirectorySourceOptions;
     let mut dso = DirectorySourceOptions::default();
@@ -253,10 +254,10 @@ async fn app() {
     let auth_pool = config.create_pool().await;
 
     let Config {
-        database_url: _,
-        login_secret: _,
-        port: _,
-        site_url: _,
+        database_url,
+        login_secret,
+        port,
+        site_url,
     } = config;
 
     sqlx::migrate!("./migrations").run(&app_pool).await.unwrap();
@@ -320,6 +321,7 @@ async fn app() {
             post(change_worker::change_worker),
         )
         .route("/admin/api/v1/restore-worker", post(restore::restore))
+        .route("/admin/api/v1/export-database.sql", get(export_db::export_db))
         .route("/admin/api/v1/reset-pw", post(reset_pw::reset_pw));
     
     let app = Router::new()
@@ -339,6 +341,7 @@ async fn app() {
         .with_state(AppState {
             pool: app_pool,
             engine: Engine::from(hbs),
+            db_url: database_url
         });
     
     // run it

@@ -18,7 +18,7 @@ use sqlx::{query, query_as, query_scalar, Pool};
 use time::Date;
 
 pub(crate) async fn index(
-    State(AppState { pool, engine }): State<AppState>,
+    State(AppState { pool, engine, .. }): State<AppState>,
 
     mut auth: AuthSession<Backend>,
 ) -> Result<impl IntoResponse, Infallible> {

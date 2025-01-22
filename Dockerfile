@@ -13,6 +13,9 @@ RUN cargo build --release
 
 FROM debian:bookworm-slim AS run
 
+RUN apt-get update
+RUN apt-get install postgresql-client -y
+
 RUN mkdir /app
 
 COPY --from=build /code/target/release/cz4r /app/

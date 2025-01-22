@@ -24,7 +24,7 @@ pub(crate) struct CheckInOutPage {
 }
 
 pub(crate) async fn checkinoutpage(
-    State(AppState { pool, engine }): State<AppState>,
+    State(AppState { pool, engine, .. }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<CheckInOutPage>,
 ) -> Result<impl IntoResponse, impl IntoResponse> {
@@ -117,7 +117,7 @@ pub(crate) struct CheckInOutForm {
 }
 
 pub(crate) async fn checkinout(
-State(AppState { pool, engine }): State<AppState>,
+State(AppState { pool, .. }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<CheckInOutForm>,
 ) -> Result<impl IntoResponse, impl IntoResponse> {

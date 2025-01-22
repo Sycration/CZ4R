@@ -44,7 +44,7 @@ fn hours_worked(signin: Time, signout: Time) -> f32 {
 }
 
 pub(crate) async fn workerdatapage(
-    State(AppState { pool, engine }): State<AppState>,
+    State(AppState { pool, engine , ..}): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(worker): Form<WorkerDataForm>,
 ) -> Result<impl IntoResponse, CustomError> {
