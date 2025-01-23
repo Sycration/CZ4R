@@ -20,7 +20,10 @@ use serde::Deserialize;
 use sqlx::query_as;
 use sqlx::Pool;
 use sqlx::Sqlite;
+use tracing::debug;
+use tracing::info;
 use tracing::trace;
+use tracing::warn;
 
 #[derive(Deserialize, Clone)]
 pub struct LoginForm {
@@ -34,7 +37,9 @@ pub struct LoginPageForm {
 }
 
 pub async fn loginpage(
-    State(AppState { pool: _, engine, .. }): State<AppState>,
+    State(AppState {
+        pool: _, engine, ..
+    }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<LoginPageForm>,
 ) -> Result<impl IntoResponse, Infallible> {
@@ -53,7 +58,9 @@ pub async fn loginpage(
 
 pub(crate) async fn login(
     mut auth: AuthSession<Backend>,
-State(AppState { pool, engine: _, .. }): State<AppState>,
+    State(AppState {
+        pool, engine: _, ..
+    }): State<AppState>,
     Form(login_form): Form<LoginForm>, //Extension(worker): Extension<Worker>
 ) -> Redirect {
     let LoginForm { username, password } = login_form;
@@ -67,14 +74,17 @@ State(AppState { pool, engine: _, .. }): State<AppState>,
     let worker = if let Ok(w) = worker {
         w
     } else {
+        debug!("user {} can't log in because there is nobody with that name in the database", &username);
         return Redirect::to("/loginpage?failure=true");
     };
 
     if worker.deactivated {
+        debug!("user {} (id {}) can't log in because they are deactivated", &worker.name, &worker.id);
         return Redirect::to("/loginpage?failure=true");
     }
 
     if worker.must_change_pw {
+        debug!("user {} (id {}) has to change their password", &worker.name, &worker.id);
         return Redirect::to(format!("/change-pw?id={}", worker.id).as_str());
     }
 
@@ -83,6 +93,7 @@ State(AppState { pool, engine: _, .. }): State<AppState>,
     let saltstr = if let Ok(s) = saltstr {
         s
     } else {
+        warn!("user {} (id {}) can't log in because they have an invalid salt", &worker.name, &worker.id);
         return Redirect::to("/loginpage?failure=true");
     };
 
@@ -96,11 +107,15 @@ State(AppState { pool, engine: _, .. }): State<AppState>,
     if worker.hash == hash {
         if worker.must_change_pw {
             //do not log in
+            debug!("user {} (id {}) has to change their password", &worker.name, &worker.id);
             return Redirect::to(format!("/change-pw?id={}", worker.id).as_str());
         }
         auth.login(&worker).await.unwrap();
+        info!("user {} (id {}) has logged in", &worker.name, &worker.id);
+
     } else {
         failure = true;
+        debug!("user {} (id {}) can't log in because they used the wrong password", &worker.name, &worker.id);
     }
 
     if failure {
@@ -114,9 +129,18 @@ pub(crate) async fn logout(
     mut auth: AuthSession<Backend>,
     State(_pool): State<Pool<Sqlite>>,
 ) -> Redirect {
-    if (auth.logout().await).is_ok() {
-        Redirect::to("/")
+    if let Some(user) = auth.user.clone() {
+        if (auth.logout().await).is_ok() {
+            debug!("user {} (id {}) logged out", user.name, user.id);
+            Redirect::to("/")
+        } else {
+            warn!("user {} (id {}) could not log out", user.name, user.id);
+
+            Redirect::to("/loginpage?failure=true")
+        }
     } else {
+        debug!("user who is not logged in attempted to log out");
+
         Redirect::to("/loginpage?failure=true")
     }
 }

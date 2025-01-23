@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::types::time::Date;
 use sqlx::{query, query_as, Pool};
 use time::{format_description::well_known::Iso8601, macros::format_description, OffsetDateTime, Time};
+use tracing::debug;
 
 use crate::{
     errors::{self, CustomError},
@@ -48,7 +49,7 @@ pub(crate) async fn workerdatapage(
     mut auth: AuthSession<Backend>,
     Form(worker): Form<WorkerDataForm>,
 ) -> Result<impl IntoResponse, CustomError> {
-    get_admin(auth)?;
+    let (my_id, my_name) = get_admin(auth)?;
 
     let users = sqlx::query_as!(
         Worker,
@@ -219,6 +220,10 @@ pub(crate) async fn workerdatapage(
             Completed: all_complete,
         };
 
+        let user = selectlist.iter().find(|u| u.0 == id).unwrap();
+        debug!("admin {my_name} (id {my_id}) retrieved data on user {} from {} to {}", id, from, to
+        );
+
         (entries, totals)
     } else {
         (vec![], WDEntry::default())
@@ -234,10 +239,12 @@ pub(crate) async fn workerdatapage(
         "num_jobs": entries.len(),
         "entries": entries,
         "totals": totals,
-        "from": from,
-        "to": to,
+        "from": &from,
+        "to": &to,
         "target": "worker-data"
     });
+
+ 
 
     Ok(RenderHtml("workerdata.hbs", engine, data))
 }

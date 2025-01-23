@@ -16,6 +16,7 @@ use serde_json::json;
 use sqlx::{query, query_as, Pool};
 use time::format_description::well_known::Iso8601;
 use time::{format_description, macros::format_description, Time};
+use tracing::*;
 
 #[derive(Deserialize)]
 pub(crate) struct CheckInOutPage {
@@ -28,11 +29,12 @@ pub(crate) async fn checkinoutpage(
     mut auth: AuthSession<Backend>,
     Form(form): Form<CheckInOutPage>,
 ) -> Result<impl IntoResponse, impl IntoResponse> {
-    let (my_id, admin) = get_user(auth)?;
+    let (my_id, my_name, admin) = get_user(auth)?;
 
     let worker = form.worker;
 
     if !admin && worker != my_id {
+        debug!("user {} (id {}) tried to check in for user {}", my_name, my_id, worker);
         return Err(CustomError(anyhow!(
             "Attempted to check in for other worker")));
     }
@@ -121,7 +123,7 @@ State(AppState { pool, .. }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<CheckInOutForm>,
 ) -> Result<impl IntoResponse, impl IntoResponse> {
-    let (my_id, admin) = get_user(auth)?;
+    let (my_id, my_name, admin) = get_user(auth)?;
 
     let worker = form.WorkerId;
 
@@ -181,9 +183,26 @@ query!(
     .execute(&pool)
     .await?;
 
-    // Ok(Redirect::to(
-    //     format!("/checkinout?id={}&worker={}", form.JobId, worker).as_str(),
-    // ))
+    info!("job {} assigned to user {} updated by {} {} (id {}):\n
+sign in time: {}\n
+sign out time: {}\n
+miles driven: {}\n
+hours driven: {}\n
+extra expenses (cents): {}\n
+notes: {}",
+form.JobId,
+worker,
+if admin {"admin"} else {"user"},
+my_name,
+my_id,
+signin.map(|t|t.to_string()).unwrap_or("removed".to_string()),
+signout.map(|t|t.to_string()).unwrap_or("removed".to_string()),
+milesdriven,
+true_hours_driven,
+true_extra_exp,
+form.Notes.unwrap_or_default(),
+);
+
     Ok(StatusCode::OK.into_response())
 
 }

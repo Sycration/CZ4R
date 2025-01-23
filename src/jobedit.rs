@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 
-
-use std::result::Result::Ok;
 use axum::{
     debug_handler,
     extract::State,
@@ -13,12 +11,13 @@ use itertools::Itertools;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use sqlx::{
-    query, query_as, query_builder, types::time::Date, Execute, Pool,  QueryBuilder, Sqlite,
+    query, query_as, query_builder, types::time::Date, Execute, Pool, QueryBuilder, Sqlite,
 };
-use tracing::info;
+use std::result::Result::Ok;
+use tracing::{info, trace};
 
-use crate::{get_admin, Backend};
 use crate::{errors::CustomError, AppState, Job};
+use crate::{get_admin, Backend};
 use axum_login::AuthSession;
 #[derive(Deserialize)]
 pub(crate) struct JobEditPage {
@@ -33,15 +32,20 @@ pub(crate) async fn jobeditpage(
     get_admin(auth)?;
 
     let this_job = match form.id {
-        Some(id) => Some(query_as!(Job, "select * from jobs where id = $1", id)
-            .fetch_one(&pool)
-            .await?),
+        Some(id) => Some(
+            query_as!(Job, "select * from jobs where id = $1", id)
+                .fetch_one(&pool)
+                .await?,
+        ),
         None => None,
     };
 
     let workers = query!("select id, name from users where users.deactivated = false;")
         .fetch_all(&pool)
-        .await?.into_iter().map(|r| (r.id, r.name)).collect::<Vec<_>>();
+        .await?
+        .into_iter()
+        .map(|r| (r.id, r.name))
+        .collect::<Vec<_>>();
 
     let assigned_fr = match form.id {
         Some(id) => query!(
@@ -54,7 +58,9 @@ pub(crate) async fn jobeditpage(
             id
         )
         .fetch_all(&pool)
-        .await?.into_iter().fold(HashMap::new(), |mut acc, x| {
+        .await?
+        .into_iter()
+        .fold(HashMap::new(), |mut acc, x| {
             acc.entry(x.id).or_insert(x.using_flat_rate);
             acc
         }),
@@ -110,11 +116,11 @@ pub(crate) struct JobEditForm {
 }
 
 pub(crate) async fn jobedit(
-State(AppState { pool, engine, .. }): State<AppState>,
+    State(AppState { pool, engine, .. }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<JobEditForm>,
 ) -> Result<impl IntoResponse, CustomError> {
-    get_admin(auth)?;
+    let (my_id, my_name) = get_admin(auth)?;
 
     let to_assign = form
         .assigned
@@ -166,10 +172,10 @@ State(AppState { pool, engine, .. }): State<AppState>,
             job_id
         )
         .fetch_all(&mut *tx)
-        .await?.into_iter()
+        .await?
+        .into_iter()
         .map(|v| (v.worker, v.using_flat_rate))
         .collect::<Vec<_>>();
-
 
         let flatrates_to_remove = currently_assigned
             .iter()
@@ -200,7 +206,13 @@ State(AppState { pool, engine, .. }): State<AppState>,
             .push_bind(csl)
             .push(")")
             .build()
-            .execute(&mut *tx).await?;
+            .execute(&mut *tx)
+            .await?;
+        trace!(
+            "removed flat-rate flags on job {} for users {:?}",
+            job_id,
+            &flatrates_to_remove
+        );
 
         //remove assignments
         let csl = assignments_to_remove.iter().join(",");
@@ -210,8 +222,13 @@ State(AppState { pool, engine, .. }): State<AppState>,
             .push_bind(csl)
             .push(")")
             .build()
-            .execute(&mut *tx).await?;
-
+            .execute(&mut *tx)
+            .await?;
+        trace!(
+            "removed assignments on job {} for users {:?}",
+            job_id,
+            &assignments_to_remove
+        );
 
         //create assignments w/ flatrates
         if !assignments_to_add.is_empty() {
@@ -222,14 +239,32 @@ State(AppState { pool, engine, .. }): State<AppState>,
                     .push_bind(assignment.0)
                     .push_bind(assignment.1);
             });
-
             let query = query_builder.build();
             query.execute(&mut *tx).await?;
+            trace!(
+                "added assignments on job {} for users {:?}\n flat-rates on {:?}",
+                job_id,
+                &assignments_to_add.iter().map(|x| x.0).collect::<Vec<_>>(),
+                &assignments_to_add
+                    .iter()
+                    .filter(|x| x.1)
+                    .map(|x| x.0)
+                    .collect::<Vec<_>>(),
+            );
         }
 
         tx.commit().await?;
-  
-        info!("Updated job {job_id}");
+
+        info!(
+            "admin {my_name} (id {my_id}) updated job {job_id}:\n
+site name: {}\n
+workorder: {}\n
+service code: {}\n
+address: {}\n
+date: {}\n
+notes: {}",
+            form.sitename, form.workorder, form.servcode, form.address, form.date, form.notes
+        );
 
         return Ok(Redirect::to(format!("/jobedit?id={}", job_id).as_str()));
     } else {
@@ -249,7 +284,19 @@ State(AppState { pool, engine, .. }): State<AppState>,
             form.notes
         )
         .fetch_one(&mut *tx)
-        .await?.id;
+        .await?
+        .id;
+
+        info!(
+            "admin {my_name} (id {my_id}) created job {job_id}:\n
+site name: {}\n
+workorder: {}\n
+service code: {}\n
+address: {}\n
+date: {}\n
+notes: {}",
+            form.sitename, form.workorder, form.servcode, form.address, form.date, form.notes
+        );
 
         //create assignments w/ flatrates
         if !to_assign.is_empty() {
@@ -263,7 +310,6 @@ State(AppState { pool, engine, .. }): State<AppState>,
 
             let query = query_builder.build();
             query.execute(&mut *tx).await?;
-
         }
 
         tx.commit().await?;
@@ -277,11 +323,11 @@ pub(crate) struct JobDeleteForm {
 }
 
 pub(crate) async fn jobdelete(
-State(AppState { pool, engine, .. }): State<AppState>,
+    State(AppState { pool, engine, .. }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<JobDeleteForm>,
 ) -> Result<impl IntoResponse, CustomError> {
-    get_admin(auth)?;
+    let (my_id, my_name) = get_admin(auth)?;
 
     query!(
         r#"
@@ -305,6 +351,8 @@ State(AppState { pool, engine, .. }): State<AppState>,
     .execute(&pool)
     .await
     .unwrap();
+
+    info!("admin {} (id {}) deleted job {}", my_name, my_id, form.jobid);
 
     Ok(Redirect::to("/joblist"))
 }

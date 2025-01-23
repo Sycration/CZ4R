@@ -21,6 +21,7 @@ use serde::Deserialize;
 use serde_json::json;
 use sqlx::query;
 use sqlx::Pool;
+use tracing::*;
 
 
 #[derive(Deserialize)]
@@ -76,6 +77,7 @@ pub(crate) async fn change_pw(
     .must_change_pw;
 
     if !must_change {
+        info!("user id {} attempted to change their password when not allowed to", form.id);
         return Err(CustomError(anyhow!(
             "User {} cannot change their password right now. Nice try.",
             form.id
@@ -83,6 +85,7 @@ pub(crate) async fn change_pw(
     }
 
     if form.password1 != form.password2 {
+        debug!("user id {} put in the wrong password", form.id);
         return Ok(Redirect::to(&format!("/change-pw?id={}&no_match=true", form.id)));
     }
 
@@ -109,6 +112,8 @@ pub(crate) async fn change_pw(
     )
     .execute(&pool)
     .await?;
+
+    info!("user id {} changed their password", form.id);
 
 
     Ok(Redirect::to("/loginpage"))

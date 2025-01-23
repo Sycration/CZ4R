@@ -18,6 +18,7 @@ use sqlx::{
     QueryBuilder,
 };
 use time::{Duration, OffsetDateTime, Time};
+use tracing::warn;
 
 #[derive(Deserialize, FromRow)]
 struct JobQueryOutput {
@@ -141,7 +142,7 @@ pub(crate) async fn joblistpage(
     mut auth: AuthSession<Backend>,
     Form(form): Form<JobListForm>,
 ) -> Result<impl IntoResponse, CustomError> {
-    let (id, admin) = get_user(auth)?;
+    let (id, _my_name, admin) = get_user(auth)?;
 
     let start_date = if let Some(d) = form.start_date {
         d
@@ -273,6 +274,10 @@ pub(crate) async fn joblistpage(
         .await;
         if let Ok(mut orphans) = query {
             r = {
+                if !orphans.is_empty() {
+                    warn!("orphan jobs returned in search: {:?}",
+                    orphans.iter().map(|j|j.id).collect::<Vec<_>>());
+                }
                 orphans.append(&mut r);
                 orphans
             }

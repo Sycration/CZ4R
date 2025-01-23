@@ -16,23 +16,27 @@ use serde::Deserialize;
 use serde::Serialize;
 use tokio::process;
 use tokio::process::Command;
+use tracing::info;
 
 pub(crate) async fn export_db(
     mut auth: AuthSession<Backend>,
     State(AppState { pool, engine, db_url }): State<AppState>,
 ) -> Result<impl IntoResponse, CustomError> {
-    get_admin(auth)?;
+    let (my_id, my_name) = get_admin(auth)?;
 
     let url = url::Url::parse(&db_url)?;
     let path = url.path();
 
-    Ok(
+    let res = Ok(
     Command::new("sqlite3")
     .arg(path)
     .arg(".dump")
     .output()
     .await?.stdout
+    );
 
-    )
+    info!("admin {} (id {}) exported the database", my_name, my_id);
+
+    res
 
 }

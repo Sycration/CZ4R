@@ -39,7 +39,7 @@ State(AppState { pool, engine, .. }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(workerdata): Form<WorkerCreateForm>,
 ) -> Result<impl IntoResponse, impl IntoResponse> {
-        get_admin(auth)?;
+        let (my_id, my_name) = get_admin(auth)?;
 
         let hourly = Decimal::from_str_exact(&workerdata.Hourly) ? * Decimal::ONE_HUNDRED;
 
@@ -77,6 +77,21 @@ State(AppState { pool, engine, .. }): State<AppState>,
             flatrate,
             true
         ).fetch_one(&pool).await?.id;
+
+        tracing::info!("admin {} (id {}) created new user {} as follows:\nname: {}\nadmin: {}\naddress: {}\nphone number: {}\nemail address: {}\nhourly rate (cents): {}\ndriving milage rate (cents): {}\ndriving hourly rate (cents): {}\nflat rate worker: {}",
+        my_name,
+        my_id,
+        id,
+        workerdata.Name,
+        admin,
+        workerdata.Address,
+        workerdata.Phone,
+        workerdata.Email,
+        hourly,
+        mileage,
+        drivetime,
+        flatrate,
+    );
 
 
 

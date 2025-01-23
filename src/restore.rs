@@ -20,6 +20,7 @@ use serde::Serialize;
 use sqlx::query;
 use sqlx::query_as;
 use sqlx::Pool;
+use tracing::info;
 
 
 #[derive(Deserialize)]
@@ -62,7 +63,7 @@ pub(crate) async fn restore(
     State(AppState { pool, engine, .. }): State<AppState>,
     Form(restore_form): Form<RestoreForm>, //Extension(worker): Extension<Worker>
 ) -> Result<impl IntoResponse, CustomError> {
-    get_admin(auth)?;
+    let (my_id, my_name) = get_admin(auth)?;
 
     query!(
         "update users set deactivated = false where id = $1",
@@ -70,6 +71,8 @@ pub(crate) async fn restore(
     )
     .execute(&pool)
     .await?;
+
+    info!("admin {my_name} (id {my_id}) restored deactivated user {}", restore_form.user);
 
     Ok(Redirect::to("/admin/restore"))
 }

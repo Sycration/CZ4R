@@ -18,6 +18,7 @@ use scrypt::Scrypt;
 use serde::Deserialize;
 use sqlx::query;
 use sqlx::Pool;
+use tracing::info;
 
 #[derive(Deserialize)]
 pub(crate) struct ResetPwForm {
@@ -29,7 +30,7 @@ State(AppState { pool, engine, .. }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<ResetPwForm>,
 ) -> Result<impl IntoResponse, CustomError> {
-    get_admin(auth)?;
+    let (my_id, my_name) = get_admin(auth)?;
         query!(
             r#"
         update users
@@ -40,6 +41,8 @@ State(AppState { pool, engine, .. }): State<AppState>,
         )
         .execute(&pool)
         .await?;
+
+        info!("admin {my_name} (id {my_id}) reset user {}'s password", form.id);
 
         Ok(Redirect::to(
             format!("/admin/worker-edit?worker={}", form.id).as_str(),

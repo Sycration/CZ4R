@@ -4,8 +4,8 @@ use super::Worker;
 use crate::errors::CustomError;
 use crate::get_admin;
 use crate::AppState;
-use anyhow::anyhow;
 use crate::Backend;
+use anyhow::anyhow;
 use axum::debug_handler;
 use axum::extract::Path;
 use axum::extract::State;
@@ -19,7 +19,6 @@ use serde::Deserialize;
 use sqlx::query;
 use sqlx::query_as;
 use sqlx::Pool;
-
 
 #[derive(Deserialize)]
 pub(crate) struct WorkerChangeForm {
@@ -42,27 +41,31 @@ pub(crate) async fn change_worker(
     mut auth: AuthSession<Backend>,
     Form(workerdata): Form<WorkerChangeForm>,
 ) -> Result<impl IntoResponse, impl IntoResponse> {
-        get_admin(auth)?;
-        let hourly = Decimal::from_str_exact(&workerdata.Hourly)? * Decimal::ONE_HUNDRED;
+    let (my_id, my_name) = get_admin(auth)?;
+    let hourly = Decimal::from_str_exact(&workerdata.Hourly)? * Decimal::ONE_HUNDRED;
 
-        let mileage = Decimal::from_str_exact(&workerdata.Mileage)? * Decimal::ONE_HUNDRED;
+    let mileage = Decimal::from_str_exact(&workerdata.Mileage)? * Decimal::ONE_HUNDRED;
 
-        let drivetime = Decimal::from_str_exact(&workerdata.Drivetime)? * Decimal::ONE_HUNDRED;
-        let flatrate = Decimal::from_str_exact(&workerdata.Flatrate)? * Decimal::ONE_HUNDRED;
+    let drivetime = Decimal::from_str_exact(&workerdata.Drivetime)? * Decimal::ONE_HUNDRED;
+    let flatrate = Decimal::from_str_exact(&workerdata.Flatrate)? * Decimal::ONE_HUNDRED;
 
-        let admin = match workerdata.Admin.as_deref() {
-            Some("on" | "true" | "yes") => true,
-            Some("off" | "false" | "no") | None => false,
-            _ => return Err(CustomError(anyhow!("Client didn't return a boolean string"))),
-        };
+    let admin = match workerdata.Admin.as_deref() {
+        Some("on" | "true" | "yes") => true,
+        Some("off" | "false" | "no") | None => false,
+        _ => {
+            return Err(CustomError(anyhow!(
+                "Client didn't return a boolean string"
+            )))
+        }
+    };
 
-        let hourly = hourly.to_i32().unwrap();
-        let mileage = mileage.to_i32().unwrap();
-        let drivetime = drivetime.to_i32().unwrap();
-        let flatrate = flatrate.to_i32().unwrap();
+    let hourly = hourly.to_i32().unwrap();
+    let mileage = mileage.to_i32().unwrap();
+    let drivetime = drivetime.to_i32().unwrap();
+    let flatrate = flatrate.to_i32().unwrap();
 
-        query!(
-            r#"update users 
+    query!(
+        r#"update users 
             set 
             name = $1, 
             admin = $2, 
@@ -75,22 +78,36 @@ pub(crate) async fn change_worker(
             flat_rate_cents = $9
             where id = $10; 
         "#,
-            workerdata.Name,
-            admin,
-            workerdata.Address,
-            workerdata.Phone,
-            workerdata.Email,
-            hourly,
-            mileage,
-            drivetime,
-            flatrate,
-            workerdata.id
-        )
-        .execute(&pool)
-        .await?;
+        workerdata.Name,
+        admin,
+        workerdata.Address,
+        workerdata.Phone,
+        workerdata.Email,
+        hourly,
+        mileage,
+        drivetime,
+        flatrate,
+        workerdata.id
+    )
+    .execute(&pool)
+    .await?;
 
-        Ok(Redirect::to(
-            format!("/admin/worker-edit?worker={}", workerdata.id).as_str(),
-        ))
+    tracing::info!("admin {} (id {}) modified user {} as follows:\nname: {}\nadmin: {}\naddress: {}\nphone number: {}\nemail address: {}\nhourly rate (cents): {}\ndriving milage rate (cents): {}\ndriving hourly rate (cents): {}\nflat rate worker: {}",
+        my_id,
+        my_name,
+        workerdata.id,
+        workerdata.Name,
+        admin,
+        workerdata.Address,
+        workerdata.Phone,
+        workerdata.Email,
+        hourly,
+        mileage,
+        drivetime,
+        flatrate,
+    );
 
+    Ok(Redirect::to(
+        format!("/admin/worker-edit?worker={}", workerdata.id).as_str(),
+    ))
 }

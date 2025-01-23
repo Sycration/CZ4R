@@ -16,7 +16,7 @@ use axum::{
 use config::Config;
 use futures::join;
 use login::{loginpage, LoginForm};
-use tracing::{trace, warn};
+use tracing::{debug, info, trace, warn};
 use axum_login::AuthSession;
 use axum_login::{
     tower_sessions::{MemoryStore, SessionManagerLayer},
@@ -147,7 +147,6 @@ impl Backend {
 
 
 #[async_trait]
-
 impl AuthnBackend for Backend {
     type User = Worker;
     type Credentials = LoginForm;
@@ -164,29 +163,52 @@ impl AuthnBackend for Backend {
         .fetch_optional(&self.db)
         .await?;
 
-        Ok(user.filter(|user| {
-            let salt = &user.salt;
-            let saltstr: Result<SaltString, password_hash::Error> =
-                SaltString::from_b64(salt.as_str());
-            let saltstr = if let Ok(s) = saltstr {
-                s
-            } else {
-                return false;
-            };
+    let filtered = user.filter(|user| {
+        let salt = &user.salt;
+        let saltstr: Result<SaltString, password_hash::Error> =
+            SaltString::from_b64(salt.as_str());
+        let saltstr = if let Ok(s) = saltstr {
+            s
+        } else {
+            return false;
+        };
 
-            let challenge_hash = Scrypt
-                .hash_password(creds.password.as_bytes(), saltstr.as_salt())
-                .unwrap()
-                .to_string();
+        let challenge_hash = Scrypt
+            .hash_password(creds.password.as_bytes(), saltstr.as_salt())
+            .unwrap()
+            .to_string();
 
-            challenge_hash == user.hash
-        }))
+        let res = challenge_hash == user.hash;
+        
+        if res {
+            debug!("user {} (id {}) successfully authenticated", user.name, user.id);
+        } else {
+            debug!("user {} (id {}) failed to authenticate", user.name, user.id);
+        }
+
+        res
+    });
+
+    if filtered.is_none() {
+        debug!("nonexistent user {} attempted to authenticate", creds.username);
+    }
+
+        return Ok(filtered);
     }
 
     async fn get_user(&self, user_id: &UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
         let user = query_as!(Worker, "select * from users where id = $1", user_id)
             .fetch_optional(&self.db)
             .await?;
+
+        match &user {
+            Some(u) => {
+                debug!("found user {} with id {}", u.name, user_id);
+            },
+            None => {
+                debug!("could not find user with id {}", user_id);
+            }
+        }
 
         Ok(user)
     }
@@ -195,10 +217,17 @@ impl AuthnBackend for Backend {
 pub static TZ_OFFSET: OnceLock<UtcOffset> = OnceLock::new();
 
 fn main() {
-    eprintln!(
-        "The timezone offset is {}",
-        TZ_OFFSET.get_or_init(|| { OffsetDateTime::now_local().unwrap().offset() })
-    );
+    let stdout_log = tracing_subscriber::fmt::layer()
+    .pretty();
+
+    tracing_subscriber::registry()
+    .with(stdout_log.with_filter(filter::EnvFilter::from_default_env()))
+    .init();
+
+    debug!("logging initialized");
+
+    let tz_offset = TZ_OFFSET.get_or_init(|| { OffsetDateTime::now_local().unwrap().offset() });
+    info!("The timezone offset is {tz_offset}");
 
     let rt = Builder::new_multi_thread().enable_all().build().unwrap();
 
@@ -216,6 +245,7 @@ pub fn setup_handlebars(hbs: &mut Handlebars) {
         dso
     )
     .unwrap();
+    debug!("setup handlebars");
 }
 
 #[cfg(not(debug_assertions))]
@@ -228,18 +258,13 @@ struct Templates;
 pub fn setup_handlebars(hbs: &mut Handlebars) {
     hbs.set_dev_mode(false);
     hbs.register_embed_templates::<Templates>().unwrap();
+    debug!("setup handlebars");
+
 }
 
 async fn app() {
-    dbg!(now());
-
-    let stdout_log = tracing_subscriber::fmt::layer()
-        .pretty();
-
-    tracing_subscriber::registry()
-    .with(stdout_log.with_filter(filter::EnvFilter::from_default_env()))
-    .init();
-    trace!("huh");
+    
+ 
 
     let mut hbs = Handlebars::new();
     hbs.set_strict_mode(true);
@@ -318,7 +343,7 @@ async fn app() {
     
     let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-    println!("listening on {}", addr);
+    info!("listening on {}", addr);
     let server = axum::serve(listener, app).into_future();
     if let Some(backup_task) = backup_task {
         let (a, b) =join!(
@@ -339,7 +364,6 @@ where
     let mut buf = Vec::new();
     f(&mut buf).expect("Error rendering template");
     let html: String = String::from_utf8_lossy(&buf).into();
-
     Html(html)
 }
 
@@ -361,19 +385,19 @@ where
     }
 }
 
-pub fn get_user(auth: AuthSession<Backend>) -> Result<(i64, bool), CustomError> {
-    if let Some((id, admin)) = auth.user.map(|u| (u.id, u.admin))  {
-        Ok((id, admin))
+pub fn get_user(auth: AuthSession<Backend>) -> Result<(i64, String, bool), CustomError> {
+    if let Some((id, name, admin)) = auth.user.map(|u| (u.id, u.name, u.admin))  {
+        Ok((id, name, admin))
     } else {
         Err(CustomError(anyhow!(
             "Not logged in")))
     }
 }
 
-pub fn get_admin(auth: AuthSession<Backend>) -> Result<i64, CustomError> {
-    let (id, admin) = get_user(auth)?;
+pub fn get_admin(auth: AuthSession<Backend>) -> Result<(i64, String), CustomError> {
+    let (id, name, admin) = get_user(auth)?;
     if admin {
-        Ok(id)
+        Ok((id, name))
     }  else {
         Err(CustomError(anyhow!(
             "User {} does not have administrator privileges", id)))

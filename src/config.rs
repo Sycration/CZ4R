@@ -19,7 +19,7 @@ use sqlx::migrate::MigrateDatabase;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use sqlx::{query, Pool, Sqlite};
 use tokio::io::AsyncWriteExt;
-use tracing::{error, info, trace, warn};
+use tracing::{debug, error, info, trace, warn};
 
 #[derive(Debug)]
 pub struct Config {
@@ -43,6 +43,7 @@ impl Config {
             if let Ok(bucket_name) = env::var("AWS_BUCKET") {
                 if let Ok(Ok(backup_time)) = env::var("AWS_BACKUP_TIME").map(|s| s.parse::<u64>()) {
                     doing_backups = true;
+
                     let database_url = database_url.clone();
 
                     let mut interval = tokio::time::interval(Duration::from_secs(backup_time));
@@ -57,15 +58,18 @@ impl Config {
 
                     let mut url = url::Url::parse(&database_url).expect("Invalid database URL");
 
-                    let mut path = url.host().map(|h|h.to_string()).unwrap_or_default();
+                    let mut path = url.host().map(|h| h.to_string()).unwrap_or_default();
                     let path_part = url.path();
 
                     path.push_str(path_part);
 
                     let file_name = path.split('/').last().unwrap();
-                    dbg!(&path);
-                    dbg!(tokio::fs::try_exists(&path).await);
+
                     if !sqlx::Sqlite::database_exists(&database_url).await.unwrap() {
+                        debug!(
+                            "no database exists at path {}, attempting to download from AWS",
+                            &path
+                        );
                         if let Ok(mut output) = client
                             .get_object()
                             .bucket(&bucket_name)
@@ -76,24 +80,30 @@ impl Config {
                             if let Ok(mut file) = tokio::fs::File::create(&path).await {
                                 let mut bytes = output.body.collect().await.unwrap();
                                 file.write_all_buf(&mut bytes).await.unwrap();
+                                info!("successfully downloaded database from AWS")
+                            } else {
+                                debug!("no database in AWS")
                             }
                         }
                     }
                     backup_task = Some(tokio::task::spawn({
                         let file_name = file_name.clone().to_string();
+                        info!("AWS backup system initialized\nbacking up to bucket {} every {} seconds", &bucket_name, &backup_time);
                         async move {
                             let backup_pool = recv_pool.await.unwrap();
                             let file = tokio::fs::File::open(&path).await.unwrap();
                             let mut last_edit = file.metadata().await.unwrap().modified().unwrap();
                             interval.tick().await;
                             loop {
-                                trace!("database backup routine loop");
+                                trace!("polling database for backup routine");
 
-                                let new_edit_time = file.metadata().await.unwrap().modified().unwrap();
+                                let new_edit_time =
+                                    file.metadata().await.unwrap().modified().unwrap();
                                 if new_edit_time != last_edit {
-                                    info!("database changed since {:?}, backing up", last_edit);
+                                    debug!("database changed since {:?}, backing up", last_edit);
                                     last_edit = new_edit_time;
-                                    match aws_sdk_s3::primitives::ByteStream::from_path(&path).await {
+                                    match aws_sdk_s3::primitives::ByteStream::from_path(&path).await
+                                    {
                                         Ok(contents) => {
                                             let upload = client
                                                 .put_object()
@@ -105,15 +115,12 @@ impl Config {
                                             if let Err(e) = upload {
                                                 error!("{}", e.to_string());
                                             } else {
-                                                info!("successfully backed up database");
+                                                debug!("successfully backed up database");
                                             }
                                         }
-                                        Err(e) => error!("{}", e.to_string()),
+                                        Err(e) => error!("backup error\n{}", e.to_string()),
                                     }
                                 }
-
- 
-
                                 interval.tick().await;
                             }
                         }
@@ -153,6 +160,7 @@ impl Config {
             .unwrap()
             .count;
         if a == 0 {
+            debug!("no users in database; configuring admin");
             let admin_uname = env::var("ADMIN_USER").expect("ADMIN_USER not set");
             let admin_pw = env::var("ADMIN_PASSWORD").expect("ADMIN_PASSWORD not set");
 
@@ -188,9 +196,20 @@ impl Config {
             .unwrap()
             .create_if_missing(true)
             .pragma("journal_mode", "DELETE");
-        SqlitePoolOptions::new()
-            .connect_with(options)
+        if !sqlx::Sqlite::database_exists(&self.database_url)
             .await
             .unwrap()
+        {
+            info!("creating new database at {}", &self.database_url);
+        }
+
+        let pool = SqlitePoolOptions::new()
+            .connect_with(options)
+            .await
+            .unwrap();
+
+        debug!("opened pool on database {}", &self.database_url);
+
+        pool
     }
 }
