@@ -14,6 +14,7 @@ use axum::{
     BoxError, Form, Router,
 };
 use config::Config;
+use futures::join;
 use login::{loginpage, LoginForm};
 use tracing::{trace, warn};
 use axum_login::AuthSession;
@@ -30,10 +31,10 @@ use rust_embed::RustEmbed;
 use scrypt::Scrypt;
 use serde::{de, Deserialize, Deserializer, Serialize};
 use serde_json::Value;
-use sqlx::types::time::Date;
+use sqlx::{migrate::MigrateDatabase, types::time::Date};
 use sqlx::{query, query_as, Pool, Sqlite};
 use tracing_subscriber::{filter, EnvFilter, Layer};
-use std::fs::File;
+use std::{fs::File, future::IntoFuture};
 use std::time::Instant;
 use std::{
     collections::{BTreeMap, HashMap},
@@ -258,9 +259,9 @@ async fn app() {
         login_secret,
         port,
         site_url,
+        backup_task
     } = config;
 
-    sqlx::migrate!("./migrations").run(&app_pool).await.unwrap();
 
     let backend = Backend::new(auth_pool);
 
@@ -270,37 +271,6 @@ async fn app() {
 
   let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer).build();
 
-    //check if no users, create it from env vars otherwise
-    let mut conn = app_pool.acquire().await.unwrap();
-    let a = query!("select count(id) as count from users;")
-    .fetch_one(&mut *conn)
-    .await
-    .unwrap()
-    .count;
-    if a == 0 {
-    let admin_uname = env::var("ADMIN_USER").expect("ADMIN_USER not set");
-    let admin_pw = env::var("ADMIN_PASSWORD").expect("ADMIN_PASSWORD not set");
-
-        let salt = SaltString::generate(&mut thread_rng());
-    
-        let hash = Scrypt
-            .hash_password(admin_pw.as_bytes(), salt.as_salt())
-            .unwrap()
-            .to_string();
-
-            let salt_str = salt.as_str();
-            query!(
-                "insert into users (name, hash, salt, admin) values ($1, $2, $3, $4);",
-                admin_uname,
-                hash,
-                salt_str,
-                true
-            )
-            .execute(&mut *conn)
-            .await
-            .expect("Failed to insert default admin user");
-    }
-    
     let admin_only = Router::new()
         .route("/admin", get(admin::admin))
         .route("/admin/worker-edit", get(workeredit::workeredit))
@@ -349,7 +319,17 @@ async fn app() {
     let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     println!("listening on {}", addr);
-    axum::serve(listener, app).await.unwrap();
+    let server = axum::serve(listener, app).into_future();
+    if let Some(backup_task) = backup_task {
+        let (a, b) =join!(
+            server,
+            backup_task
+        );
+        a.unwrap();
+        b.unwrap();
+    } else {
+        server.await.unwrap();
+    }
 }
 
 pub fn render<F>(f: F) -> Html<String>
