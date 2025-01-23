@@ -2,7 +2,7 @@ use std::env;
 use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
 use std::thread::JoinHandle;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
 use aws_config::meta::region::RegionProviderChain;
 use aws_config::BehaviorVersion;
@@ -19,7 +19,7 @@ use sqlx::migrate::MigrateDatabase;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use sqlx::{query, Pool, Sqlite};
 use tokio::io::AsyncWriteExt;
-use tracing::{error, warn};
+use tracing::{error, info, trace, warn};
 
 #[derive(Debug)]
 pub struct Config {
@@ -83,24 +83,36 @@ impl Config {
                         let file_name = file_name.clone().to_string();
                         async move {
                             let backup_pool = recv_pool.await.unwrap();
-
+                            let file = tokio::fs::File::open(&path).await.unwrap();
+                            let mut last_edit = file.metadata().await.unwrap().modified().unwrap();
                             interval.tick().await;
                             loop {
-                                match aws_sdk_s3::primitives::ByteStream::from_path(&path).await {
-                                    Ok(contents) => {
-                                        let upload = client
-                                            .put_object()
-                                            .bucket(&bucket_name)
-                                            .key(&file_name)
-                                            .body(contents)
-                                            .send()
-                                            .await;
-                                        if let Err(e) = upload {
-                                            error!("{}", e.to_string());
+                                trace!("database backup routine loop");
+
+                                let new_edit_time = file.metadata().await.unwrap().modified().unwrap();
+                                if new_edit_time != last_edit {
+                                    info!("database changed since {:?}, backing up", last_edit);
+                                    last_edit = new_edit_time;
+                                    match aws_sdk_s3::primitives::ByteStream::from_path(&path).await {
+                                        Ok(contents) => {
+                                            let upload = client
+                                                .put_object()
+                                                .bucket(&bucket_name)
+                                                .key(&file_name)
+                                                .body(contents)
+                                                .send()
+                                                .await;
+                                            if let Err(e) = upload {
+                                                error!("{}", e.to_string());
+                                            } else {
+                                                info!("successfully backed up database");
+                                            }
                                         }
+                                        Err(e) => error!("{}", e.to_string()),
                                     }
-                                    Err(e) => error!("{}", e.to_string()),
                                 }
+
+ 
 
                                 interval.tick().await;
                             }
