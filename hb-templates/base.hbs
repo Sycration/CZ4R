@@ -9,6 +9,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{title}}</title>
+<link rel="icon" id="svg-favicon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="icon" id="96-favicon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+<link id="ico-favicon" rel="shortcut icon" href="/favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-title" content="CZ4R" />
+<link rel="manifest" href="/site.webmanifest" />
 </head>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -87,8 +93,21 @@
     const setTheme = function (theme) {
       if (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
         document.documentElement.setAttribute('data-bs-theme', 'dark')
+        document.getElementById('svg-favicon').setAttribute('href','/favicon-dark.svg');
+        document.getElementById('96-favicon').setAttribute('href','/favicon-96x96-dark.png');
+        document.getElementById('ico-favicon').setAttribute('href','/favicon-dark.ico');
       } else {
         document.documentElement.setAttribute('data-bs-theme', theme)
+        if (theme === 'dark') {
+          document.getElementById('svg-favicon').setAttribute('href','/favicon-dark.svg');
+          document.getElementById('96-favicon').setAttribute('href','/favicon-96x96-dark.png');
+          document.getElementById('ico-favicon').setAttribute('href','/favicon-dark.ico');
+        } else {
+          document.getElementById('svg-favicon').setAttribute('href','/favicon.svg');
+          document.getElementById('96-favicon').setAttribute('href','/favicon-96x96.png');
+          document.getElementById('ico-favicon').setAttribute('href','/favicon.ico');
+        }
+        
       }
     }
   

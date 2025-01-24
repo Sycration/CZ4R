@@ -27,7 +27,7 @@ password-hash = {version = "0.5.0", features = ["rand_core"]}
 rust_decimal = "1"
 axum-template = {version = "3", features = ["handlebars"]}
 handlebars = {version = "6", features = ["dir_source", "rust-embed"]}
-rust-embed = "8"
+rust-embed = {version = "8", features = ["axum", "tokio", "mime_guess", "mime-guess"]}
 serde_json = "1.0"
 secrecy = "0.10"
 anyhow = "1.0"
@@ -37,6 +37,7 @@ url = "2"
 dotenvy = "0.15.7"
 aws-sdk-s3 = "1.70.0"
 aws-config = "1.5.14"
+mime_guess = "2.0.5"
 
 [profile.dev.package."*"]
 opt-level = 3

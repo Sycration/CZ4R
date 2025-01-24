@@ -16,6 +16,7 @@ use axum::{
 use config::Config;
 use futures::join;
 use login::{loginpage, LoginForm};
+use r#static::static_handler;
 use tracing::{debug, info, trace, warn};
 use axum_login::AuthSession;
 use axum_login::{
@@ -69,6 +70,7 @@ mod restore;
 mod workerdata;
 mod workeredit;
 mod export_db;
+mod r#static;
 
 #[derive(Debug, Clone, sqlx::FromRow, Serialize)]
 pub struct Job {
@@ -263,9 +265,6 @@ pub fn setup_handlebars(hbs: &mut Handlebars) {
 }
 
 async fn app() {
-    
- 
-
     let mut hbs = Handlebars::new();
     hbs.set_strict_mode(true);
     setup_handlebars(&mut hbs);

@@ -547,11 +547,41 @@ dependencies = [
 
 [[package]]
 name = "axum"
+version = "0.7.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "edca88bc138befd0323b20752846e6587272d3b03b0343c8ea28a6f819e6e71f"
+dependencies = [
+ "async-trait",
+ "axum-core 0.4.5",
+ "bytes",
+ "futures-util",
+ "http 1.1.0",
+ "http-body 1.0.1",
+ "http-body-util",
+ "hyper 1.5.0",
+ "hyper-util",
+ "itoa",
+ "matchit 0.7.3",
+ "memchr",
+ "mime",
+ "percent-encoding",
+ "pin-project-lite",
+ "rustversion",
+ "serde",
+ "sync_wrapper",
+ "tokio",
+ "tower",
+ "tower-layer",
+ "tower-service",
+]
+
+[[package]]
+name = "axum"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6d6fd624c75e18b3b4c6b9caf42b1afe24437daaee904069137d8bab077be8b8"
 dependencies = [
- "axum-core",
+ "axum-core 0.5.0",
  "axum-macros",
  "bytes",
  "form_urlencoded",
@@ -562,7 +592,7 @@ dependencies = [
  "hyper 1.5.0",
  "hyper-util",
  "itoa",
- "matchit",
+ "matchit 0.8.4",
  "memchr",
  "mime",
  "percent-encoding",
@@ -578,6 +608,26 @@ dependencies = [
  "tower-layer",
  "tower-service",
  "tracing",
+]
+
+[[package]]
+name = "axum-core"
+version = "0.4.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "09f2bd6146b97ae3359fa0cc6d6b376d9539582c7b4220f041a33ec24c226199"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "futures-util",
+ "http 1.1.0",
+ "http-body 1.0.1",
+ "http-body-util",
+ "mime",
+ "pin-project-lite",
+ "rustversion",
+ "sync_wrapper",
+ "tower-layer",
+ "tower-service",
 ]
 
 [[package]]
@@ -607,7 +657,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b0da8e8e4cf127a9b71b578e9a8fa9833e70f893e428ed5453c85e44bf0fd8eb"
 dependencies = [
  "async-trait",
- "axum",
+ "axum 0.8.1",
  "form_urlencoded",
  "serde",
  "subtle",
@@ -637,7 +687,7 @@ version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3df50f7d669bfc3a8c348f08f536fe37e7acfbeded3cfdffd2ad3d76725fc40c"
 dependencies = [
- "axum",
+ "axum 0.8.1",
  "handlebars",
  "serde",
  "thiserror 2.0.11",
@@ -1086,7 +1136,7 @@ dependencies = [
  "async-trait",
  "aws-config",
  "aws-sdk-s3",
- "axum",
+ "axum 0.8.1",
  "axum-login",
  "axum-template",
  "base64 0.22.1",
@@ -1094,6 +1144,7 @@ dependencies = [
  "futures",
  "handlebars",
  "itertools 0.14.0",
+ "mime_guess",
  "password-hash",
  "rand",
  "rust-embed",
@@ -2040,6 +2091,12 @@ dependencies = [
 
 [[package]]
 name = "matchit"
+version = "0.7.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0e7465ac9959cc2b1404e8e2367b43684a6d13790fe23056cc8c6c5a6b7bcb94"
+
+[[package]]
+name = "matchit"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "47e1ffaa40ddd1f3ed91f717a33c8c0ee23fff369e3aa8772b9605cc1d22f4c3"
@@ -2065,6 +2122,16 @@ name = "mime"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6877bb514081ee2a7ff5ef9de3281f14a4dd4bceac4c09388074a6b5df8a139a"
+
+[[package]]
+name = "mime_guess"
+version = "2.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f7c44f8e672c00fe5308fa235f821cb4198414e1c77935c1ab6948d3fd78550e"
+dependencies = [
+ "mime",
+ "unicase",
+]
 
 [[package]]
 name = "minimal-lexical"
@@ -2685,8 +2752,11 @@ version = "8.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fa66af4a4fdd5e7ebc276f115e895611a34739a9c1c01028383d612d550953c0"
 dependencies = [
+ "axum 0.7.9",
+ "mime_guess",
  "rust-embed-impl",
  "rust-embed-utils",
+ "tokio",
  "walkdir",
 ]
 
@@ -2710,6 +2780,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2e5347777e9aacb56039b0e1f28785929a8a3b709e87482e7442c72e7c12529d"
 dependencies = [
  "globset",
+ "mime_guess",
  "sha2",
  "walkdir",
 ]
@@ -3703,7 +3774,7 @@ version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "151b5a3e3c45df17466454bb74e9ecedecc955269bdedbf4d150dfa393b55a36"
 dependencies = [
- "axum-core",
+ "axum-core 0.5.0",
  "cookie",
  "futures-util",
  "http 1.1.0",
@@ -3766,7 +3837,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ce8cce604865576b7751b7a6bc3058f754569a60d689328bb74c52b1d87e355b"
 dependencies = [
  "async-trait",
- "axum-core",
+ "axum-core 0.5.0",
  "base64 0.22.1",
  "futures",
  "http 1.1.0",
@@ -3871,6 +3942,12 @@ name = "ucd-trie"
 version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2896d95c02a80c6d6a5d6e953d479f5ddf2dfdb6a244441010e373ac0fb88971"
+
+[[package]]
+name = "unicase"
+version = "2.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75b844d17643ee918803943289730bec8aac480150456169e647ed0b576ba539"
 
 [[package]]
 name = "unicode-bidi"
