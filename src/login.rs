@@ -11,6 +11,7 @@ use axum::response::Html;
 use axum::response::IntoResponse;
 use axum::response::Redirect;
 use axum::Form;
+use axum_login::tower_sessions::Session;
 use axum_login::AuthSession;
 use axum_template::RenderHtml;
 use password_hash::SaltString;
@@ -58,6 +59,7 @@ pub async fn loginpage(
 
 pub(crate) async fn login(
     mut auth: AuthSession<Backend>,
+   // mut session: Session,
     State(AppState {
         pool, engine: _, ..
     }): State<AppState>,
@@ -144,10 +146,11 @@ pub(crate) async fn login(
 
 pub(crate) async fn logout(
     mut auth: AuthSession<Backend>,
+   // mut session: Session,
     State(_pool): State<Pool<Sqlite>>,
 ) -> Redirect {
     if let Some(user) = auth.user.clone() {
-        if (auth.logout().await).is_ok() {
+        if (auth.logout().await).is_ok() /*&& session.flush().await.is_ok() */{
             debug!("user {} (id {}) logged out", user.name, user.id);
             Redirect::to("/")
         } else {

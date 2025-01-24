@@ -140,7 +140,6 @@ pub struct SearchParams {
 pub(crate) async fn joblistpage(
     State(AppState { pool, engine, .. }): State<AppState>,
     mut auth: AuthSession<Backend>,
-    // mut session: Session,
     Form(form): Form<JobListForm>,
 ) -> Result<impl IntoResponse, CustomError> {
     let (id, _my_name, admin) = get_user(auth)?;

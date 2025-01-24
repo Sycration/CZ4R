@@ -28,8 +28,8 @@ pub struct Config {
     pub login_secret: Vec<u8>,
     pub port: u16,
     pub backup_task: Option<tokio::task::JoinHandle<()>>,
-    pub session_ttl: u64,
-    pub session_check_time: i64,
+    pub session_ttl: i64,
+    pub session_check_time: u64,
 }
 
 impl Config {

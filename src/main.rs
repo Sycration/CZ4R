@@ -302,16 +302,16 @@ async fn app() {
     let deletion_task = tokio::task::spawn(
         session_store
             .clone()
-            .continuously_delete_expired(tokio::time::Duration::from_secs(session_ttl)),
+            .continuously_delete_expired(tokio::time::Duration::from_secs(session_check_time)),
     );
 
     let session_layer = SessionManagerLayer::new(session_store)
         .with_expiry(Expiry::OnInactivity(time::Duration::seconds(
-            session_check_time,
+            session_ttl,
         )))
         .with_always_save(true);
 
-    let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer.clone()).build();
+    let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer).build();
 
     let admin_only = Router::new()
         .route("/admin", get(admin::admin))
@@ -353,7 +353,7 @@ async fn app() {
         .merge(admin_only)
         .fallback(error404::error404)
         .layer(auth_layer)
-        .layer(session_layer)
+        //.layer(session_layer)
         .with_state(AppState {
             pool: app_pool,
             engine: Engine::from(hbs),
