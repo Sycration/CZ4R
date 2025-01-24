@@ -22,7 +22,6 @@ use sqlx::query_as;
 use sqlx::Pool;
 use tracing::info;
 
-
 #[derive(Deserialize)]
 pub struct RestoreForm {
     user: i64,
@@ -39,7 +38,6 @@ pub async fn restorepage(
     mut auth: AuthSession<Backend>,
 ) -> Result<impl IntoResponse, CustomError> {
     get_admin(auth)?;
-
 
     let workers = query_as!(
         RestoreListItem,
@@ -60,7 +58,7 @@ pub async fn restorepage(
 
 pub(crate) async fn restore(
     mut auth: AuthSession<Backend>,
-    State(AppState { pool, engine, .. }): State<AppState>,
+    State(AppState { pool, .. }): State<AppState>,
     Form(restore_form): Form<RestoreForm>, //Extension(worker): Extension<Worker>
 ) -> Result<impl IntoResponse, CustomError> {
     let (my_id, my_name) = get_admin(auth)?;
@@ -72,7 +70,10 @@ pub(crate) async fn restore(
     .execute(&pool)
     .await?;
 
-    info!("admin {my_name} (id {my_id}) restored deactivated user {}", restore_form.user);
+    info!(
+        "admin {my_name} (id {my_id}) restored deactivated user {}",
+        restore_form.user
+    );
 
     Ok(Redirect::to("/admin/restore"))
 }

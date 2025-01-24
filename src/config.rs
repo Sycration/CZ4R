@@ -28,11 +28,12 @@ pub struct Config {
     pub login_secret: Vec<u8>,
     pub port: u16,
     pub backup_task: Option<tokio::task::JoinHandle<()>>,
+    pub session_ttl: u64,
+    pub session_check_time: i64,
 }
 
 impl Config {
     pub async fn new() -> Config {
-        dotenvy::dotenv();
         let database_url = env::var("DATABASE_URL").expect("DATABASE_URL not set");
 
         let mut doing_backups = false;
@@ -138,12 +139,23 @@ impl Config {
             .ok()
             .and_then(|s| s.parse().ok())
             .unwrap_or(3000u16);
+        let session_ttl = env::var("SESSION_TTL")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(60 * 60 * 24);
+        let session_check_time = env::var("SESSION_CHECK_TIME")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(60 * 60);
+
         let config = Config {
             database_url,
             site_url,
             login_secret,
             port,
             backup_task,
+            session_ttl,
+            session_check_time,
         };
 
         let config_pool = config.create_pool().await;

@@ -1,5 +1,5 @@
-use crate::{get_user, Backend};
 use crate::{errors::CustomError, AppState, Job, JobWorker};
+use crate::{get_user, Backend};
 use anyhow::anyhow;
 use axum::http::StatusCode;
 use axum::{
@@ -34,9 +34,13 @@ pub(crate) async fn checkinoutpage(
     let worker = form.worker;
 
     if !admin && worker != my_id {
-        debug!("user {} (id {}) tried to check in for user {}", my_name, my_id, worker);
+        debug!(
+            "user {} (id {}) tried to check in for user {}",
+            my_name, my_id, worker
+        );
         return Err(CustomError(anyhow!(
-            "Attempted to check in for other worker")));
+            "Attempted to check in for other worker"
+        )));
     }
 
     let jw = query!(
@@ -66,17 +70,15 @@ pub(crate) async fn checkinoutpage(
     .await?;
 
     let signin = jw.signin.map(|t| {
-        Time::parse(
-            &t,
-            &Iso8601::TIME
-        ).unwrap().format(&format_description::parse("[hour]:[minute]").unwrap())
+        Time::parse(&t, &Iso8601::TIME)
+            .unwrap()
+            .format(&format_description::parse("[hour]:[minute]").unwrap())
             .unwrap()
     });
     let signout = jw.signout.map(|t| {
-        Time::parse(
-            &t,
-            &Iso8601::TIME
-        ).unwrap().format(&format_description::parse("[hour]:[minute]").unwrap())
+        Time::parse(&t, &Iso8601::TIME)
+            .unwrap()
+            .format(&format_description::parse("[hour]:[minute]").unwrap())
             .unwrap()
     });
 
@@ -119,7 +121,7 @@ pub(crate) struct CheckInOutForm {
 }
 
 pub(crate) async fn checkinout(
-State(AppState { pool, .. }): State<AppState>,
+    State(AppState { pool, .. }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<CheckInOutForm>,
 ) -> Result<impl IntoResponse, impl IntoResponse> {
@@ -127,10 +129,10 @@ State(AppState { pool, .. }): State<AppState>,
 
     let worker = form.WorkerId;
 
-
     if !admin && worker != my_id {
         return Err(CustomError(anyhow!(
-            "Attempted to check in for other worker")));
+            "Attempted to check in for other worker"
+        )));
     }
 
     let signin = form.Signin.unwrap_or_default();
@@ -145,20 +147,25 @@ State(AppState { pool, .. }): State<AppState>,
     let signin = if signin.is_empty() {
         None
     } else {
-        Some(Time::parse(&signin, format_description!("[hour]:[minute]"))?)
+        Some(Time::parse(
+            &signin,
+            format_description!("[hour]:[minute]"),
+        )?)
     };
 
     let signout = if signout.is_empty() {
         None
     } else {
-        Some(Time::parse(&signout, format_description!("[hour]:[minute]"))?)
+        Some(Time::parse(
+            &signout,
+            format_description!("[hour]:[minute]"),
+        )?)
     };
 
-
-    let true_hours_driven = (hoursdriven + (minutesdriven / 60.));
+    let true_hours_driven = hoursdriven + (minutesdriven / 60.);
     let true_extra_exp = extraexp.to_i32().unwrap();
 
-query!(
+    query!(
         r#"
     update jobworkers
     set
@@ -183,26 +190,30 @@ query!(
     .execute(&pool)
     .await?;
 
-    info!("job {} assigned to user {} updated by {} {} (id {}):\n
+    info!(
+        "job {} assigned to user {} updated by {} {} (id {}):\n
 sign in time: {}\n
 sign out time: {}\n
 miles driven: {}\n
 hours driven: {}\n
 extra expenses (cents): {}\n
 notes: {}",
-form.JobId,
-worker,
-if admin {"admin"} else {"user"},
-my_name,
-my_id,
-signin.map(|t|t.to_string()).unwrap_or("removed".to_string()),
-signout.map(|t|t.to_string()).unwrap_or("removed".to_string()),
-milesdriven,
-true_hours_driven,
-true_extra_exp,
-form.Notes.unwrap_or_default(),
-);
+        form.JobId,
+        worker,
+        if admin { "admin" } else { "user" },
+        my_name,
+        my_id,
+        signin
+            .map(|t| t.to_string())
+            .unwrap_or("removed".to_string()),
+        signout
+            .map(|t| t.to_string())
+            .unwrap_or("removed".to_string()),
+        milesdriven,
+        true_hours_driven,
+        true_extra_exp,
+        form.Notes.unwrap_or_default(),
+    );
 
     Ok(StatusCode::OK.into_response())
-
 }

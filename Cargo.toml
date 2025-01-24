@@ -17,7 +17,7 @@ futures = "0.3"
 rand = "0.8"
 rustls = "0.23"
 serde = { version = "1.0", features = ["derive"] }
-tokio = { version = "1", features = ["macros", "rt-multi-thread", "process"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "process", "signal"] }
 base64 = "0.22"
 webpki-roots = "0.26"
 tracing-subscriber = { version = "0.3", features = ["env-filter"]}
@@ -38,6 +38,7 @@ dotenvy = "0.15.7"
 aws-sdk-s3 = "1.70.0"
 aws-config = "1.5.14"
 mime_guess = "2.0.5"
+tower-sessions-sqlx-store = { version = "0.15", features = ["sqlite"] }
 
 [profile.dev.package."*"]
 opt-level = 3

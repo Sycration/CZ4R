@@ -9,7 +9,9 @@ use password_hash::{rand_core::le, PasswordHasher, Salt, SaltString};
 use serde::{Deserialize, Serialize};
 use sqlx::types::time::Date;
 use sqlx::{query, query_as, Pool};
-use time::{format_description::well_known::Iso8601, macros::format_description, OffsetDateTime, Time};
+use time::{
+    format_description::well_known::Iso8601, macros::format_description, OffsetDateTime, Time,
+};
 use tracing::debug;
 
 use crate::{
@@ -45,7 +47,7 @@ fn hours_worked(signin: Time, signout: Time) -> f32 {
 }
 
 pub(crate) async fn workerdatapage(
-    State(AppState { pool, engine , ..}): State<AppState>,
+    State(AppState { pool, engine, .. }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(worker): Form<WorkerDataForm>,
 ) -> Result<impl IntoResponse, CustomError> {
@@ -112,19 +114,13 @@ pub(crate) async fn workerdatapage(
             .iter()
             .filter(|d| d.signin.is_some() && d.signout.is_some())
             .map(|x| {
-                let signin = Some(Time::parse(
-                    &x.signin.clone().unwrap(),
-                    &Iso8601::TIME,
-                ));
-                let signout = Some(Time::parse(
-                    &x.signout.clone().unwrap(),
-                    &Iso8601::TIME,
-                ));
+                let signin = Some(Time::parse(&x.signin.clone().unwrap(), &Iso8601::TIME));
+                let signout = Some(Time::parse(&x.signout.clone().unwrap(), &Iso8601::TIME));
                 (signin, signout)
             })
-            .filter(|(signin, signout)|signin.is_some() && signout.is_some())
+            .filter(|(signin, signout)| signin.is_some() && signout.is_some())
             .map(|(signin, signout)| (signin.unwrap(), signout.unwrap()))
-            .filter(|(signin, signout)|signin.is_ok() && signout.is_ok())
+            .filter(|(signin, signout)| signin.is_ok() && signout.is_ok())
             .map(|(signin, signout)| (signin.unwrap(), signout.unwrap()))
             .fold(0.0, |acc, (signin, signout)| {
                 acc + hours_worked(signin, signout)
@@ -160,15 +156,10 @@ pub(crate) async fn workerdatapage(
                     FlatRate: d.using_flat_rate,
                     HoursWorked: {
                         if Completed {
-
-                            let signin = Time::parse(
-                                &d.signin.clone().unwrap(),
-                                &Iso8601::TIME
-                            ).unwrap();
-                            let signout = Time::parse(
-                                &d.signout.clone().unwrap(),
-                                &Iso8601::TIME
-                            ).unwrap();
+                            let signin =
+                                Time::parse(&d.signin.clone().unwrap(), &Iso8601::TIME).unwrap();
+                            let signout =
+                                Time::parse(&d.signout.clone().unwrap(), &Iso8601::TIME).unwrap();
                             let val = hours_worked(signin, signout);
                             format!("{:.2}", val)
                         } else {
@@ -177,16 +168,9 @@ pub(crate) async fn workerdatapage(
                     },
                     TrueHoursWorked: if Completed {
                         {
-                            let signin = Time::parse(
-                                &d.signin.unwrap(),
-                                &Iso8601::TIME
-                            ).unwrap();
-                            let signout = Time::parse(
-                                &d.signout.unwrap(),
-                                &Iso8601::TIME
-                            ).unwrap();
-                            let val =
-                                (signout - signin).as_seconds_f32() / 3600.;
+                            let signin = Time::parse(&d.signin.unwrap(), &Iso8601::TIME).unwrap();
+                            let signout = Time::parse(&d.signout.unwrap(), &Iso8601::TIME).unwrap();
+                            let val = (signout - signin).as_seconds_f32() / 3600.;
                             format!("{:.2}", val)
                         }
                     } else {
@@ -221,7 +205,9 @@ pub(crate) async fn workerdatapage(
         };
 
         let user = selectlist.iter().find(|u| u.0 == id).unwrap();
-        debug!("admin {my_name} (id {my_id}) retrieved data on user {} from {} to {}", id, from, to
+        debug!(
+            "admin {my_name} (id {my_id}) retrieved data on user {} (id {}) from {} to {}",
+            user.1, id, from, to
         );
 
         (entries, totals)
@@ -243,8 +229,6 @@ pub(crate) async fn workerdatapage(
         "to": &to,
         "target": "worker-data"
     });
-
- 
 
     Ok(RenderHtml("workerdata.hbs", engine, data))
 }

@@ -26,26 +26,28 @@ pub(crate) struct ResetPwForm {
 }
 
 pub(crate) async fn reset_pw(
-State(AppState { pool, engine, .. }): State<AppState>,
+    State(AppState { pool, .. }): State<AppState>,
     mut auth: AuthSession<Backend>,
     Form(form): Form<ResetPwForm>,
 ) -> Result<impl IntoResponse, CustomError> {
     let (my_id, my_name) = get_admin(auth)?;
-        query!(
-            r#"
+    query!(
+        r#"
         update users
         set must_change_pw = true
         where id = $1
         "#,
-            form.id
-        )
-        .execute(&pool)
-        .await?;
+        form.id
+    )
+    .execute(&pool)
+    .await?;
 
-        info!("admin {my_name} (id {my_id}) reset user {}'s password", form.id);
+    info!(
+        "admin {my_name} (id {my_id}) reset user {}'s password",
+        form.id
+    );
 
-        Ok(Redirect::to(
-            format!("/admin/worker-edit?worker={}", form.id).as_str(),
-        ))
- 
+    Ok(Redirect::to(
+        format!("/admin/worker-edit?worker={}", form.id).as_str(),
+    ))
 }

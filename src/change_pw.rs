@@ -23,7 +23,6 @@ use sqlx::query;
 use sqlx::Pool;
 use tracing::*;
 
-
 #[derive(Deserialize)]
 pub(crate) struct ChangePwPageForm {
     id: Option<i64>,
@@ -31,12 +30,15 @@ pub(crate) struct ChangePwPageForm {
 }
 
 pub(crate) async fn change_pw_page(
-    State(AppState { pool: _, engine , ..}): State<AppState>,
+    State(AppState {
+        pool: _, engine, ..
+    }): State<AppState>,
     mut _auth: AuthSession<Backend>, //never logged in
     Form(form): Form<ChangePwPageForm>,
 ) -> Result<impl IntoResponse, impl IntoResponse> {
-    let id = if let Some(id) = form.id {id
-    } else  {
+    let id = if let Some(id) = form.id {
+        id
+    } else {
         return Err(CustomError(anyhow!("No ID selected.")));
     };
 
@@ -63,7 +65,6 @@ pub(crate) async fn change_pw(
     mut _auth: AuthSession<Backend>,
     Form(form): Form<ChangePwForm>,
 ) -> Result<impl IntoResponse, impl IntoResponse> {
-    
     let must_change = query!(
         r#"
     select (must_change_pw) from users 
@@ -77,7 +78,10 @@ pub(crate) async fn change_pw(
     .must_change_pw;
 
     if !must_change {
-        info!("user id {} attempted to change their password when not allowed to", form.id);
+        info!(
+            "user id {} attempted to change their password when not allowed to",
+            form.id
+        );
         return Err(CustomError(anyhow!(
             "User {} cannot change their password right now. Nice try.",
             form.id
@@ -86,7 +90,10 @@ pub(crate) async fn change_pw(
 
     if form.password1 != form.password2 {
         debug!("user id {} put in the wrong password", form.id);
-        return Ok(Redirect::to(&format!("/change-pw?id={}&no_match=true", form.id)));
+        return Ok(Redirect::to(&format!(
+            "/change-pw?id={}&no_match=true",
+            form.id
+        )));
     }
 
     let salt = SaltString::generate(&mut thread_rng());
@@ -95,7 +102,7 @@ pub(crate) async fn change_pw(
         .hash_password(form.password1.as_bytes(), salt.as_salt())
         .unwrap()
         .to_string();
-    
+
     let salt = salt.as_str();
 
     query!(
@@ -114,7 +121,6 @@ pub(crate) async fn change_pw(
     .await?;
 
     info!("user id {} changed their password", form.id);
-
 
     Ok(Redirect::to("/loginpage"))
 }

@@ -20,13 +20,13 @@ use sqlx::{query, query_as, Pool};
 use tracing::debug;
 pub(crate) async fn error404(
     uri: Uri,
-    State(AppState { pool: _, engine, .. }): State<AppState>,
+    State(AppState {
+        pool: _, engine, ..
+    }): State<AppState>,
     mut auth: AuthSession<Backend>,
 ) -> Result<impl IntoResponse, Infallible> {
-
     let admin = auth.user.as_ref().map_or(false, |w| w.admin);
     let logged_in = auth.user.is_some();
-
 
     if StaticAsset::iter().contains(uri.path().strip_prefix('/').unwrap_or(uri.path())) {
         return Ok(static_handler(uri).await.into_response());

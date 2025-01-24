@@ -74,17 +74,26 @@ pub(crate) async fn login(
     let worker = if let Ok(w) = worker {
         w
     } else {
-        debug!("user {} can't log in because there is nobody with that name in the database", &username);
+        debug!(
+            "user {} can't log in because there is nobody with that name in the database",
+            &username
+        );
         return Redirect::to("/loginpage?failure=true");
     };
 
     if worker.deactivated {
-        debug!("user {} (id {}) can't log in because they are deactivated", &worker.name, &worker.id);
+        debug!(
+            "user {} (id {}) can't log in because they are deactivated",
+            &worker.name, &worker.id
+        );
         return Redirect::to("/loginpage?failure=true");
     }
 
     if worker.must_change_pw {
-        debug!("user {} (id {}) has to change their password", &worker.name, &worker.id);
+        debug!(
+            "user {} (id {}) has to change their password",
+            &worker.name, &worker.id
+        );
         return Redirect::to(format!("/change-pw?id={}", worker.id).as_str());
     }
 
@@ -93,7 +102,10 @@ pub(crate) async fn login(
     let saltstr = if let Ok(s) = saltstr {
         s
     } else {
-        warn!("user {} (id {}) can't log in because they have an invalid salt", &worker.name, &worker.id);
+        warn!(
+            "user {} (id {}) can't log in because they have an invalid salt",
+            &worker.name, &worker.id
+        );
         return Redirect::to("/loginpage?failure=true");
     };
 
@@ -107,15 +119,20 @@ pub(crate) async fn login(
     if worker.hash == hash {
         if worker.must_change_pw {
             //do not log in
-            debug!("user {} (id {}) has to change their password", &worker.name, &worker.id);
+            debug!(
+                "user {} (id {}) has to change their password",
+                &worker.name, &worker.id
+            );
             return Redirect::to(format!("/change-pw?id={}", worker.id).as_str());
         }
         auth.login(&worker).await.unwrap();
         info!("user {} (id {}) has logged in", &worker.name, &worker.id);
-
     } else {
         failure = true;
-        debug!("user {} (id {}) can't log in because they used the wrong password", &worker.name, &worker.id);
+        debug!(
+            "user {} (id {}) can't log in because they used the wrong password",
+            &worker.name, &worker.id
+        );
     }
 
     if failure {

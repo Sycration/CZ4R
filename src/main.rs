@@ -2,7 +2,7 @@
 #![allow(unused_imports)]
 #![allow(non_snake_case)]
 
-use anyhow::{bail, anyhow};
+use anyhow::{anyhow, bail};
 use async_trait::async_trait;
 use axum::{
     debug_handler,
@@ -13,29 +13,28 @@ use axum::{
     routing::{get, post, put},
     BoxError, Form, Router,
 };
-use config::Config;
-use futures::join;
-use login::{loginpage, LoginForm};
-use r#static::static_handler;
-use tracing::{debug, info, trace, warn};
-use axum_login::AuthSession;
+use axum_login::tower_sessions::ExpiredDeletion;
+use axum_login::{tower_sessions::Expiry, AuthSession};
 use axum_login::{
     tower_sessions::{MemoryStore, SessionManagerLayer},
     AuthManagerLayerBuilder, AuthUser, AuthnBackend, UserId,
 };
 use axum_template::{engine::Engine, Key, RenderHtml};
+use config::Config;
 use errors::CustomError;
+use futures::join;
 use handlebars::{handlebars_helper, Handlebars};
+use login::{loginpage, LoginForm};
 use password_hash::{PasswordHasher, Salt, SaltString};
+use r#static::static_handler;
 use rand::{thread_rng, Rng};
 use rust_embed::RustEmbed;
 use scrypt::Scrypt;
 use serde::{de, Deserialize, Deserializer, Serialize};
 use serde_json::Value;
+use shutdown::shutdown_signal;
 use sqlx::{migrate::MigrateDatabase, types::time::Date};
 use sqlx::{query, query_as, Pool, Sqlite};
-use tracing_subscriber::{filter, EnvFilter, Layer};
-use std::{fs::File, future::IntoFuture};
 use std::time::Instant;
 use std::{
     collections::{BTreeMap, HashMap},
@@ -44,12 +43,16 @@ use std::{
     str::FromStr,
     sync::{Arc, OnceLock},
 };
+use std::{fs::File, future::IntoFuture};
 use time::{OffsetDateTime, Time, UtcOffset};
 use tokio::runtime::Builder;
 use tokio::sync::RwLock;
 use tower::ServiceBuilder;
 use tower_http::trace::{self, TraceLayer};
+use tower_sessions_sqlx_store::{sqlx::SqlitePool, SqliteStore};
 use tracing::Level;
+use tracing::{debug, info, trace, warn};
+use tracing_subscriber::{filter, EnvFilter, Layer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod admin;
@@ -61,16 +64,17 @@ mod create_worker;
 mod deactivate;
 mod error404;
 mod errors;
+mod export_db;
 mod index;
 mod jobedit;
 mod joblist;
 mod login;
 mod reset_pw;
 mod restore;
+mod shutdown;
+mod r#static;
 mod workerdata;
 mod workeredit;
-mod export_db;
-mod r#static;
 
 #[derive(Debug, Clone, sqlx::FromRow, Serialize)]
 pub struct Job {
@@ -82,7 +86,6 @@ pub struct Job {
     date: Date,
     notes: String,
 }
-
 
 #[derive(Debug, Default, Clone, sqlx::FromRow, Serialize)]
 pub struct Worker {
@@ -122,7 +125,7 @@ type AppEngine = Engine<Handlebars<'static>>;
 pub struct AppState {
     pool: Pool<Sqlite>,
     engine: AppEngine,
-    db_url: String
+    db_url: String,
 }
 
 impl AuthUser for Worker {
@@ -147,7 +150,6 @@ impl Backend {
     }
 }
 
-
 #[async_trait]
 impl AuthnBackend for Backend {
     type User = Worker;
@@ -165,35 +167,41 @@ impl AuthnBackend for Backend {
         .fetch_optional(&self.db)
         .await?;
 
-    let filtered = user.filter(|user| {
-        let salt = &user.salt;
-        let saltstr: Result<SaltString, password_hash::Error> =
-            SaltString::from_b64(salt.as_str());
-        let saltstr = if let Ok(s) = saltstr {
-            s
-        } else {
-            return false;
-        };
+        let filtered = user.filter(|user| {
+            let salt = &user.salt;
+            let saltstr: Result<SaltString, password_hash::Error> =
+                SaltString::from_b64(salt.as_str());
+            let saltstr = if let Ok(s) = saltstr {
+                s
+            } else {
+                return false;
+            };
 
-        let challenge_hash = Scrypt
-            .hash_password(creds.password.as_bytes(), saltstr.as_salt())
-            .unwrap()
-            .to_string();
+            let challenge_hash = Scrypt
+                .hash_password(creds.password.as_bytes(), saltstr.as_salt())
+                .unwrap()
+                .to_string();
 
-        let res = challenge_hash == user.hash;
-        
-        if res {
-            debug!("user {} (id {}) successfully authenticated", user.name, user.id);
-        } else {
-            debug!("user {} (id {}) failed to authenticate", user.name, user.id);
+            let res = challenge_hash == user.hash;
+
+            if res {
+                debug!(
+                    "user {} (id {}) successfully authenticated",
+                    user.name, user.id
+                );
+            } else {
+                debug!("user {} (id {}) failed to authenticate", user.name, user.id);
+            }
+
+            res
+        });
+
+        if filtered.is_none() {
+            debug!(
+                "nonexistent user {} attempted to authenticate",
+                creds.username
+            );
         }
-
-        res
-    });
-
-    if filtered.is_none() {
-        debug!("nonexistent user {} attempted to authenticate", creds.username);
-    }
 
         return Ok(filtered);
     }
@@ -206,7 +214,7 @@ impl AuthnBackend for Backend {
         match &user {
             Some(u) => {
                 debug!("found user {} with id {}", u.name, user_id);
-            },
+            }
             None => {
                 debug!("could not find user with id {}", user_id);
             }
@@ -219,16 +227,17 @@ impl AuthnBackend for Backend {
 pub static TZ_OFFSET: OnceLock<UtcOffset> = OnceLock::new();
 
 fn main() {
-    let stdout_log = tracing_subscriber::fmt::layer()
-    .pretty();
+    let _ = dotenvy::dotenv();
+
+    let stdout_log = tracing_subscriber::fmt::layer().pretty();
 
     tracing_subscriber::registry()
-    .with(stdout_log.with_filter(filter::EnvFilter::from_default_env()))
-    .init();
+        .with(stdout_log.with_filter(filter::EnvFilter::from_default_env()))
+        .init();
 
     debug!("logging initialized");
 
-    let tz_offset = TZ_OFFSET.get_or_init(|| { OffsetDateTime::now_local().unwrap().offset() });
+    let tz_offset = TZ_OFFSET.get_or_init(|| OffsetDateTime::now_local().unwrap().offset());
     info!("The timezone offset is {tz_offset}");
 
     let rt = Builder::new_multi_thread().enable_all().build().unwrap();
@@ -242,11 +251,8 @@ pub fn setup_handlebars(hbs: &mut Handlebars) {
     dso.tpl_extension = "".to_string();
 
     hbs.set_dev_mode(true);
-    hbs.register_templates_directory(
-        "./hb-templates",
-        dso
-    )
-    .unwrap();
+    hbs.register_templates_directory("./hb-templates", dso)
+        .unwrap();
     debug!("setup handlebars");
 }
 
@@ -261,7 +267,6 @@ pub fn setup_handlebars(hbs: &mut Handlebars) {
     hbs.set_dev_mode(false);
     hbs.register_embed_templates::<Templates>().unwrap();
     debug!("setup handlebars");
-
 }
 
 async fn app() {
@@ -277,23 +282,36 @@ async fn app() {
 
     let app_pool: Pool<Sqlite> = config.create_pool().await;
     let auth_pool = config.create_pool().await;
+    let backend_pool = config.create_pool().await;
 
     let Config {
         database_url,
-        login_secret,
+        login_secret: _,
         port,
-        site_url,
-        backup_task
+        site_url: _,
+        backup_task,
+        session_ttl,
+        session_check_time,
     } = config;
 
+    let backend = Backend::new(backend_pool);
 
-    let backend = Backend::new(auth_pool);
+    let session_store = SqliteStore::new(auth_pool);
+    session_store.migrate().await.unwrap();
 
-    
-    let session_store = MemoryStore::default();
-    let session_layer = SessionManagerLayer::new(session_store).with_secure(false);
+    let deletion_task = tokio::task::spawn(
+        session_store
+            .clone()
+            .continuously_delete_expired(tokio::time::Duration::from_secs(session_ttl)),
+    );
 
-  let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer).build();
+    let session_layer = SessionManagerLayer::new(session_store)
+        .with_expiry(Expiry::OnInactivity(time::Duration::seconds(
+            session_check_time,
+        )))
+        .with_always_save(true);
+
+    let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer.clone()).build();
 
     let admin_only = Router::new()
         .route("/admin", get(admin::admin))
@@ -315,9 +333,12 @@ async fn app() {
             post(change_worker::change_worker),
         )
         .route("/admin/api/v1/restore-worker", post(restore::restore))
-        .route("/admin/api/v1/export-database.sql", get(export_db::export_db))
+        .route(
+            "/admin/api/v1/export-database.sql",
+            get(export_db::export_db),
+        )
         .route("/admin/api/v1/reset-pw", post(reset_pw::reset_pw));
-    
+
     let app = Router::new()
         .route("/", get(index::index))
         .route("/joblist", get(joblist::joblistpage))
@@ -332,27 +353,27 @@ async fn app() {
         .merge(admin_only)
         .fallback(error404::error404)
         .layer(auth_layer)
+        .layer(session_layer)
         .with_state(AppState {
             pool: app_pool,
             engine: Engine::from(hbs),
-            db_url: database_url
+            db_url: database_url,
         });
-    
+
     // run it
-    
-    let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
+
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     info!("listening on {}", addr);
-    let server = axum::serve(listener, app).into_future();
+
+    let backup_handle = backup_task.as_ref().map(|t| t.abort_handle());
+    let server = axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal(deletion_task.abort_handle(), backup_handle))
+        .into_future();
     if let Some(backup_task) = backup_task {
-        let (a, b) =join!(
-            server,
-            backup_task
-        );
-        a.unwrap();
-        b.unwrap();
+        let (_, _, _) = join!(server, backup_task, deletion_task);
     } else {
-        server.await.unwrap();
+        let (_, _) = join!(server, deletion_task);
     }
 }
 
@@ -385,11 +406,10 @@ where
 }
 
 pub fn get_user(auth: AuthSession<Backend>) -> Result<(i64, String, bool), CustomError> {
-    if let Some((id, name, admin)) = auth.user.map(|u| (u.id, u.name, u.admin))  {
+    if let Some((id, name, admin)) = auth.user.map(|u| (u.id, u.name, u.admin)) {
         Ok((id, name, admin))
     } else {
-        Err(CustomError(anyhow!(
-            "Not logged in")))
+        Err(CustomError(anyhow!("Not logged in")))
     }
 }
 
@@ -397,8 +417,10 @@ pub fn get_admin(auth: AuthSession<Backend>) -> Result<(i64, String), CustomErro
     let (id, name, admin) = get_user(auth)?;
     if admin {
         Ok((id, name))
-    }  else {
+    } else {
         Err(CustomError(anyhow!(
-            "User {} does not have administrator privileges", id)))
+            "User {} does not have administrator privileges",
+            id
+        )))
     }
 }

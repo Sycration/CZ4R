@@ -35,10 +35,7 @@ pub(crate) async fn index(
     let jobs = match jobs {
         Ok(v) => v,
         _ => 0,
-
     };
-
-
 
     let workers = query_scalar!(
         r#"
@@ -62,7 +59,6 @@ pub(crate) async fn index(
     let miles = match miles {
         Ok(Some(v)) => v,
         _ => 0.0,
-
     };
 
     let earliest: Result<time::Date, sqlx::Error> = query_scalar!(
@@ -78,14 +74,19 @@ pub(crate) async fn index(
     };
 
     let mut jobsavg = days as f64 / jobs as f64;
-    if !jobsavg.is_finite() {jobsavg = 0.0};
+    if !jobsavg.is_finite() {
+        jobsavg = 0.0
+    };
 
-    let mut milesavg =  miles as f64/ days as f64;
-    if !milesavg.is_finite() {milesavg = 0.0};
+    let mut milesavg = miles as f64 / days as f64;
+    if !milesavg.is_finite() {
+        milesavg = 0.0
+    };
 
     let mut workersavg = (days as f64 / 30.437) / workers as f64;
-    if !workersavg.is_finite() {workersavg = 0.0};
-
+    if !workersavg.is_finite() {
+        workersavg = 0.0
+    };
 
     let data = serde_json::json!({
         "admin": admin,

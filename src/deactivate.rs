@@ -26,7 +26,6 @@ use serde::Deserialize;
 use serde::Serialize;
 use sqlx::Pool;
 
-
 #[derive(Deserialize)]
 pub struct DeactivateForm {
     user: i64,
@@ -34,12 +33,15 @@ pub struct DeactivateForm {
 
 pub(crate) async fn deactivate(
     mut auth: AuthSession<Backend>,
-    State(AppState { pool, engine, .. }): State<AppState>,
+    State(AppState { pool, .. }): State<AppState>,
     Form(deactivate_form): Form<DeactivateForm>, //Extension(worker): Extension<Worker>
 ) -> Result<impl IntoResponse, impl IntoResponse> {
     let (my_id, my_name) = get_admin(auth)?;
     if deactivate_form.user == my_id {
-        debug!("admin {} (id {}) tried to deactivate themself", my_name, my_id);
+        debug!(
+            "admin {} (id {}) tried to deactivate themself",
+            my_name, my_id
+        );
         return Err(CustomError(anyhow!("A user cannot deactivate themselves")));
     }
 
@@ -53,7 +55,6 @@ pub(crate) async fn deactivate(
     .await?;
 
     info!("admin {} deactivated user {}", my_id, deactivate_form.user);
-
 
     Ok(Redirect::to("/admin/worker-edit"))
 }

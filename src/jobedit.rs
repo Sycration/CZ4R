@@ -352,7 +352,10 @@ pub(crate) async fn jobdelete(
     .await
     .unwrap();
 
-    info!("admin {} (id {}) deleted job {}", my_name, my_id, form.jobid);
+    info!(
+        "admin {} (id {}) deleted job {}",
+        my_name, my_id, form.jobid
+    );
 
     Ok(Redirect::to("/joblist"))
 }

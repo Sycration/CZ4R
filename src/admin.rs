@@ -1,5 +1,5 @@
-use crate::{get_admin, Backend};
 use crate::{errors::CustomError, AppEngine, AppState, Job, JobWorker};
+use crate::{get_admin, Backend};
 use axum::{
     extract::{Path, State},
     response::{Html, IntoResponse, Redirect},
@@ -14,7 +14,9 @@ use serde_json::json;
 use sqlx::{query, query_as, Pool};
 
 pub(crate) async fn admin(
-    State(AppState { pool: _, engine, .. }): State<AppState>,
+    State(AppState {
+        pool: _, engine, ..
+    }): State<AppState>,
     mut auth: AuthSession<Backend>,
 ) -> Result<impl IntoResponse, CustomError> {
     get_admin(auth)?;
@@ -26,5 +28,4 @@ pub(crate) async fn admin(
     });
 
     Ok(RenderHtml("admin.hbs", engine, data))
-
 }

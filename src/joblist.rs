@@ -7,6 +7,7 @@ use axum::{
     response::{Html, IntoResponse},
     Form,
 };
+use axum_login::tower_sessions::Session;
 use axum_login::AuthSession;
 use axum_template::RenderHtml;
 use itertools::Itertools;
@@ -14,8 +15,7 @@ use password_hash::rand_core::le;
 use serde::{Deserialize, Serialize};
 use sqlx::Sqlite;
 use sqlx::{
-    query, query_as, query_builder, types::time::Date, Execute, FromRow, Pool,
-    QueryBuilder,
+    query, query_as, query_builder, types::time::Date, Execute, FromRow, Pool, QueryBuilder,
 };
 use time::{Duration, OffsetDateTime, Time};
 use tracing::warn;
@@ -140,6 +140,7 @@ pub struct SearchParams {
 pub(crate) async fn joblistpage(
     State(AppState { pool, engine, .. }): State<AppState>,
     mut auth: AuthSession<Backend>,
+    // mut session: Session,
     Form(form): Form<JobListForm>,
 ) -> Result<impl IntoResponse, CustomError> {
     let (id, _my_name, admin) = get_user(auth)?;
@@ -148,12 +149,14 @@ pub(crate) async fn joblistpage(
         d
     } else {
         now().date()
-    }.to_string();
+    }
+    .to_string();
     let end_date = if let Some(d) = form.end_date {
         d
     } else {
         (now() + Duration::days(15)).date()
-    }.to_string();
+    }
+    .to_string();
 
     //testing form.order because that is always sent on form submit
     let assigned = if form.order.is_some() {
@@ -173,7 +176,7 @@ pub(crate) async fn joblistpage(
     };
 
     let parsed_workers = if let Some(w) = &form.workers {
-        w.split('-').filter_map(|x|x.parse::<i64>().ok()).collect()
+        w.split('-').filter_map(|x| x.parse::<i64>().ok()).collect()
     } else {
         vec![]
     };
@@ -196,7 +199,7 @@ pub(crate) async fn joblistpage(
     query_builder.push(" and date(jobs.date) <= ");
     query_builder.push_bind(&end_date);
 
-    if admin &&  form.workers.is_some() {
+    if admin && form.workers.is_some() {
         query_builder.push(" and jobworkers.worker in (");
         for (idx, id) in parsed_workers.iter().enumerate() {
             query_builder.push_bind(id);
@@ -243,11 +246,9 @@ pub(crate) async fn joblistpage(
         }
     }
 
-    
     let query = query_builder.build_query_as();
 
     let mut r = query.fetch_all(&pool).await?;
-
 
     let jobs = {
         let query = query_as!(
@@ -275,8 +276,10 @@ pub(crate) async fn joblistpage(
         if let Ok(mut orphans) = query {
             r = {
                 if !orphans.is_empty() {
-                    warn!("orphan jobs returned in search: {:?}",
-                    orphans.iter().map(|j|j.id).collect::<Vec<_>>());
+                    warn!(
+                        "orphan jobs returned in search: {:?}",
+                        orphans.iter().map(|j| j.id).collect::<Vec<_>>()
+                    );
                 }
                 orphans.append(&mut r);
                 orphans
@@ -297,7 +300,11 @@ pub(crate) async fn joblistpage(
         (
             w.id,
             w.name.clone(),
-            if form.workers.is_some() { parsed_workers.contains(&w.id) } else {true}
+            if form.workers.is_some() {
+                parsed_workers.contains(&w.id)
+            } else {
+                true
+            },
         )
     })
     .collect();
