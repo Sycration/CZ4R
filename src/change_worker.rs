@@ -41,7 +41,7 @@ pub(crate) async fn change_worker(
     mut auth: AuthSession<Backend>,
     Form(workerdata): Form<WorkerChangeForm>,
 ) -> Result<impl IntoResponse, impl IntoResponse> {
-    let (my_id, my_name) = get_admin(auth)?;
+    let (my_id, my_name) = get_admin(&auth)?;
     let hourly = Decimal::from_str_exact(&workerdata.Hourly)? * Decimal::ONE_HUNDRED;
 
     let mileage = Decimal::from_str_exact(&workerdata.Mileage)? * Decimal::ONE_HUNDRED;

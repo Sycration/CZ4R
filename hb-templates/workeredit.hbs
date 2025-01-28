@@ -1,10 +1,11 @@
-{{!-- @(title: &str, admin: bool, creating: bool, selected:Option<i64>, workerlist: &[Worker], selectlist: &[(i64,
-  &str)], own_id: i64) --}}
-  {{#*inline "body"}}
+{{#*inline "body"}}
 
   <div id="worker-edit">
 
     {{#if selected}}
+
+            <form id="logout" hx-post="/admin/api/v1/logout-worker" >
+            </form>
 
     <div class="modal fade" id="DeactivateModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
       <div class="modal-dialog">
@@ -152,6 +153,10 @@
             <div class="col">
               <div class="gap-2 pb-4 text-end">
                 {{#if (neq w.id ../own_id)}}
+                <div class="pb-2">
+              <button form="logout" type="submit" class="btn btn-warning">Logout</button>
+              <input  form="logout" type="hidden" id="hidden-id" name="id" value="{{w.id}}">
+                </div>
                 <div class="pb-2">
                   <a class="btn btn-danger" type="button" data-bs-toggle="modal" data-bs-target="#ResetModal">
                     Reset password</a>

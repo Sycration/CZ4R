@@ -51,7 +51,7 @@ pub(crate) async fn workerdatapage(
     mut auth: AuthSession<Backend>,
     Form(worker): Form<WorkerDataForm>,
 ) -> Result<impl IntoResponse, CustomError> {
-    let (my_id, my_name) = get_admin(auth)?;
+    let (my_id, my_name) = get_admin(&auth)?;
 
     let users = sqlx::query_as!(
         Worker,

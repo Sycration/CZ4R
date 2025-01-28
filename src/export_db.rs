@@ -26,7 +26,7 @@ pub(crate) async fn export_db(
         db_url,
     }): State<AppState>,
 ) -> Result<impl IntoResponse, CustomError> {
-    let (my_id, my_name) = get_admin(auth)?;
+    let (my_id, my_name) = get_admin(&auth)?;
 
     let url = url::Url::parse(&db_url)?;
     let path = url.path();

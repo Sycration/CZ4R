@@ -29,7 +29,7 @@ pub(crate) async fn checkinoutpage(
     mut auth: AuthSession<Backend>,
     Form(form): Form<CheckInOutPage>,
 ) -> Result<impl IntoResponse, impl IntoResponse> {
-    let (my_id, my_name, admin) = get_user(auth)?;
+    let (my_id, my_name, admin) = get_user(&auth)?;
 
     let worker = form.worker;
 
@@ -125,7 +125,7 @@ pub(crate) async fn checkinout(
     mut auth: AuthSession<Backend>,
     Form(form): Form<CheckInOutForm>,
 ) -> Result<impl IntoResponse, impl IntoResponse> {
-    let (my_id, my_name, admin) = get_user(auth)?;
+    let (my_id, my_name, admin) = get_user(&auth)?;
 
     let worker = form.WorkerId;
 

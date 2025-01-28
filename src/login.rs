@@ -1,10 +1,14 @@
 use std::convert::Infallible;
 
 use crate::errors::CustomError;
+use crate::get_admin;
 use crate::AppState;
 
 use super::Worker;
 
+use axum_login::AuthnBackend;
+use sqlx::query;
+use sqlx::Row;
 use crate::Backend;
 use axum::extract::State;
 use axum::response::Html;
@@ -128,6 +132,13 @@ pub(crate) async fn login(
             return Redirect::to(format!("/change-pw?id={}", worker.id).as_str());
         }
         auth.login(&worker).await.unwrap();
+        let id = worker.id;
+        query!(r#"
+        update users
+            set logged_out = 0
+            where id = $1
+        "#, id).execute(&pool).await.unwrap();
+        
         info!("user {} (id {}) has logged in", &worker.name, &worker.id);
     } else {
         failure = true;
@@ -142,6 +153,39 @@ pub(crate) async fn login(
     } else {
         Redirect::to("/")
     }
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub struct LogoutForm {
+     pub id: i64
+}
+
+#[axum::debug_handler]
+pub async fn logout_user(
+    State(AppState { pool, .. }): State<AppState>,
+    mut auth: AuthSession<Backend>,
+    Form(form): Form<LogoutForm>,
+) -> Result<impl IntoResponse, CustomError> {
+    let (my_id, my_name) = get_admin(&auth)?;
+
+    let me = (&auth).user.clone().unwrap();
+    let user = &auth.backend.get_user(&form.id).await?;
+
+    if let Some(u) = user {
+
+        
+        query!(r#"
+        update users
+            set logged_out = 1
+            where id = $1
+        "#, u.id).execute(&pool).await?;
+    }
+
+    
+
+
+    Ok(())
+
 }
 
 pub(crate) async fn logout(

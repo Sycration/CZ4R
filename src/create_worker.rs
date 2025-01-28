@@ -38,7 +38,7 @@ pub(crate) async fn create_worker(
     mut auth: AuthSession<Backend>,
     Form(workerdata): Form<WorkerCreateForm>,
 ) -> Result<impl IntoResponse, impl IntoResponse> {
-    let (my_id, my_name) = get_admin(auth)?;
+    let (my_id, my_name) = get_admin(&auth)?;
 
     let hourly = Decimal::from_str_exact(&workerdata.Hourly)? * Decimal::ONE_HUNDRED;
 

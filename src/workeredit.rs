@@ -24,7 +24,7 @@ pub(crate) async fn workeredit(
     mut auth: AuthSession<Backend>,
     Form(worker): Form<WorkerEditForm>,
 ) -> Result<impl IntoResponse, CustomError> {
-    let id = get_admin(auth)?;
+    let id = get_admin(&auth)?;
 
     let users = sqlx::query_as!(
         Worker,

@@ -72,12 +72,18 @@
         "name": "deactivated",
         "ordinal": 13,
         "type_info": "Bool"
+      },
+      {
+        "name": "logged_out",
+        "ordinal": 14,
+        "type_info": "Bool"
       }
     ],
     "parameters": {
       "Right": 1
     },
     "nullable": [
+      false,
       false,
       false,
       false,

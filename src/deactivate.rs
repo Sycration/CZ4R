@@ -36,7 +36,7 @@ pub(crate) async fn deactivate(
     State(AppState { pool, .. }): State<AppState>,
     Form(deactivate_form): Form<DeactivateForm>, //Extension(worker): Extension<Worker>
 ) -> Result<impl IntoResponse, impl IntoResponse> {
-    let (my_id, my_name) = get_admin(auth)?;
+    let (my_id, my_name) = get_admin(&auth)?;
     if deactivate_form.user == my_id {
         debug!(
             "admin {} (id {}) tried to deactivate themself",

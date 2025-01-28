@@ -142,7 +142,7 @@ pub(crate) async fn joblistpage(
     mut auth: AuthSession<Backend>,
     Form(form): Form<JobListForm>,
 ) -> Result<impl IntoResponse, CustomError> {
-    let (id, _my_name, admin) = get_user(auth)?;
+    let (id, _my_name, admin) = get_user(&auth)?;
 
     let start_date = if let Some(d) = form.start_date {
         d

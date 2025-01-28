@@ -37,7 +37,7 @@ pub async fn restorepage(
     State(AppState { pool, engine, .. }): State<AppState>,
     mut auth: AuthSession<Backend>,
 ) -> Result<impl IntoResponse, CustomError> {
-    get_admin(auth)?;
+    get_admin(&auth)?;
 
     let workers = query_as!(
         RestoreListItem,
@@ -61,7 +61,7 @@ pub(crate) async fn restore(
     State(AppState { pool, .. }): State<AppState>,
     Form(restore_form): Form<RestoreForm>, //Extension(worker): Extension<Worker>
 ) -> Result<impl IntoResponse, CustomError> {
-    let (my_id, my_name) = get_admin(auth)?;
+    let (my_id, my_name) = get_admin(&auth)?;
 
     query!(
         "update users set deactivated = false where id = $1",

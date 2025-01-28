@@ -103,6 +103,7 @@ pub struct Worker {
     flat_rate_cents: i64,
     must_change_pw: bool,
     deactivated: bool,
+    logged_out: bool
 }
 
 #[derive(Debug, Default, Clone, sqlx::FromRow)]
@@ -214,6 +215,11 @@ impl AuthnBackend for Backend {
         match &user {
             Some(u) => {
                 debug!("found user {} with id {}", u.name, user_id);
+
+                if u.logged_out {
+                    debug!("user {} (id {}) is logged out", u.name, user_id);
+                    return Ok(None);
+                }
             }
             None => {
                 debug!("could not find user with id {}", user_id);
@@ -283,6 +289,7 @@ async fn app() {
     let app_pool: Pool<Sqlite> = config.create_pool().await;
     let auth_pool = config.create_pool().await;
     let backend_pool = config.create_pool().await;
+    let session_pool = config.create_pool().await;
 
     let Config {
         database_url,
@@ -311,7 +318,7 @@ async fn app() {
         )))
         .with_always_save(true);
 
-    let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer).build();
+    let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer.clone()).build();
 
     let admin_only = Router::new()
         .route("/admin", get(admin::admin))
@@ -324,6 +331,7 @@ async fn app() {
         )
         .route("/admin/api/v1/edit-job", post(jobedit::jobedit))
         .route("/admin/api/v1/delete-job", post(jobedit::jobdelete))
+        .route("/admin/api/v1/logout-worker", post(login::logout_user))
         .route(
             "/admin/api/v1/deactivate-worker",
             post(deactivate::deactivate),
@@ -405,16 +413,16 @@ where
     }
 }
 
-pub fn get_user(auth: AuthSession<Backend>) -> Result<(i64, String, bool), CustomError> {
-    if let Some((id, name, admin)) = auth.user.map(|u| (u.id, u.name, u.admin)) {
+pub fn get_user(auth: &AuthSession<Backend>) -> Result<(i64, &str, bool), CustomError> {
+    if let Some((id, name, admin)) = auth.user.iter().map(|u| (u.id, &u.name, u.admin)).next() {
         Ok((id, name, admin))
     } else {
         Err(CustomError(anyhow!("Not logged in")))
     }
 }
 
-pub fn get_admin(auth: AuthSession<Backend>) -> Result<(i64, String), CustomError> {
-    let (id, name, admin) = get_user(auth)?;
+pub fn get_admin(auth: &AuthSession<Backend>) -> Result<(i64, &str), CustomError> {
+    let (id, name, admin) = get_user(&auth)?;
     if admin {
         Ok((id, name))
     } else {

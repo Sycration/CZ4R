@@ -19,7 +19,7 @@ pub(crate) async fn admin(
     }): State<AppState>,
     mut auth: AuthSession<Backend>,
 ) -> Result<impl IntoResponse, CustomError> {
-    get_admin(auth)?;
+    get_admin(&auth)?;
 
     let data = serde_json::json!({
         "admin": true,

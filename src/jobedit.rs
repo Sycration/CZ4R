@@ -29,7 +29,7 @@ pub(crate) async fn jobeditpage(
     mut auth: AuthSession<Backend>,
     Form(form): Form<JobEditPage>,
 ) -> Result<impl IntoResponse, CustomError> {
-    get_admin(auth)?;
+    get_admin(&auth)?;
 
     let this_job = match form.id {
         Some(id) => Some(
@@ -120,7 +120,7 @@ pub(crate) async fn jobedit(
     mut auth: AuthSession<Backend>,
     Form(form): Form<JobEditForm>,
 ) -> Result<impl IntoResponse, CustomError> {
-    let (my_id, my_name) = get_admin(auth)?;
+    let (my_id, my_name) = get_admin(&auth)?;
 
     let to_assign = form
         .assigned
@@ -327,7 +327,7 @@ pub(crate) async fn jobdelete(
     mut auth: AuthSession<Backend>,
     Form(form): Form<JobDeleteForm>,
 ) -> Result<impl IntoResponse, CustomError> {
-    let (my_id, my_name) = get_admin(auth)?;
+    let (my_id, my_name) = get_admin(&auth)?;
 
     query!(
         r#"

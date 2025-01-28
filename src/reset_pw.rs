@@ -30,7 +30,7 @@ pub(crate) async fn reset_pw(
     mut auth: AuthSession<Backend>,
     Form(form): Form<ResetPwForm>,
 ) -> Result<impl IntoResponse, CustomError> {
-    let (my_id, my_name) = get_admin(auth)?;
+    let (my_id, my_name) = get_admin(&auth)?;
     query!(
         r#"
         update users
