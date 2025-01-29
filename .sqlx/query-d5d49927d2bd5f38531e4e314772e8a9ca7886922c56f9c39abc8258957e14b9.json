@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        update users\n            set logged_out = 0\n            where id = $1\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "d5d49927d2bd5f38531e4e314772e8a9ca7886922c56f9c39abc8258957e14b9"
+}
