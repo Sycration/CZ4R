@@ -11,6 +11,7 @@ use axum::{
 };
 use axum_login::AuthSession;
 use axum_template::RenderHtml;
+use git_version::git_version;
 use itertools::Itertools;
 use rust_decimal::prelude::*;
 use rust_decimal::Decimal;
@@ -18,6 +19,7 @@ use serde::Deserialize;
 use serde_json::json;
 use sqlx::{query, query_as, Pool};
 use tracing::debug;
+
 pub(crate) async fn error404(
     uri: Uri,
     State(AppState {
@@ -33,6 +35,7 @@ pub(crate) async fn error404(
     }
 
     let data = serde_json::json!({
+    "git_ver": git_version!(),
         "admin": admin,
         "logged_in": logged_in,
         "title": "CZ4R Error 404"

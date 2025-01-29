@@ -9,6 +9,7 @@ use axum::response::Html;
 use axum::Form;
 use axum_login::AuthSession;
 use axum_template::RenderHtml;
+use git_version::git_version;
 use serde::Deserialize;
 use serde_json::json;
 use sqlx::Pool;
@@ -41,6 +42,7 @@ pub(crate) async fn workeredit(
         .collect::<Vec<_>>();
 
     let data = serde_json::json!({
+    "git_ver": git_version!(),
         "admin": true,
         "logged_in": true,
         "title": "CZ4R Worker Edit",

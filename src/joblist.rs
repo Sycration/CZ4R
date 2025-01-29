@@ -10,6 +10,7 @@ use axum::{
 use axum_login::tower_sessions::Session;
 use axum_login::AuthSession;
 use axum_template::RenderHtml;
+use git_version::git_version;
 use itertools::Itertools;
 use password_hash::rand_core::le;
 use serde::{Deserialize, Serialize};
@@ -310,6 +311,7 @@ pub(crate) async fn joblistpage(
 
     let job_datas = JobData::from_outputs(jobs, assigned, started, completed);
     let data = serde_json::json!({
+    "git_ver": git_version!(),
         "title": "CZ4R Job List",
         "admin": admin,
         "logged_in": true,

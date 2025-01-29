@@ -13,6 +13,7 @@ use axum::response::Redirect;
 use axum::Form;
 use axum_login::AuthSession;
 use axum_template::RenderHtml;
+use git_version::git_version;
 use password_hash::PasswordHasher;
 use password_hash::SaltString;
 use rand::thread_rng;
@@ -43,6 +44,7 @@ pub(crate) async fn change_pw_page(
     };
 
     let data = json!({
+    "git_ver": git_version!(),
         "title": "CZ4R Login",
         "admin": false,
         "logged_in": true,

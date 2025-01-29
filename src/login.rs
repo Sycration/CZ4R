@@ -6,9 +6,6 @@ use crate::AppState;
 
 use super::Worker;
 
-use axum_login::AuthnBackend;
-use sqlx::query;
-use sqlx::Row;
 use crate::Backend;
 use axum::extract::State;
 use axum::response::Html;
@@ -17,13 +14,17 @@ use axum::response::Redirect;
 use axum::Form;
 use axum_login::tower_sessions::Session;
 use axum_login::AuthSession;
+use axum_login::AuthnBackend;
 use axum_template::RenderHtml;
+use git_version::git_version;
 use password_hash::SaltString;
 use scrypt::password_hash::PasswordHasher;
 use scrypt::Scrypt;
 use serde::Deserialize;
+use sqlx::query;
 use sqlx::query_as;
 use sqlx::Pool;
+use sqlx::Row;
 use sqlx::Sqlite;
 use tracing::debug;
 use tracing::info;
@@ -52,6 +53,7 @@ pub async fn loginpage(
     let admin = auth.user.as_ref().map_or(false, |w| w.admin);
 
     let data = serde_json::json!({
+    "git_ver": git_version!(),
         "title": "CZ4R Login",
         "admin": admin,
         "logged_in": logged_in,
@@ -63,7 +65,7 @@ pub async fn loginpage(
 
 pub(crate) async fn login(
     mut auth: AuthSession<Backend>,
-   // mut session: Session,
+    // mut session: Session,
     State(AppState {
         pool, engine: _, ..
     }): State<AppState>,
@@ -133,12 +135,18 @@ pub(crate) async fn login(
         }
         auth.login(&worker).await.unwrap();
         let id = worker.id;
-        query!(r#"
+        query!(
+            r#"
         update users
             set logged_out = 0
             where id = $1
-        "#, id).execute(&pool).await.unwrap();
-        
+        "#,
+            id
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+
         info!("user {} (id {}) has logged in", &worker.name, &worker.id);
     } else {
         failure = true;
@@ -157,7 +165,7 @@ pub(crate) async fn login(
 
 #[derive(Debug, Clone, Copy, Deserialize)]
 pub struct LogoutForm {
-     pub id: i64
+    pub id: i64,
 }
 
 #[axum::debug_handler]
@@ -172,29 +180,30 @@ pub async fn logout_user(
     let user = &auth.backend.get_user(&form.id).await?;
 
     if let Some(u) = user {
-
-        
-        query!(r#"
+        query!(
+            r#"
         update users
             set logged_out = 1
             where id = $1
-        "#, u.id).execute(&pool).await?;
+        "#,
+            u.id
+        )
+        .execute(&pool)
+        .await?;
     }
 
-    
-
-
     Ok(())
-
 }
 
 pub(crate) async fn logout(
     mut auth: AuthSession<Backend>,
-   // mut session: Session,
+    // mut session: Session,
     State(_pool): State<Pool<Sqlite>>,
 ) -> Redirect {
     if let Some(user) = auth.user.clone() {
-        if (auth.logout().await).is_ok() /*&& session.flush().await.is_ok() */{
+        if (auth.logout().await).is_ok()
+        /*&& session.flush().await.is_ok() */
+        {
             debug!("user {} (id {}) logged out", user.name, user.id);
             Redirect::to("/")
         } else {

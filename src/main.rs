@@ -103,7 +103,7 @@ pub struct Worker {
     flat_rate_cents: i64,
     must_change_pw: bool,
     deactivated: bool,
-    logged_out: bool
+    logged_out: bool,
 }
 
 #[derive(Debug, Default, Clone, sqlx::FromRow)]
@@ -313,9 +313,7 @@ async fn app() {
     );
 
     let session_layer = SessionManagerLayer::new(session_store)
-        .with_expiry(Expiry::OnInactivity(time::Duration::seconds(
-            session_ttl,
-        )))
+        .with_expiry(Expiry::OnInactivity(time::Duration::seconds(session_ttl)))
         .with_always_save(true);
 
     let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer.clone()).build();

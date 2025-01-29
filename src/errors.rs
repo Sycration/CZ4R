@@ -1,14 +1,14 @@
+use crate::{render, setup_handlebars};
 use axum::{
     http::StatusCode,
     response::{Html, IntoResponse, Response},
 };
 use axum_template::{engine::Engine, RenderHtml, TemplateEngine};
+use git_version::git_version;
 use handlebars::Handlebars;
 use std::{borrow::Borrow, fmt};
 use thiserror::Error;
 use tracing::{debug, info, warn};
-
-use crate::{render, setup_handlebars};
 
 #[derive(Debug)]
 pub struct CustomError(pub anyhow::Error);
@@ -29,6 +29,7 @@ impl IntoResponse for CustomError {
         setup_handlebars(&mut hbs);
 
         let data = serde_json::json!({
+        "git_ver": git_version!(),
             "admin": false,
             "logged_in": false,
             "title": "CZ4R Error 404",

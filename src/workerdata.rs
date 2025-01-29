@@ -5,6 +5,7 @@ use axum::{
 };
 
 use axum_template::RenderHtml;
+use git_version::git_version;
 use password_hash::{rand_core::le, PasswordHasher, Salt, SaltString};
 use serde::{Deserialize, Serialize};
 use sqlx::types::time::Date;
@@ -216,6 +217,7 @@ pub(crate) async fn workerdatapage(
     };
 
     let data = serde_json::json!({
+    "git_ver": git_version!(),
         "title": "CZ4R Worker Data",
         "admin": true,
         "logged_in": true,

@@ -19,6 +19,8 @@ use tracing::{info, trace};
 use crate::{errors::CustomError, AppState, Job};
 use crate::{get_admin, Backend};
 use axum_login::AuthSession;
+use git_version::git_version;
+
 #[derive(Deserialize)]
 pub(crate) struct JobEditPage {
     id: Option<i64>,
@@ -80,6 +82,7 @@ pub(crate) async fn jobeditpage(
         .collect::<Vec<_>>();
 
     let data = json!({
+    "git_ver": git_version!(),
         "title": "Job Edit",
         "admin": true,
         "logged_in": true,

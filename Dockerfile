@@ -5,7 +5,7 @@ COPY . /code/
 WORKDIR /code
 
 RUN apt-get update
-RUN apt-get install cmake -y
+RUN apt-get install cmake git -y
 
 RUN cargo --version
 

@@ -12,6 +12,7 @@ use axum::response::Redirect;
 use axum::Form;
 use axum_login::AuthSession;
 use axum_template::RenderHtml;
+use git_version::git_version;
 use password_hash::SaltString;
 use scrypt::password_hash::PasswordHasher;
 use scrypt::Scrypt;
@@ -47,6 +48,7 @@ pub async fn restorepage(
     .await?;
 
     let data = serde_json::json!({
+    "git_ver": git_version!(),
         "title": "CZ4R Restore Workers",
         "admin": true,
         "logged_in": true,

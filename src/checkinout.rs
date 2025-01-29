@@ -9,6 +9,7 @@ use axum::{
 };
 use axum_login::AuthSession;
 use axum_template::RenderHtml;
+use git_version::git_version;
 use rust_decimal::prelude::*;
 use rust_decimal::Decimal;
 use serde::Deserialize;
@@ -83,6 +84,7 @@ pub(crate) async fn checkinoutpage(
     });
 
     let data = json!({
+    "git_ver": git_version!(),
         "title": "CZ4R Time Tracking",
         "admin": admin,
         "logged_in": true,
