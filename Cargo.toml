@@ -14,7 +14,7 @@ axum-login = "0.17"
 sqlx = { version = "0.8", features = [ "runtime-tokio-rustls" , "sqlite", "time",] }
 time = {version = "0.3", features = ["serde", "local-offset"]}
 futures = "0.3"
-rand = "0.8"
+rand = "0.8.5"
 rustls = "0.23"
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "process", "signal"] }

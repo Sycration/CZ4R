@@ -13,7 +13,7 @@ use futures::channel::oneshot;
 use futures::task;
 use password_hash::{PasswordHasher, Salt, SaltString};
 
-use rand::thread_rng;
+use rand::{thread_rng};
 use scrypt::Scrypt;
 use sqlx::migrate::MigrateDatabase;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
