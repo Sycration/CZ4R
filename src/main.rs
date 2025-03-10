@@ -27,7 +27,7 @@ use handlebars::{handlebars_helper, Handlebars};
 use login::{loginpage, LoginForm};
 use password_hash::{PasswordHasher, Salt, SaltString};
 use r#static::static_handler;
-use rand::{thread_rng, Rng};
+use rand::{rng, Rng};
 use rust_embed::RustEmbed;
 use scrypt::Scrypt;
 use serde::{de, Deserialize, Deserializer, Serialize};
