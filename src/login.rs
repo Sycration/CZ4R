@@ -17,9 +17,13 @@ use axum_login::AuthSession;
 use axum_login::AuthnBackend;
 use axum_template::RenderHtml;
 use git_version::git_version;
-use password_hash::SaltString;
-use scrypt::password_hash::PasswordHasher;
-use scrypt::Scrypt;
+use scrypt::{
+    password_hash::{
+        rand_core::OsRng,
+        PasswordHash, PasswordHasher, PasswordVerifier, SaltString, self
+    },
+    Scrypt
+};
 use serde::Deserialize;
 use sqlx::query;
 use sqlx::query_as;

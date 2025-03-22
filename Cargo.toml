@@ -14,7 +14,6 @@ axum-login = "0.17"
 sqlx = { version = "0.8", features = [ "runtime-tokio-rustls" , "sqlite", "time",] }
 time = {version = "0.3", features = ["serde", "local-offset"]}
 futures = "0.3"
-rand = "0.9"
 rustls = "0.23"
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "process", "signal"] }
@@ -23,8 +22,7 @@ webpki-roots = "0.26"
 tracing-subscriber = { version = "0.3", features = ["env-filter"]}
 tracing = "0.1"
 scrypt = "0.11"
-password-hash = {git = "https://github.com/RustCrypto/traits.git", features = ["rand_core"]}
-rust_decimal = "1"
+rust_decimal = "1.32.0"
 axum-template = {version = "3", features = ["handlebars"]}
 handlebars = {version = "6", features = ["dir_source", "rust-embed"]}
 rust-embed = {version = "8", features = ["axum", "tokio", "mime_guess", "mime-guess"]}
@@ -41,11 +39,6 @@ mime_guess = "2.0.5"
 tower-sessions-sqlx-store = { version = "0.15", features = ["sqlite"] }
 rmp-serde = "1.3.0"
 git-version = "0.3.9"
-
-[patch.crates-io]
-tower-sessions = {git = "https://github.com/Sycration/tower-sessions.git"}
-password-hash = {git = "https://github.com/RustCrypto/traits.git"}
-
 
 [profile.dev.package."*"]
 opt-level = 3

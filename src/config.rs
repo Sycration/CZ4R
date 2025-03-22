@@ -11,10 +11,13 @@ use aws_sdk_s3::Client;
 use base64::Engine;
 use futures::channel::oneshot;
 use futures::task;
-use password_hash::{PasswordHasher, Salt, SaltString};
-
-use rand::{rng, thread_rng};
-use scrypt::Scrypt;
+use scrypt::{
+    password_hash::{
+        rand_core::OsRng,
+        PasswordHash, PasswordHasher, PasswordVerifier, SaltString
+    },
+    Scrypt
+};
 use sqlx::migrate::MigrateDatabase;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use sqlx::{query, Pool, Sqlite};
@@ -176,13 +179,13 @@ impl Config {
             let admin_uname = env::var("ADMIN_USER").expect("ADMIN_USER not set");
             let admin_pw = env::var("ADMIN_PASSWORD").expect("ADMIN_PASSWORD not set");
 
-            let salt = SaltString::from_rng(&mut rng());
+            let salt = SaltString::generate(&mut scrypt::password_hash::rand_core::OsRng);
+
 
             let hash = Scrypt
                 .hash_password(admin_pw.as_bytes(), salt.as_salt())
                 .unwrap()
                 .to_string();
-            use password_hash::SaltString;
 
             let salt_str = salt.as_str();
             query!(

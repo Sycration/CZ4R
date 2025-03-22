@@ -12,7 +12,6 @@ use axum_login::AuthSession;
 use axum_template::RenderHtml;
 use git_version::git_version;
 use itertools::Itertools;
-use password_hash::rand_core::le;
 use serde::{Deserialize, Serialize};
 use sqlx::Sqlite;
 use sqlx::{

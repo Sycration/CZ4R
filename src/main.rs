@@ -25,11 +25,15 @@ use errors::CustomError;
 use futures::join;
 use handlebars::{handlebars_helper, Handlebars};
 use login::{loginpage, LoginForm};
-use password_hash::{PasswordHasher, Salt, SaltString};
+use scrypt::{
+    password_hash::{
+        rand_core::OsRng,
+        PasswordHash, PasswordHasher, PasswordVerifier, SaltString, self
+    },
+    Scrypt
+};
 use r#static::static_handler;
-use rand::{rng, Rng};
 use rust_embed::RustEmbed;
-use scrypt::Scrypt;
 use serde::{de, Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use shutdown::shutdown_signal;

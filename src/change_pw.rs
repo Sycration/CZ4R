@@ -14,10 +14,13 @@ use axum::Form;
 use axum_login::AuthSession;
 use axum_template::RenderHtml;
 use git_version::git_version;
-use password_hash::PasswordHasher;
-use password_hash::SaltString;
-use rand::thread_rng;
-use scrypt::Scrypt;
+use scrypt::{
+    password_hash::{
+        rand_core::OsRng,
+        PasswordHash, PasswordHasher, PasswordVerifier, SaltString
+    },
+    Scrypt
+};
 use serde::Deserialize;
 use serde_json::json;
 use sqlx::query;
@@ -98,7 +101,7 @@ pub(crate) async fn change_pw(
         )));
     }
 
-    let salt = SaltString::generate(&mut thread_rng());
+    let salt = SaltString::generate(&mut scrypt::password_hash::rand_core::OsRng);
 
     let hash = Scrypt
         .hash_password(form.password1.as_bytes(), salt.as_salt())
