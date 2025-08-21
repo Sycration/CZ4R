@@ -22,7 +22,7 @@ webpki-roots = "0.26"
 tracing-subscriber = { version = "0.3", features = ["env-filter"]}
 tracing = "0.1"
 scrypt = "0.11"
-rust_decimal = "1.32.0"
+rust_decimal = "1.37.2"
 axum-template = {version = "3", features = ["handlebars"]}
 handlebars = {version = "6", features = ["dir_source", "rust-embed"]}
 rust-embed = {version = "8", features = ["axum", "tokio", "mime_guess", "mime-guess"]}
@@ -33,8 +33,8 @@ thiserror = "2"
 itertools = "0.14"
 url = "2"
 dotenvy = "0.15.7"
-aws-sdk-s3 = "1.70.0"
-aws-config = "1.5.14"
+aws-sdk-s3 = "1.103.0"
+aws-config = "1.8.5"
 mime_guess = "2.0.5"
 tower-sessions-sqlx-store = { version = "0.15", features = ["sqlite"] }
 rmp-serde = "1.3.0"
