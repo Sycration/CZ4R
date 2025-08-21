@@ -1,4 +1,4 @@
-FROM rust:bookworm AS build
+FROM rust:bullseye AS build
 
 COPY . /code/
 
@@ -11,7 +11,7 @@ RUN cargo --version
 
 RUN cargo build --release
 
-FROM debian:bookworm-slim AS run
+FROM debian:bullseye-slim AS run
 
 RUN apt-get update
 RUN apt-get install ca-certificates sqlite3 -y
