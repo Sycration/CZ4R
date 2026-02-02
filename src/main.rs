@@ -16,7 +16,7 @@ use axum::{
 use axum_login::tower_sessions::ExpiredDeletion;
 use axum_login::{tower_sessions::Expiry, AuthSession};
 use axum_login::{
-    tower_sessions::{MemoryStore, SessionManagerLayer},
+    tower_sessions::{SessionManagerLayer},
     AuthManagerLayerBuilder, AuthUser, AuthnBackend, UserId,
 };
 use axum_template::{engine::Engine, Key, RenderHtml};
@@ -155,7 +155,6 @@ impl Backend {
     }
 }
 
-#[async_trait]
 impl AuthnBackend for Backend {
     type User = Worker;
     type Credentials = LoginForm;
