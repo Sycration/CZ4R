@@ -317,6 +317,7 @@ impl utoipa::Modify for SecurityAddon {
 #[openapi(
     info(
         title = "CZ4R API",
+        license(name = "AGPL-3.0", url = "https://www.gnu.org/licenses/agpl-3.0.en.html"),
     ),
     tags(
         (name = USER_TAG, description = "User API endpoints"),

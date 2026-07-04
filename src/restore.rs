@@ -83,7 +83,6 @@ async fn restore_core(
     Ok(RestoreOutput { user: input.user })
 }
 
-/// `POST /admin/web/v1/restore-worker` — HTML-facing endpoint.
 pub(crate) async fn restore(
     auth: AuthSession<Backend>,
     State(AppState { pool, .. }): State<AppState>,
@@ -93,7 +92,7 @@ pub(crate) async fn restore(
     Ok(Redirect::to("/admin/restore"))
 }
 
-/// `POST /admin/api/v1/restore-worker` — REST/JSON endpoint.
+/// Restores a deactivated worker via the API.
 #[utoipa::path(
     post,
     path = "/admin/api/v1/restore-worker",

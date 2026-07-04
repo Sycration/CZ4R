@@ -141,9 +141,7 @@ pub(crate) async fn index(
     Ok(RenderHtml("home.hbs", engine, data))
 }
 
-/// `GET /api/v1/stats` — REST/JSON endpoint. Public: the homepage shows
-/// these same numbers to logged-out visitors, so this doesn't require a
-/// bearer token either.
+/// Some public statistics, does not require authentication.
 #[utoipa::path(
     get,
     path = "/api/v1/stats",

@@ -96,8 +96,7 @@ async fn get_user_core(
     Ok(WorkerSummary::from(worker))
 }
 
-/// `GET /admin/api/v1/users` — REST/JSON endpoint. The full list of
-/// workers (active and deactivated), for worker management and for
+/// The full list of workers (active and deactivated), for worker management and for
 /// picking assignees when creating or editing a job.
 #[utoipa::path(
     get,
@@ -113,8 +112,7 @@ pub(crate) async fn list_users_api(
     to_api(list_users_core(&pool, Some(&user)).await)
 }
 
-/// `GET /admin/api/v1/users/{id}` — REST/JSON endpoint. A single worker's
-/// profile, e.g. to prefill a worker-edit form.
+/// Gets a single worker's profile, e.g. to prefill a worker-edit form.
 #[utoipa::path(
     get,
     path = "/admin/api/v1/users/{id}",

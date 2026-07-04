@@ -20,9 +20,8 @@ use sqlx::Pool;
 use utoipa::ToSchema;
 
 
-/// `GET /api/v1/whoami` — REST/JSON endpoint.
-/// Gets the current user's details, as a `WorkerSummary`
-/// Equivalent to the `/api/v1/users/:id` endpoint, but for the currently logged-in user.
+/// Gets the current user's details
+/// Equivalent to the `/admin/api/v1/users/:id` endpoint, but for the currently logged-in user.
 #[utoipa::path(
     get,
     path = "/api/v1/whoami",

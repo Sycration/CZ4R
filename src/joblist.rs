@@ -383,8 +383,8 @@ pub(crate) async fn joblistpage(
     Ok(RenderHtml("joblist.hbs", engine, data))
 }
 
-/// `GET /api/v1/joblist` — REST/JSON endpoint. The workers parameter is a dash-separated list of worker ids to filter by, e.g. `workers=1-2-3`.
-/// Date range defaults to today through 15 days from now.
+/// The workers parameter is a dash-separated list of worker ids to filter by, e.g. `workers=1-2-3`.
+/// Date range is YYYY-MM-DD format, defaults to today through 15 days from now.
 /// Non-admins can only see their own jobs, and the workers parameter is ignored for them.
 /// Admins' view defaults to show all assignments for all workers, which is the recommended default.
 #[utoipa::path(

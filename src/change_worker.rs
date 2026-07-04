@@ -157,7 +157,6 @@ async fn change_worker_core(
     Ok(WorkerChangeOutput { id: input.id })
 }
 
-/// `POST /admin/web/v1/change-worker` — HTML-facing endpoint.
 pub(crate) async fn change_worker(
     State(AppState { pool, .. }): State<AppState>,
     auth: AuthSession<Backend>,
@@ -171,7 +170,6 @@ pub(crate) async fn change_worker(
     ))
 }
 
-/// `POST /admin/api/v1/change-worker` — REST/JSON endpoint.
 /// Admins are not capable of removing their own admin privileges, and the API will return a 403 error if they try.
 #[utoipa::path(
     post,

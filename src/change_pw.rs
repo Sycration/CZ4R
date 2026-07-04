@@ -147,9 +147,6 @@ async fn change_pw_core(
     })
 }
 
-/// `POST /web/v1/change-pw` — HTML-facing endpoint, redirects back to the
-/// change-password page (with `no_match=true` on failure) or to the login
-/// page on success.
 pub(crate) async fn change_pw(
     State(AppState { pool, .. }): State<AppState>,
     mut _auth: AuthSession<Backend>,
@@ -167,7 +164,7 @@ pub(crate) async fn change_pw(
     Ok(Redirect::to("/loginpage"))
 }
 
-/// `POST /api/v1/change-pw` — REST/JSON endpoint.
+/// Changes the current user's password
 #[utoipa::path(
     post,
     path = "/api/v1/change-pw",

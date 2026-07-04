@@ -158,8 +158,7 @@ pub(crate) async fn create_worker(
     ))
 }
 
-/// `POST /admin/api/v1/create-worker` — REST/JSON endpoint. Responds
-/// `201 Created` with the new worker's id on success.
+/// Responds `201 Created` with the new worker's id on success.
 #[utoipa::path(
     post,
     path = "/admin/api/v1/create-worker",

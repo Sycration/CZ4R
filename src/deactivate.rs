@@ -73,7 +73,6 @@ pub(crate) async fn deactivate(
     Ok(Redirect::to("/admin/worker-edit"))
 }
 
-/// `POST /admin/api/v1/deactivate-worker` — REST/JSON endpoint.
 /// Admins are not capable of deactivating themselves, and the API will return a 403 error if they try.
 #[utoipa::path(
     post,

@@ -226,9 +226,7 @@ pub(crate) async fn login(
     }
 }
 
-/// `POST /api/v1/login` — REST/JSON endpoint. Authenticates via
-/// `authenticate_core`, then (on success) issues a bearer token instead of
-/// a cookie session - this endpoint doesn't touch `AuthSession` at all.
+/// Issues a beater token for API authentication.
 #[utoipa::path(
     post,
     path = "/api/v1/login",
@@ -316,7 +314,7 @@ pub async fn logout_user(
     Ok(StatusCode::OK)
 }
 
-/// `POST /admin/api/v1/logout-worker` — REST/JSON endpoint.
+/// This is intended to be used by admins to forcibly log another worker out, e.g. if they left their session open on a public computer.
 #[utoipa::path(
     post,
     path = "/admin/api/v1/logout-worker",
@@ -352,8 +350,7 @@ pub(crate) async fn logout(mut auth: AuthSession<Backend>) -> Redirect {
     Redirect::to("/loginpage?failure=true")
 }
 
-/// `POST /api/v1/logout` — REST/JSON endpoint. Revokes the bearer token
-/// used to authenticate this very request.
+/// Revokes the bearer token used to authenticate this very request.
 #[utoipa::path(
     post,
     path = "/api/v1/logout",

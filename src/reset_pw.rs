@@ -65,7 +65,7 @@ pub(crate) async fn reset_pw(
     ))
 }
 
-/// `POST /admin/api/v1/reset-pw` — REST/JSON endpoint.
+/// Forces a user to change their password on next login.
 #[utoipa::path(
     post,
     path = "/admin/api/v1/reset-pw",

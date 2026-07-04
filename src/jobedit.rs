@@ -155,8 +155,7 @@ pub(crate) async fn jobeditpage(
     Ok(RenderHtml("jobedit.hbs", engine, data))
 }
 
-/// `GET /admin/api/v1/jobs/{id}` — REST/JSON endpoint. See
-/// [`jobeditpage_api_new`] for the "new job" form-data equivalent.
+
 #[utoipa::path(
     get,
     path = "/admin/api/v1/jobs/{id}",
@@ -483,7 +482,6 @@ pub(crate) async fn jobedit(
     Ok(Redirect::to(format!("/admin/jobedit?id={}", out.job_id).as_str()))
 }
 
-/// `POST /admin/api/v1/jobs` — REST/JSON endpoint that creates a job.
 /// `job_id` in the body is ignored (a new job always gets a fresh id).
 /// Responds `201 Created`.
 #[utoipa::path(
@@ -506,7 +504,7 @@ pub(crate) async fn create_job_api(
     )
 }
 
-/// `PUT /admin/api/v1/jobs/{id}` — REST/JSON endpoint that updates a job.
+/// Updates an existing job.
 /// The id comes from the path, not the body.
 #[utoipa::path(
     put,
@@ -592,7 +590,7 @@ pub(crate) async fn jobdelete(
     Ok(Redirect::to("/joblist"))
 }
 
-/// `DELETE /admin/api/v1/jobs/{id}` — REST/JSON endpoint.
+/// Deletes a job. The id comes from the path, not the body.
 #[utoipa::path(
     delete,
     path = "/admin/api/v1/jobs/{id}",

@@ -47,6 +47,7 @@ pub struct FullAssignmentData {
     signout: Option<String>,
     miles_driven: f32,
     hours_driven: f32,
+    minutes_driven: f32,
     extraexpcents: i64,
     using_flat_rate: bool,
 }
@@ -114,7 +115,8 @@ pub(crate) async fn assignment_data_core(
         signin: jw.signin,
         signout: jw.signout,
         miles_driven: jw.miles_driven as f32,
-        hours_driven: jw.hours_driven as f32,
+        hours_driven: (jw.hours_driven as f32).floor(),
+        minutes_driven: ((jw.hours_driven as f32).fract() * 60.).round(),
         extraexpcents: jw.extraexpcents,
         using_flat_rate: jw.using_flat_rate,
     })
@@ -150,7 +152,7 @@ pub(crate) async fn checkinoutpage(
         "signout": signout,
         "miles": full_data.miles_driven,
         "hours": full_data.hours_driven.floor(),
-        "minutes": 60. * (full_data.hours_driven - full_data.hours_driven.floor()),
+        "minutes": full_data.minutes_driven,
         "extra_exp_ct": format!("{:.2}", (full_data.extraexpcents as f64 / 100.)),
         "notes": full_data.worker_notes.as_str(),
         "jobnotes": full_data.job_notes.as_str(),
@@ -159,11 +161,10 @@ pub(crate) async fn checkinoutpage(
     Ok(RenderHtml("checkinout.hbs", engine, data))
 }
 
-/// `GET /api/v1/assignment-data` — REST/JSON endpoint.
 #[utoipa::path(
     get,
     path = "/api/v1/assignment-data",
-    params(("id", Query, description = "Job ID"), ("worker", Query, description = "Worker ID")),
+    params(("id" = i64, Query, description = "Job ID"), ("worker" = i64, Query, description = "Worker ID")),
     responses((status = OK, body = FullAssignmentData)),
     security(("bearer_auth" = [])),
     tag = super::USER_TAG
@@ -352,7 +353,6 @@ pub(crate) async fn checkinout(
     Ok(StatusCode::OK.into_response())
 }
 
-/// `POST /api/v1/checkinout` — REST/JSON endpoint. Takes and returns JSON.
 /// Sign in and sign out parameters accept full ISO8601 or simple HH:MM time strings.
 #[utoipa::path(
     post,
