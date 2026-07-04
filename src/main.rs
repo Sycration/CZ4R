@@ -81,6 +81,7 @@ mod reset_pw;
 mod restore;
 mod shutdown;
 mod r#static;
+mod whoami;
 mod workerdata;
 mod workeredit;
 
@@ -432,8 +433,10 @@ async fn app() {
         .routes(routes!(login::logout_api))
         .routes(routes!(change_pw::change_pw_api))
         .routes(routes!(checkinout::checkinout_api))
+        .routes(routes!(checkinout::assignment_data_api))
         .routes(routes!(joblist::joblist_api))
         .routes(routes!(index::index_api))
+        .routes(routes!(whoami::whoami))
         .merge(admin_only)
         .fallback(error404::error404)
         .layer(auth_layer)

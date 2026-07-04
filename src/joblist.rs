@@ -234,7 +234,10 @@ async fn joblist_core(
             }
         }
         query_builder.push(") ");
-    } else {
+    } else if admin && form.workers.is_none() {
+  
+    }
+    else {
         query_builder.push(" and jobworkers.worker = ");
         query_builder.push_bind(id);
     }
@@ -380,9 +383,10 @@ pub(crate) async fn joblistpage(
     Ok(RenderHtml("joblist.hbs", engine, data))
 }
 
-/// `GET /api/v1/joblist` — REST/JSON endpoint. Takes the exact same filters
-/// as the web page, but as query parameters, and returns the results as
-/// JSON.
+/// `GET /api/v1/joblist` — REST/JSON endpoint. The workers parameter is a dash-separated list of worker ids to filter by, e.g. `workers=1-2-3`.
+/// Date range defaults to today through 15 days from now.
+/// Non-admins can only see their own jobs, and the workers parameter is ignored for them.
+/// Admins' view defaults to show all assignments for all workers, which is the recommended default.
 #[utoipa::path(
     get,
     path = "/api/v1/joblist",

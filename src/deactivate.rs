@@ -47,7 +47,7 @@ async fn deactivate_core(
         );
         return Err(CustomError::new(
             anyhow!("A user cannot deactivate themselves"),
-            StatusCode::BAD_REQUEST,
+            StatusCode::FORBIDDEN,
         ));
     }
 
@@ -74,6 +74,7 @@ pub(crate) async fn deactivate(
 }
 
 /// `POST /admin/api/v1/deactivate-worker` — REST/JSON endpoint.
+/// Admins are not capable of deactivating themselves, and the API will return a 403 error if they try.
 #[utoipa::path(
     post,
     path = "/admin/api/v1/deactivate-worker",

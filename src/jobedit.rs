@@ -155,10 +155,8 @@ pub(crate) async fn jobeditpage(
     Ok(RenderHtml("jobedit.hbs", engine, data))
 }
 
-/// `GET /admin/api/v1/jobs/{id}` — REST/JSON endpoint. To build a "create
-/// job" form (no existing job, just the worker list to assign from), use
-/// `GET /admin/api/v1/users` instead - a brand-new job has no assignment
-/// state of its own to report here.
+/// `GET /admin/api/v1/jobs/{id}` — REST/JSON endpoint. See
+/// [`jobeditpage_api_new`] for the "new job" form-data equivalent.
 #[utoipa::path(
     get,
     path = "/admin/api/v1/jobs/{id}",
@@ -173,6 +171,22 @@ pub(crate) async fn jobeditpage_api(
     axum::extract::Path(id): axum::extract::Path<i64>,
 ) -> Result<Json<JobEditPageOutput>, ApiError> {
     to_api(jobeditpage_core(&pool, Some(&user), Some(id)).await)
+}
+
+/// `GET /admin/api/v1/jobs/new` — the data needed to build a "create job"
+/// form: no job, but the full active-worker list.
+#[utoipa::path(
+    get,
+    path = "/admin/api/v1/jobs/new",
+    responses((status = OK, body = JobEditPageOutput)),
+    security(("bearer_auth" = [])),
+    tag = super::ADMIN_TAG
+)]
+pub(crate) async fn jobeditpage_api_new(
+    State(AppState { pool, .. }): State<AppState>,
+    ApiAuth { user, .. }: ApiAuth,
+) -> Result<Json<JobEditPageOutput>, ApiError> {
+    to_api(jobeditpage_core(&pool, Some(&user), None).await)
 }
 
 /// A single worker assignment on a job, and whether that worker is being

@@ -172,6 +172,7 @@ pub(crate) async fn change_worker(
 }
 
 /// `POST /admin/api/v1/change-worker` — REST/JSON endpoint.
+/// Admins are not capable of removing their own admin privileges, and the API will return a 403 error if they try.
 #[utoipa::path(
     post,
     path = "/admin/api/v1/change-worker",
