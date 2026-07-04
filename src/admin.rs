@@ -1,5 +1,5 @@
 use crate::{errors::CustomError, AppEngine, AppState, Job, JobWorker};
-use crate::{get_admin, Backend};
+use crate::{current_user, get_admin, Backend};
 use axum::{
     extract::{Path, State},
     response::{Html, IntoResponse, Redirect},
@@ -18,9 +18,9 @@ pub(crate) async fn admin(
     State(AppState {
         pool: _, engine, ..
     }): State<AppState>,
-    mut auth: AuthSession<Backend>,
+    auth: AuthSession<Backend>,
 ) -> Result<impl IntoResponse, CustomError> {
-    get_admin(&auth)?;
+    get_admin(current_user(&auth).as_ref())?;
 
     let data = serde_json::json!({
     "git_ver": git_version!(),

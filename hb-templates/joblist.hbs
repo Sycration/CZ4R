@@ -58,7 +58,7 @@
 
 <div class="z-3 position-fixed bottom-0 end-0 rounded-circle m-5">
   <div class=" my-3 py-2">
-    <a href="/jobedit">
+    <a href="/admin/jobedit">
       <button class=" shadow-lg btn btn-success btn">
 
         Create job
@@ -165,8 +165,8 @@
           <div>Assigned to</div>
           <div class="">
             <select form="notreal" class=" mx-2 form-select" onchange="updateSet()" multiple>
-              {{#each params.workers as |workers| }}
-              <option class="select-option" {{#if workers.[2]}}selected{{/if}} value="{{ workers.[0] }}">{{workers.[1]}}
+              {{#each params.workers as |worker| }}
+              <option class="select-option" {{#if worker.selected}}selected{{/if}} value="{{ worker.id }}">{{worker.name}}
               </option>
 
               {{/each}}

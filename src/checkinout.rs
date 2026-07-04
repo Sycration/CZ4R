@@ -1,23 +1,26 @@
-use crate::{errors::CustomError, AppState, Job, JobWorker};
-use crate::{get_user, Backend};
+use crate::api_auth::ApiAuth;
+use crate::errors::{to_api, ApiError, CustomError};
+use crate::{current_user, get_user, Backend};
+use crate::{AppState, Job, JobWorker};
 use anyhow::anyhow;
 use axum::http::StatusCode;
 use axum::{
-    extract::{Path, State},
-    response::{Html, IntoResponse, Redirect},
-    Form,
+    extract::State,
+    response::{IntoResponse, Redirect},
+    Form, Json,
 };
 use axum_login::AuthSession;
 use axum_template::RenderHtml;
 use git_version::git_version;
 use rust_decimal::prelude::*;
 use rust_decimal::Decimal;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{query, query_as, Pool};
 use time::format_description::well_known::Iso8601;
 use time::{format_description, macros::format_description, Time};
 use tracing::*;
+use utoipa::ToSchema;
 
 #[derive(Deserialize)]
 pub(crate) struct CheckInOutPage {
@@ -27,10 +30,10 @@ pub(crate) struct CheckInOutPage {
 
 pub(crate) async fn checkinoutpage(
     State(AppState { pool, engine, .. }): State<AppState>,
-    mut auth: AuthSession<Backend>,
+    auth: AuthSession<Backend>,
     Form(form): Form<CheckInOutPage>,
 ) -> Result<impl IntoResponse, impl IntoResponse> {
-    let (my_id, my_name, admin) = get_user(&auth)?;
+    let (my_id, my_name, admin) = get_user(current_user(&auth).as_ref())?;
 
     let worker = form.worker;
 
@@ -39,9 +42,10 @@ pub(crate) async fn checkinoutpage(
             "user {} (id {}) tried to check in for user {}",
             my_name, my_id, worker
         );
-        return Err(CustomError(anyhow!(
-            "Attempted to check in for other worker"
-        )));
+        return Err(CustomError::new(
+            anyhow!("Attempted to check in for other worker"),
+            StatusCode::FORBIDDEN,
+        ));
     }
 
     let jw = query!(
@@ -108,6 +112,22 @@ pub(crate) async fn checkinoutpage(
     Ok(RenderHtml("checkinout.hbs", engine, data))
 }
 
+/// The data needed to update a single worker's check-in/out record for a
+/// job. Used as the request body for both the web form and the JSON API.
+#[derive(Debug, Clone, Deserialize, Serialize, ToSchema)]
+pub(crate) struct CheckInOutInput {
+    pub signin: Option<String>,
+    pub signout: Option<String>,
+    pub miles_driven: Option<f32>,
+    pub hours_driven: Option<f32>,
+    pub minutes_driven: Option<f32>,
+    pub extra_expenses: Option<String>,
+    pub notes: Option<String>,
+    pub job_id: i64,
+    pub worker_id: i64,
+}
+
+/// The legacy, PascalCase-named form fields the HTML/htmx client posts.
 //?Signin=&Signout=&MilesDriven=2&ExtraExpenses=&Notes=
 #[derive(Deserialize)]
 pub(crate) struct CheckInOutForm {
@@ -122,27 +142,53 @@ pub(crate) struct CheckInOutForm {
     WorkerId: i64,
 }
 
-pub(crate) async fn checkinout(
-    State(AppState { pool, .. }): State<AppState>,
-    mut auth: AuthSession<Backend>,
-    Form(form): Form<CheckInOutForm>,
-) -> Result<impl IntoResponse, impl IntoResponse> {
-    let (my_id, my_name, admin) = get_user(&auth)?;
+impl From<CheckInOutForm> for CheckInOutInput {
+    fn from(form: CheckInOutForm) -> Self {
+        Self {
+            signin: form.Signin,
+            signout: form.Signout,
+            miles_driven: form.MilesDriven,
+            hours_driven: form.HoursDriven,
+            minutes_driven: form.MinutesDriven,
+            extra_expenses: form.ExtraExpenses,
+            notes: form.Notes,
+            job_id: form.JobId,
+            worker_id: form.WorkerId,
+        }
+    }
+}
 
-    let worker = form.WorkerId;
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub(crate) struct CheckInOutOutput {
+    pub job_id: i64,
+    pub worker_id: i64,
+}
+
+/// Shared business logic for updating a check-in/out record. Both the web
+/// handler and the API handler call this and only differ in how they
+/// extract their input and render their output.
+async fn checkinout_core(
+    pool: &Pool<sqlx::Sqlite>,
+    user: Option<&crate::CurrentUser>,
+    input: CheckInOutInput,
+) -> Result<CheckInOutOutput, CustomError> {
+    let (my_id, my_name, admin) = get_user(user)?;
+
+    let worker = input.worker_id;
 
     if !admin && worker != my_id {
-        return Err(CustomError(anyhow!(
-            "Attempted to check in for other worker"
-        )));
+        return Err(CustomError::new(
+            anyhow!("Attempted to check in for other worker"),
+            StatusCode::FORBIDDEN,
+        ));
     }
 
-    let signin = form.Signin.unwrap_or_default();
-    let signout = form.Signout.unwrap_or_default();
-    let milesdriven = form.MilesDriven.unwrap_or_default();
-    let hoursdriven = form.HoursDriven.unwrap_or_default();
-    let minutesdriven = form.MinutesDriven.unwrap_or_default();
-    let extraexpenses = form.ExtraExpenses.unwrap_or_default();
+    let signin = input.signin.unwrap_or_default();
+    let signout = input.signout.unwrap_or_default();
+    let milesdriven = input.miles_driven.unwrap_or_default();
+    let hoursdriven = input.hours_driven.unwrap_or_default();
+    let minutesdriven = input.minutes_driven.unwrap_or_default();
+    let extraexpenses = input.extra_expenses.unwrap_or_default();
 
     let extraexp = Decimal::from_str_exact(&extraexpenses)? * Decimal::ONE_HUNDRED;
 
@@ -185,11 +231,11 @@ pub(crate) async fn checkinout(
         milesdriven,
         true_hours_driven,
         true_extra_exp,
-        form.Notes,
+        input.notes,
         worker,
-        form.JobId
+        input.job_id
     )
-    .execute(&pool)
+    .execute(pool)
     .await?;
 
     info!(
@@ -200,7 +246,7 @@ miles driven: {}\n
 hours driven: {}\n
 extra expenses (cents): {}\n
 notes: {}",
-        form.JobId,
+        input.job_id,
         worker,
         if admin { "admin" } else { "user" },
         my_name,
@@ -214,8 +260,40 @@ notes: {}",
         milesdriven,
         true_hours_driven,
         true_extra_exp,
-        form.Notes.unwrap_or_default(),
+        input.notes.unwrap_or_default(),
     );
 
+    Ok(CheckInOutOutput {
+        job_id: input.job_id,
+        worker_id: worker,
+    })
+}
+
+/// `POST /web/v1/checkinout` — HTML/htmx-facing endpoint. Takes a
+/// form-encoded body, returns a bare status code (the client re-fetches the
+/// page via htmx on success).
+pub(crate) async fn checkinout(
+    State(AppState { pool, .. }): State<AppState>,
+    auth: AuthSession<Backend>,
+    Form(form): Form<CheckInOutForm>,
+) -> Result<impl IntoResponse, CustomError> {
+    checkinout_core(&pool, current_user(&auth).as_ref(), form.into()).await?;
     Ok(StatusCode::OK.into_response())
+}
+
+/// `POST /api/v1/checkinout` — REST/JSON endpoint. Takes and returns JSON.
+#[utoipa::path(
+    post,
+    path = "/api/v1/checkinout",
+    request_body = CheckInOutInput,
+    responses((status = OK, body = CheckInOutOutput)),
+    security(("bearer_auth" = [])),
+    tag = super::USER_TAG
+)]
+pub(crate) async fn checkinout_api(
+    State(AppState { pool, .. }): State<AppState>,
+    ApiAuth { user, .. }: ApiAuth,
+    Json(input): Json<CheckInOutInput>,
+) -> Result<Json<CheckInOutOutput>, ApiError> {
+    to_api(checkinout_core(&pool, Some(&user), input).await)
 }

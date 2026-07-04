@@ -1,11 +1,13 @@
 use std::collections::BTreeMap;
 
-use crate::{empty_string_as_none, errors::CustomError, now, AppState, TZ_OFFSET};
+use crate::api_auth::ApiAuth;
+use crate::errors::{to_api, ApiError};
+use crate::{current_user, empty_string_as_none, errors::CustomError, now, AppState, TZ_OFFSET};
 use crate::{get_user, Backend};
 use axum::{
-    extract::State,
+    extract::{Query, State},
     response::{Html, IntoResponse},
-    Form,
+    Form, Json,
 };
 use axum_login::tower_sessions::Session;
 use axum_login::AuthSession;
@@ -19,6 +21,7 @@ use sqlx::{
 };
 use time::{Duration, OffsetDateTime, Time};
 use tracing::warn;
+use utoipa::{IntoParams, ToSchema};
 
 #[derive(Deserialize, FromRow)]
 struct JobQueryOutput {
@@ -39,7 +42,7 @@ struct JobQueryOutput {
     extraexpcents: Option<i64>,
 }
 
-#[derive(Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow, ToSchema)]
 pub struct JobData {
     pub job_id: i64,
     pub worker_id: Option<i64>,
@@ -100,7 +103,7 @@ impl JobData {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Clone, Deserialize, IntoParams)]
 pub(crate) struct JobListForm {
     start_date: Option<Date>,
     end_date: Option<Date>,
@@ -120,13 +123,22 @@ pub(crate) struct JobListForm {
     pub workers: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub enum Order {
     Latest,
     Earliest,
 }
 
-#[derive(Deserialize, Serialize)]
+/// A worker, and whether they're currently included in a job-list search's
+/// worker filter.
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct WorkerFilterOption {
+    pub id: i64,
+    pub name: String,
+    pub selected: bool,
+}
+
+#[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct SearchParams {
     pub start: String,
     pub end: String,
@@ -134,15 +146,30 @@ pub struct SearchParams {
     pub work_order: String,
     pub address: String,
     pub fieldnotes: String,
-    pub workers: Vec<(i64, String, bool)>,
+    pub workers: Vec<WorkerFilterOption>,
 }
 
-pub(crate) async fn joblistpage(
-    State(AppState { pool, engine, .. }): State<AppState>,
-    mut auth: AuthSession<Backend>,
-    Form(form): Form<JobListForm>,
-) -> Result<impl IntoResponse, CustomError> {
-    let (id, _my_name, admin) = get_user(&auth)?;
+/// The full result of a job-list search: every matching job/assignment row
+/// plus the (possibly defaulted) search parameters that produced it. Shared
+/// by both the HTML page and the JSON API.
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct JobListOutput {
+    pub admin: bool,
+    pub count: usize,
+    pub jobs: Vec<JobData>,
+    pub params: SearchParams,
+    pub order: Order,
+    pub assigned: bool,
+    pub started: bool,
+    pub completed: bool,
+}
+
+async fn joblist_core(
+    pool: &Pool<Sqlite>,
+    user: Option<&crate::CurrentUser>,
+    form: JobListForm,
+) -> Result<JobListOutput, CustomError> {
+    let (id, _my_name, admin) = get_user(user)?;
 
     let start_date = if let Some(d) = form.start_date {
         d
@@ -247,7 +274,7 @@ pub(crate) async fn joblistpage(
 
     let query = query_builder.build_query_as();
 
-    let mut r = query.fetch_all(&pool).await?;
+    let mut r = query.fetch_all(pool).await?;
 
     let jobs = {
         let query = query_as!(
@@ -270,7 +297,7 @@ pub(crate) async fn joblistpage(
             start_date,
             end_date
         )
-        .fetch_all(&pool)
+        .fetch_all(pool)
         .await;
         if let Ok(mut orphans) = query {
             r = {
@@ -292,44 +319,82 @@ pub(crate) async fn joblistpage(
             select id, name from users where users.deactivated = false
         "#
     )
-    .fetch_all(&pool)
+    .fetch_all(pool)
     .await?
     .iter()
-    .map(|w| {
-        (
-            w.id,
-            w.name.clone(),
-            if form.workers.is_some() {
-                parsed_workers.contains(&w.id)
-            } else {
-                true
-            },
-        )
+    .map(|w| WorkerFilterOption {
+        id: w.id,
+        name: w.name.clone(),
+        selected: if form.workers.is_some() {
+            parsed_workers.contains(&w.id)
+        } else {
+            true
+        },
     })
     .collect();
 
     let job_datas = JobData::from_outputs(jobs, assigned, started, completed);
-    let data = serde_json::json!({
-    "git_ver": git_version!(),
-        "title": "CZ4R Job List",
-        "admin": admin,
-        "logged_in": true,
-        "count": &job_datas.len(),
-        "job_datas": job_datas,
-        "params": SearchParams {
-            start: start_date.to_string(),
-            end: end_date.to_string(),
+
+    Ok(JobListOutput {
+        admin,
+        count: job_datas.len(),
+        jobs: job_datas,
+        params: SearchParams {
+            start: start_date,
+            end: end_date,
             site_name: form.site_name.unwrap_or_default(),
             work_order: form.work_order.unwrap_or_default(),
             address: form.address.unwrap_or_default(),
             fieldnotes: form.notes.unwrap_or_default(),
-            workers
+            workers,
         },
-        "order": form.order.unwrap_or(Order::Latest),
-        "assigned": assigned,
-        "started": started,
-        "completed": completed
+        order: form.order.unwrap_or(Order::Latest),
+        assigned,
+        started,
+        completed,
+    })
+}
+
+/// `GET /joblist` — HTML-facing endpoint.
+pub(crate) async fn joblistpage(
+    State(AppState { pool, engine, .. }): State<AppState>,
+    auth: AuthSession<Backend>,
+    Form(form): Form<JobListForm>,
+) -> Result<impl IntoResponse, CustomError> {
+    let out = joblist_core(&pool, current_user(&auth).as_ref(), form).await?;
+
+    let data = serde_json::json!({
+    "git_ver": git_version!(),
+        "title": "CZ4R Job List",
+        "admin": out.admin,
+        "logged_in": true,
+        "count": out.count,
+        "job_datas": out.jobs,
+        "params": out.params,
+        "order": out.order,
+        "assigned": out.assigned,
+        "started": out.started,
+        "completed": out.completed
     });
 
     Ok(RenderHtml("joblist.hbs", engine, data))
+}
+
+/// `GET /api/v1/joblist` — REST/JSON endpoint. Takes the exact same filters
+/// as the web page, but as query parameters, and returns the results as
+/// JSON.
+#[utoipa::path(
+    get,
+    path = "/api/v1/joblist",
+    params(JobListForm),
+    responses((status = OK, body = JobListOutput)),
+    security(("bearer_auth" = [])),
+    tag = super::USER_TAG
+)]
+pub(crate) async fn joblist_api(
+    State(AppState { pool, .. }): State<AppState>,
+    ApiAuth { user, .. }: ApiAuth,
+    Query(form): Query<JobListForm>,
+) -> Result<Json<JobListOutput>, ApiError> {
+    to_api(joblist_core(&pool, Some(&user), form).await)
 }

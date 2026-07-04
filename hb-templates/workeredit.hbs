@@ -4,7 +4,7 @@
 
     {{#if selected}}
 
-            <form id="logout" hx-post="/admin/api/v1/logout-worker" >
+            <form id="logout" hx-post="/admin/web/v1/logout-worker" >
             </form>
 
     <div class="modal fade" id="DeactivateModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
@@ -19,7 +19,7 @@
             the site admin page.
           </div>
           <div class="modal-footer">
-            <form action="/admin/api/v1/deactivate-worker" method="post">
+            <form action="/admin/web/v1/deactivate-worker" method="post">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
               <button type="submit" class="btn btn-danger">Deactivate</button>
               <input type="hidden" id="hidden-user" name="user" value="{{selected}}">
@@ -40,7 +40,7 @@
             Are you sure you want to reset this worker's password? They will have to set a new one on their next login.
           </div>
           <div class="modal-footer">
-            <form action="/admin/api/v1/reset-pw" method="post">
+            <form action="/admin/web/v1/reset-pw" method="post">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
               <button type="submit" class="btn btn-danger">Reset</button>
               <input type="hidden" id="hidden-id" name="id" value="{{selected}}">
@@ -70,7 +70,7 @@
 
 
 
-        <form method="post" id="edit" hx-push-url="true" hx-post="/admin/api/v1/change-worker" hx-target="#worker-edit"
+        <form method="post" id="edit" hx-push-url="true" hx-post="/admin/web/v1/change-worker" hx-target="#worker-edit"
           hx-select="#worker-edit" hx-trigger="change delay:500ms">
           <div class="input-group pb-2">
             {{#each workerlist as |w|}}
@@ -134,10 +134,10 @@
             </div>
 
             <div class="form-check">
-              <input form="edit" class="form-check-input" type="checkbox" id="Admin" name="Admin" {{#if w.admin}}
-                checked="checked" {{/if}} {{#if (eq w.id ../own_id)}} class="special" onclick="event.preventDefault();"
+              <input form="edit" class="form-check-input"  type="checkbox" id="Admin" name="Admin" {{#if w.admin}}
+                checked="checked" {{/if}} {{#if (eq w.id ../own_id.[0])}} class="special" disabled="" onclick="event.preventDefault();"
                 {{/if}}>
-              <label class="form-check-label" for="Admin">Admin</label>
+              <label class="form-check-label" for="Admin">Admin {{#if (eq w.id ../own_id.[0])}} (You cannot revoke your own admin privileges) {{/if}}</label>
             </div>
 
           </div>
@@ -162,8 +162,13 @@
                     Reset password</a>
                 </div>
                 <div>
-                  <a class="btn btn-danger" type="button" data-bs-toggle="modal"
-                    data-bs-target="#DeactivateModal">Deactivate</a>
+                  <button {{#if (eq w.id ../own_id.[0])}} disabled = "" {{/if}} class="btn btn-danger" type="button" data-bs-toggle="modal"
+                  
+                    data-bs-target="#DeactivateModal">Deactivate</button>
+                    
+                </div>
+                <div>
+                  {{#if (eq w.id ../own_id.[0])}} (You cannot deactivate your own account) {{/if}}
                 </div>
                 {{/if}}
 
@@ -183,7 +188,7 @@
 
         {{/unless}}
         {{#if creating}}
-        <form method="post" id="edit" hx-post="/admin/api/v1/create-worker" hx-target="#worker-edit"
+        <form method="post" id="edit" hx-post="/admin/web/v1/create-worker" hx-target="#worker-edit"
           hx-select="#worker-edit" hx-trigger="change delay:500ms">
           <div class="input-group pb-2">
             <span class="input-group-text">Name</span>

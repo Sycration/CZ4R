@@ -1,0 +1,104 @@
+{
+  "db_name": "SQLite",
+  "query": "select * from users order by id asc;",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "hash",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "salt",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "admin",
+        "ordinal": 4,
+        "type_info": "Bool"
+      },
+      {
+        "name": "address",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "phone",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "email",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "rate_hourly_cents",
+        "ordinal": 8,
+        "type_info": "Integer"
+      },
+      {
+        "name": "rate_mileage_cents",
+        "ordinal": 9,
+        "type_info": "Integer"
+      },
+      {
+        "name": "rate_drive_hourly_cents",
+        "ordinal": 10,
+        "type_info": "Integer"
+      },
+      {
+        "name": "must_change_pw",
+        "ordinal": 11,
+        "type_info": "Bool"
+      },
+      {
+        "name": "flat_rate_cents",
+        "ordinal": 12,
+        "type_info": "Integer"
+      },
+      {
+        "name": "deactivated",
+        "ordinal": 13,
+        "type_info": "Bool"
+      },
+      {
+        "name": "logged_out",
+        "ordinal": 14,
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "a50418db3fabf61f7709da4fb5fe860fb0bd1fdc2e1cac5d9cd005af1eaaa3b4"
+}

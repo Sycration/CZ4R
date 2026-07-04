@@ -1,25 +1,42 @@
 //Name=&Address=&Phone=&Email=&Hourly=&Mileage=&Drivetime=
 
 use super::Worker;
-use crate::errors::CustomError;
-use crate::get_admin;
+use crate::api_auth::ApiAuth;
+use crate::errors::{to_api, ApiError, CustomError};
+use crate::{current_user, get_admin};
 use crate::AppState;
 use crate::Backend;
 use anyhow::anyhow;
-use axum::debug_handler;
-use axum::extract::Path;
 use axum::extract::State;
+use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::response::Redirect;
 use axum::Form;
+use axum::Json;
 use axum_login::AuthSession;
-use axum_template::engine;
 use rust_decimal::prelude::*;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use sqlx::query;
-use sqlx::query_as;
 use sqlx::Pool;
+use utoipa::ToSchema;
 
+/// Request body shared by the web form and the JSON API for changing a
+/// worker's details.
+#[derive(Debug, Clone, Deserialize, Serialize, ToSchema)]
+pub(crate) struct WorkerChangeInput {
+    pub id: i64,
+    pub name: String,
+    pub address: String,
+    pub phone: String,
+    pub email: String,
+    pub hourly: String,
+    pub mileage: String,
+    pub drivetime: String,
+    pub flatrate: String,
+    pub admin: Option<bool>,
+}
+
+/// The legacy, PascalCase-named form fields the HTML client posts.
 #[derive(Deserialize)]
 pub(crate) struct WorkerChangeForm {
     Name: String,
@@ -34,35 +51,65 @@ pub(crate) struct WorkerChangeForm {
     id: i64,
 }
 
-// Result<impl IntoResponse, impl IntoResponse>
+impl TryFrom<WorkerChangeForm> for WorkerChangeInput {
+    type Error = CustomError;
 
-pub(crate) async fn change_worker(
-    State(AppState { pool, .. }): State<AppState>,
-    mut auth: AuthSession<Backend>,
-    Form(workerdata): Form<WorkerChangeForm>,
-) -> Result<impl IntoResponse, impl IntoResponse> {
-    let (my_id, my_name) = get_admin(&auth)?;
-    let hourly = Decimal::from_str_exact(&workerdata.Hourly)? * Decimal::ONE_HUNDRED;
+    fn try_from(form: WorkerChangeForm) -> Result<Self, Self::Error> {
+        let admin = match form.Admin.as_deref() {
+            Some("on" | "true" | "yes") => Some(true),
+            Some("off" | "false" | "no") | None => Some(false),
+            _ => {
+                return Err(CustomError::new(
+                    anyhow!("Client didn't return a boolean string"),
+                    StatusCode::BAD_REQUEST,
+                ))
+            }
+        };
 
-    let mileage = Decimal::from_str_exact(&workerdata.Mileage)? * Decimal::ONE_HUNDRED;
+        Ok(Self {
+            id: form.id,
+            name: form.Name,
+            address: form.Address,
+            phone: form.Phone,
+            email: form.Email,
+            hourly: form.Hourly,
+            mileage: form.Mileage,
+            drivetime: form.Drivetime,
+            flatrate: form.Flatrate,
+            admin,
+        })
+    }
+}
 
-    let drivetime = Decimal::from_str_exact(&workerdata.Drivetime)? * Decimal::ONE_HUNDRED;
-    let flatrate = Decimal::from_str_exact(&workerdata.Flatrate)? * Decimal::ONE_HUNDRED;
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub(crate) struct WorkerChangeOutput {
+    pub id: i64,
+}
 
-    let admin = match workerdata.Admin.as_deref() {
-        Some("on" | "true" | "yes") => true,
-        Some("off" | "false" | "no") | None => false,
-        _ => {
-            return Err(CustomError(anyhow!(
-                "Client didn't return a boolean string"
-            )))
-        }
-    };
+async fn change_worker_core(
+    pool: &Pool<sqlx::Sqlite>,
+    user: Option<&crate::CurrentUser>,
+    input: WorkerChangeInput,
+) -> Result<WorkerChangeOutput, CustomError> {
+    let (my_id, my_name) = get_admin(user)?;
+    let hourly = Decimal::from_str_exact(&input.hourly)? * Decimal::ONE_HUNDRED;
+    let mileage = Decimal::from_str_exact(&input.mileage)? * Decimal::ONE_HUNDRED;
+    let drivetime = Decimal::from_str_exact(&input.drivetime)? * Decimal::ONE_HUNDRED;
+    let flatrate = Decimal::from_str_exact(&input.flatrate)? * Decimal::ONE_HUNDRED;
+
+    let admin = input.admin.unwrap_or(false);
 
     let hourly = hourly.to_i32().unwrap();
     let mileage = mileage.to_i32().unwrap();
     let drivetime = drivetime.to_i32().unwrap();
     let flatrate = flatrate.to_i32().unwrap();
+
+    if my_id == input.id && !admin {
+        return Err(CustomError::new(
+            anyhow!("Admin cannot remove their own admin privileges"),
+            StatusCode::FORBIDDEN,
+        ));
+    }
 
     query!(
         r#"update users 
@@ -78,36 +125,65 @@ pub(crate) async fn change_worker(
             flat_rate_cents = $9
             where id = $10; 
         "#,
-        workerdata.Name,
+        input.name,
         admin,
-        workerdata.Address,
-        workerdata.Phone,
-        workerdata.Email,
+        input.address,
+        input.phone,
+        input.email,
         hourly,
         mileage,
         drivetime,
         flatrate,
-        workerdata.id
+        input.id
     )
-    .execute(&pool)
+    .execute(pool)
     .await?;
 
     tracing::info!("admin {} (id {}) modified user {} as follows:\nname: {}\nadmin: {}\naddress: {}\nphone number: {}\nemail address: {}\nhourly rate (cents): {}\ndriving milage rate (cents): {}\ndriving hourly rate (cents): {}\nflat rate worker: {}",
         my_id,
         my_name,
-        workerdata.id,
-        workerdata.Name,
+        input.id,
+        input.name,
         admin,
-        workerdata.Address,
-        workerdata.Phone,
-        workerdata.Email,
+        input.address,
+        input.phone,
+        input.email,
         hourly,
         mileage,
         drivetime,
         flatrate,
     );
 
+    Ok(WorkerChangeOutput { id: input.id })
+}
+
+/// `POST /admin/web/v1/change-worker` — HTML-facing endpoint.
+pub(crate) async fn change_worker(
+    State(AppState { pool, .. }): State<AppState>,
+    auth: AuthSession<Backend>,
+    Form(form): Form<WorkerChangeForm>,
+) -> Result<impl IntoResponse, CustomError> {
+    let input = WorkerChangeInput::try_from(form)?;
+    let out = change_worker_core(&pool, current_user(&auth).as_ref(), input).await?;
+
     Ok(Redirect::to(
-        format!("/admin/worker-edit?worker={}", workerdata.id).as_str(),
+        format!("/admin/worker-edit?worker={}", out.id).as_str(),
     ))
+}
+
+/// `POST /admin/api/v1/change-worker` — REST/JSON endpoint.
+#[utoipa::path(
+    post,
+    path = "/admin/api/v1/change-worker",
+    request_body = WorkerChangeInput,
+    responses((status = OK, body = WorkerChangeOutput)),
+    security(("bearer_auth" = [])),
+    tag = super::ADMIN_TAG
+)]
+pub(crate) async fn change_worker_api(
+    State(AppState { pool, .. }): State<AppState>,
+    ApiAuth { user, .. }: ApiAuth,
+    Json(input): Json<WorkerChangeInput>,
+) -> Result<Json<WorkerChangeOutput>, ApiError> {
+    to_api(change_worker_core(&pool, Some(&user), input).await)
 }

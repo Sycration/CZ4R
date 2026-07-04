@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "update jobworkers set using_flat_rate = $1 where job = $2 and worker = $3;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "d45dbbf7dd948c0cb4768a35f04eda06f3d0a063c1f12f3be0482355e4ffbb2a"
+}

@@ -1,5 +1,5 @@
 use crate::errors::CustomError;
-use crate::get_admin;
+use crate::{current_user, get_admin};
 use crate::AppState;
 
 use super::Worker;
@@ -18,18 +18,33 @@ use tokio::process;
 use tokio::process::Command;
 use tracing::info;
 
+/// `GET /admin/api/v1/export-database.sql` — not JSON (it streams a raw
+/// `sqlite3 .dump` of the database), but still documented in the OpenAPI
+/// spec for completeness.
+#[utoipa::path(
+    get,
+    path = "/admin/api/v1/export-database.sql",
+    responses((status = OK, description = "A raw `sqlite3 .dump` of the database.")),
+    tag = super::ADMIN_TAG
+)]
 pub(crate) async fn export_db(
-    mut auth: AuthSession<Backend>,
+    auth: AuthSession<Backend>,
     State(AppState {
         pool: _,
         engine: _,
         db_url,
     }): State<AppState>,
 ) -> Result<impl IntoResponse, CustomError> {
-    let (my_id, my_name) = get_admin(&auth)?;
+    let (my_id, my_name) = get_admin(current_user(&auth).as_ref())?;
 
     let url = url::Url::parse(&db_url)?;
-    let path = url.path();
+    let mut path = url.path().to_string();
+
+    if let Some(domain) = url.domain() {
+        if domain == "." {
+            path.insert(0, '.');
+        }
+    }
 
     let res = Ok(Command::new("sqlite3")
         .arg(path)

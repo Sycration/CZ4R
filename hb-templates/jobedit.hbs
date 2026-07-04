@@ -1,4 +1,4 @@
-{{!-- @use super::base_html; @use crate::Job; @use super::list_html; @(title: &str, admin: bool, job: Option<Job>, list-data: &[(i64, String, bool, bool)]) @:base_html(title, admin, true,  { --}}
+{{!-- @use super::base_html; @use crate::Job; @use super::list_html; @(title: &str, admin: bool, job: Option<Job>, list-data: &[WorkerAssignmentInfo]) @:base_html(title, admin, true,  { --}}
 {{#*inline "body"}}
 
 
@@ -7,14 +7,14 @@
 <div id="wholething">
 {{!-- up here because html  --}}
   {{#if job}}
-<form action="/admin/api/v1/delete-job" id="deleter" method="post">
+<form action="/admin/web/v1/delete-job" id="deleter" method="post">
 <input type="hidden" name="jobid" id="jobid" value="{{job.id}}">
 </form>
 {{/if}} 
 
 
 
-  <form id="editform" method="post" hx-post="/admin/api/v1/edit-job" hx-target="#wholething" hx-select="#wholething"  hx-trigger="change delay:500ms"> 
+  <form id="editform" method="post" hx-post="/admin/web/v1/edit-job" hx-target="#wholething" hx-select="#wholething"  hx-trigger="change delay:500ms"> 
 
   {{#if job}}
     <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
@@ -117,17 +117,17 @@
             <li class="list-group-item d-flex justify-content-between align-items-center row" style="margin: 0;">
                 <div class="col-sm align-middle">
                     <h6 class="align-middle display-6">
-                        {{item.[1]}}
+                        {{item.name}}
 
                     </h6>
                 </div>
                 <ul class="list-group list-group-horizontal col-sm justify-content-end">
-                    <li class="list-group-item"><input type="checkbox" name="" id="{{item.[0]}}-assigned" class=" ms-auto form-check-input" {{#if item.[2]}} checked {{/if}}>
-                        <label for="{{item.[0]}}-assigned" class=" form-check-label">assigned</label>    
+                    <li class="list-group-item"><input type="checkbox" name="" id="{{item.id}}-assigned" class=" ms-auto form-check-input" {{#if item.assigned}} checked {{/if}}>
+                        <label for="{{item.id}}-assigned" class=" form-check-label">assigned</label>    
                     </li>
                     <li class="list-group-item">
-                        <input type="checkbox" name="" id="{{item.[0]}}-flatrate" class=" form-check-input" {{#if item.[3]}} checked {{/if}}>
-                        <label for="{{item.[0]}}-flatrate" class=" form-check-label">flat rate</label>
+                        <input type="checkbox" name="" id="{{item.id}}-flatrate" class=" form-check-input" {{#if item.flat_rate}} checked {{/if}}>
+                        <label for="{{item.id}}-flatrate" class=" form-check-label">flat rate</label>
                     </li>
                 </ul>
             </li>
@@ -163,11 +163,11 @@
     {{#each list-data as |item|}}
         
     
-        {{#if item.[2]}}
-            assigned.push("{{item.[0]}}");
+        {{#if item.assigned}}
+            assigned.push("{{item.id}}");
         {{/if}} 
-        {{#if item.[3]}}
-            flatrate.push("{{item.[0]}}");
+        {{#if item.flat_rate}}
+            flatrate.push("{{item.id}}");
         {{/if}}
 
 
@@ -184,17 +184,17 @@
         }
 
 
-        document.getElementById("{{item.[0]}}-assigned").addEventListener("change", function(evt){
+        document.getElementById("{{item.id}}-assigned").addEventListener("change", function(evt){
             var cbAssigned = evt.target;
-            if (!assigned.includes("{{item.[0]}}")) {
+            if (!assigned.includes("{{item.id}}")) {
                 if (cbAssigned.checked) {
-                    assigned.push("{{item.[0]}}"); 
+                    assigned.push("{{item.id}}"); 
                 }
             } else {
                 if (!cbAssigned.checked) {
-                    assigned = assigned.filter(x => x !== "{{item.[0]}}");
-                    flatrate = flatrate.filter(x => x !== "{{item.[0]}}");
-                    document.getElementById("{{item.[0]}}-flatrate").checked = false;
+                    assigned = assigned.filter(x => x !== "{{item.id}}");
+                    flatrate = flatrate.filter(x => x !== "{{item.id}}");
+                    document.getElementById("{{item.id}}-flatrate").checked = false;
                 }
             }
 
@@ -206,18 +206,18 @@
             }
         })
 
-        document.getElementById("{{item.[0]}}-flatrate").addEventListener("change", function(evt){
+        document.getElementById("{{item.id}}-flatrate").addEventListener("change", function(evt){
             var cbFlatrate = evt.target;
-            if (!assigned.includes("{{item.[0]}}")) {
+            if (!assigned.includes("{{item.id}}")) {
                 cbFlatrate.checked = false;
             } else {
-            if (!flatrate.includes("{{item.[0]}}")) {
+            if (!flatrate.includes("{{item.id}}")) {
                 if (cbFlatrate.checked) {
-                    flatrate.push("{{item.[0]}}"); 
+                    flatrate.push("{{item.id}}"); 
                 }
             } else {
                 if (!cbFlatrate.checked) {
-                    flatrate = flatrate.filter(x => x !== "{{item.[0]}}");
+                    flatrate = flatrate.filter(x => x !== "{{item.id}}");
                 }
             }
 

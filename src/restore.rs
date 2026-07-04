@@ -1,28 +1,34 @@
-use crate::errors::CustomError;
-use crate::get_admin;
+use crate::api_auth::ApiAuth;
+use crate::errors::{to_api, ApiError, CustomError};
+use crate::{current_user, get_admin};
 use crate::AppState;
 
 use super::Worker;
 
 use crate::Backend;
 use axum::extract::State;
-use axum::response::Html;
 use axum::response::IntoResponse;
 use axum::response::Redirect;
 use axum::Form;
+use axum::Json;
 use axum_login::AuthSession;
 use axum_template::RenderHtml;
 use git_version::git_version;
-use serde::Deserialize;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::query;
 use sqlx::query_as;
 use sqlx::Pool;
 use tracing::info;
+use utoipa::ToSchema;
 
-#[derive(Deserialize)]
-pub struct RestoreForm {
-    user: i64,
+#[derive(Debug, Clone, Deserialize, Serialize, ToSchema)]
+pub struct RestoreInput {
+    pub user: i64,
+}
+
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct RestoreOutput {
+    pub user: i64,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -33,9 +39,9 @@ struct RestoreListItem {
 
 pub async fn restorepage(
     State(AppState { pool, engine, .. }): State<AppState>,
-    mut auth: AuthSession<Backend>,
+    auth: AuthSession<Backend>,
 ) -> Result<impl IntoResponse, CustomError> {
-    get_admin(&auth)?;
+    get_admin(current_user(&auth).as_ref())?;
 
     let workers = query_as!(
         RestoreListItem,
@@ -55,24 +61,51 @@ pub async fn restorepage(
     Ok(RenderHtml("restore.hbs", engine, data))
 }
 
-pub(crate) async fn restore(
-    mut auth: AuthSession<Backend>,
-    State(AppState { pool, .. }): State<AppState>,
-    Form(restore_form): Form<RestoreForm>, //Extension(worker): Extension<Worker>
-) -> Result<impl IntoResponse, CustomError> {
-    let (my_id, my_name) = get_admin(&auth)?;
+async fn restore_core(
+    pool: &Pool<sqlx::Sqlite>,
+    user: Option<&crate::CurrentUser>,
+    input: RestoreInput,
+) -> Result<RestoreOutput, CustomError> {
+    let (my_id, my_name) = get_admin(user)?;
 
     query!(
         "update users set deactivated = false where id = $1",
-        restore_form.user
+        input.user
     )
-    .execute(&pool)
+    .execute(pool)
     .await?;
 
     info!(
         "admin {my_name} (id {my_id}) restored deactivated user {}",
-        restore_form.user
+        input.user
     );
 
+    Ok(RestoreOutput { user: input.user })
+}
+
+/// `POST /admin/web/v1/restore-worker` — HTML-facing endpoint.
+pub(crate) async fn restore(
+    auth: AuthSession<Backend>,
+    State(AppState { pool, .. }): State<AppState>,
+    Form(input): Form<RestoreInput>,
+) -> Result<impl IntoResponse, CustomError> {
+    restore_core(&pool, current_user(&auth).as_ref(), input).await?;
     Ok(Redirect::to("/admin/restore"))
+}
+
+/// `POST /admin/api/v1/restore-worker` — REST/JSON endpoint.
+#[utoipa::path(
+    post,
+    path = "/admin/api/v1/restore-worker",
+    request_body = RestoreInput,
+    responses((status = OK, body = RestoreOutput)),
+    security(("bearer_auth" = [])),
+    tag = super::ADMIN_TAG
+)]
+pub(crate) async fn restore_api(
+    ApiAuth { user, .. }: ApiAuth,
+    State(AppState { pool, .. }): State<AppState>,
+    Json(input): Json<RestoreInput>,
+) -> Result<Json<RestoreOutput>, ApiError> {
+    to_api(restore_core(&pool, Some(&user), input).await)
 }

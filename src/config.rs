@@ -91,7 +91,7 @@ impl Config {
                         }
                     }
                     backup_task = Some(tokio::task::spawn({
-                        let file_name = file_name.clone().to_string();
+                        let file_name = file_name.to_string();
                         info!("AWS backup system initialized - saving to bucket {}\n polling for changes every {} seconds", &bucket_name, &backup_time);
                         async move {
                             let backup_pool = recv_pool.await.unwrap();

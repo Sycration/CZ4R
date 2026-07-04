@@ -19,6 +19,7 @@ use crate::{
     now, AppState, Worker,
 };
 use crate::{get_admin, Backend};
+use crate::current_user;
 use axum_login::AuthSession;
 #[derive(Deserialize)]
 pub(crate) struct WorkerDataForm {
@@ -48,10 +49,10 @@ fn hours_worked(signin: Time, signout: Time) -> f32 {
 
 pub(crate) async fn workerdatapage(
     State(AppState { pool, engine, .. }): State<AppState>,
-    mut auth: AuthSession<Backend>,
+    auth: AuthSession<Backend>,
     Form(worker): Form<WorkerDataForm>,
 ) -> Result<impl IntoResponse, CustomError> {
-    let (my_id, my_name) = get_admin(&auth)?;
+    let (my_id, my_name) = get_admin(current_user(&auth).as_ref())?;
 
     let users = sqlx::query_as!(
         Worker,

@@ -39,6 +39,8 @@ use serde_json::Value;
 use shutdown::shutdown_signal;
 use sqlx::{migrate::MigrateDatabase, types::time::Date};
 use sqlx::{query, query_as, Pool, Sqlite};
+use utoipa::OpenApi;
+use utoipa_axum::{router::OpenApiRouter, routes};
 use std::time::Instant;
 use std::{
     collections::{BTreeMap, HashMap},
@@ -58,8 +60,10 @@ use tracing::Level;
 use tracing::{debug, info, trace, warn};
 use tracing_subscriber::{filter, EnvFilter, Layer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use utoipa_swagger_ui::SwaggerUi;
 
 mod admin;
+mod api_auth;
 mod change_pw;
 mod change_worker;
 mod checkinout;
@@ -277,6 +281,49 @@ pub fn setup_handlebars(hbs: &mut Handlebars) {
     hbs.register_embed_templates::<Templates>().unwrap();
     debug!("setup handlebars");
 }
+pub const USER_TAG: &str = "user";
+pub const ADMIN_TAG: &str = "admin";
+
+/// Registers the `bearer_auth` security scheme (`Authorization: Bearer
+/// <token>`, as issued by `POST /api/v1/login`) with the generated OpenAPI
+/// spec, so Swagger UI shows an "Authorize" button and every endpoint
+/// annotated with `security(("bearer_auth" = []))` documents that it needs
+/// one.
+struct SecurityAddon;
+
+impl utoipa::Modify for SecurityAddon {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
+
+        let components = openapi.components.get_or_insert_with(Default::default);
+        components.add_security_scheme(
+            "bearer_auth",
+            SecurityScheme::Http(
+                HttpBuilder::new()
+                    .scheme(HttpAuthScheme::Bearer)
+                    .bearer_format("opaque")
+                    .description(Some(
+                        "The token returned by `POST /api/v1/login`. Send as \
+                         `Authorization: Bearer <token>`.",
+                    ))
+                    .build(),
+            ),
+        );
+    }
+}
+
+#[derive(OpenApi)]
+#[openapi(
+    info(
+        title = "CZ4R API",
+    ),
+    tags(
+        (name = USER_TAG, description = "User API endpoints"),
+        (name = ADMIN_TAG, description = "Admin API endpoints")
+    ),
+    modifiers(&SecurityAddon)
+)]
+struct ApiDoc;
 
 async fn app() {
     let mut hbs = Handlebars::new();
@@ -321,44 +368,72 @@ async fn app() {
 
     let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer.clone()).build();
 
-    let admin_only = Router::new()
+    // Every action below is split into two handlers that share the same
+    // "core" business-logic function (see each module):
+    //   - a `/web/v1/...` handler that takes an HTML form and returns HTML
+    //     (a redirect, or a status code, for the htmx-driven UI), and
+    //   - an `/api/v1/...` handler that is a proper REST/JSON endpoint,
+    //     taking and returning JSON, documented with `#[utoipa::path]` and
+    //     collected into the OpenAPI spec via `routes!`.
+    let admin_only = OpenApiRouter::new()
         .route("/admin", get(admin::admin))
         .route("/admin/worker-edit", get(workeredit::workeredit))
         .route("/admin/worker-data", get(workerdata::workerdatapage))
         .route("/admin/restore", get(restore::restorepage))
+        .route("/admin/jobedit", get(jobedit::jobeditpage))
+        // web (HTML forms, htmx)
         .route(
-            "/admin/api/v1/create-worker",
+            "/admin/web/v1/create-worker",
             post(create_worker::create_worker),
         )
-        .route("/admin/api/v1/edit-job", post(jobedit::jobedit))
-        .route("/admin/api/v1/delete-job", post(jobedit::jobdelete))
-        .route("/admin/api/v1/logout-worker", post(login::logout_user))
+        .route("/admin/web/v1/edit-job", post(jobedit::jobedit))
+        .route("/admin/web/v1/delete-job", post(jobedit::jobdelete))
+        .route("/admin/web/v1/logout-worker", post(login::logout_user))
         .route(
-            "/admin/api/v1/deactivate-worker",
+            "/admin/web/v1/deactivate-worker",
             post(deactivate::deactivate),
         )
         .route(
-            "/admin/api/v1/change-worker",
+            "/admin/web/v1/change-worker",
             post(change_worker::change_worker),
         )
-        .route("/admin/api/v1/restore-worker", post(restore::restore))
-        .route(
-            "/admin/api/v1/export-database.sql",
-            get(export_db::export_db),
-        )
-        .route("/admin/api/v1/reset-pw", post(reset_pw::reset_pw));
+        .route("/admin/web/v1/restore-worker", post(restore::restore))
+        .route("/admin/web/v1/reset-pw", post(reset_pw::reset_pw))
+        // api (JSON REST)
+        .routes(routes!(export_db::export_db))
+        .routes(routes!(create_worker::create_worker_api))
+        .routes(routes!(jobedit::create_job_api))
+        .routes(routes!(
+            jobedit::jobeditpage_api,
+            jobedit::update_job_api,
+            jobedit::delete_job_api,
+        ))
+        .routes(routes!(workeredit::list_users_api))
+        .routes(routes!(workeredit::get_user_api))
+        .routes(routes!(login::logout_user_api))
+        .routes(routes!(deactivate::deactivate_api))
+        .routes(routes!(change_worker::change_worker_api))
+        .routes(routes!(restore::restore_api))
+        .routes(routes!(reset_pw::reset_pw_api));
 
-    let app = Router::new()
+    let (app, api) = OpenApiRouter::with_openapi(ApiDoc::openapi())
         .route("/", get(index::index))
         .route("/joblist", get(joblist::joblistpage))
-        .route("/jobedit", get(jobedit::jobeditpage))
         .route("/loginpage", get(loginpage))
-        .route("/login", post(login::login))
-        .route("/logout", post(login::logout))
         .route("/checkinout", get(checkinout::checkinoutpage))
         .route("/change-pw", get(change_pw::change_pw_page))
-        .route("/api/v1/change-pw", post(change_pw::change_pw))
-        .route("/api/v1/checkinout", post(checkinout::checkinout))
+        // web (HTML forms, htmx)
+        .route("/web/v1/login", post(login::login))
+        .route("/web/v1/logout", post(login::logout))
+        .route("/web/v1/change-pw", post(change_pw::change_pw))
+        .route("/web/v1/checkinout", post(checkinout::checkinout))
+        // api (JSON REST)
+        .routes(routes!(login::login_api))
+        .routes(routes!(login::logout_api))
+        .routes(routes!(change_pw::change_pw_api))
+        .routes(routes!(checkinout::checkinout_api))
+        .routes(routes!(joblist::joblist_api))
+        .routes(routes!(index::index_api))
         .merge(admin_only)
         .fallback(error404::error404)
         .layer(auth_layer)
@@ -367,7 +442,11 @@ async fn app() {
             pool: app_pool,
             engine: Engine::from(hbs),
             db_url: database_url,
-        });
+        })
+        .split_for_parts();
+
+    let app = app.merge(SwaggerUi::new("/swagger-ui").url("/openapi.json", api));
+
 
     // run it
 
@@ -414,22 +493,49 @@ where
     }
 }
 
-pub fn get_user(auth: &AuthSession<Backend>) -> Result<(i64, &str, bool), CustomError> {
-    if let Some((id, name, admin)) = auth.user.iter().map(|u| (u.id, &u.name, u.admin)).next() {
-        Ok((id, name, admin))
+/// The authenticated caller of a request, regardless of *how* they
+/// authenticated. The HTML/htmx UI authenticates via a cookie-backed
+/// [`AuthSession<Backend>`] (see [`current_user`]); the JSON REST API
+/// authenticates via an `Authorization: Bearer <token>` header (see
+/// [`crate::api_auth::ApiAuth`]). Business logic (the `*_core` functions in
+/// every module) only ever deals with this type, so it doesn't need to care
+/// which transport was used.
+#[derive(Debug, Clone, Serialize)]
+pub struct CurrentUser {
+    pub id: i64,
+    pub name: String,
+    pub admin: bool,
+}
+
+/// Build a [`CurrentUser`] from a cookie session, for the HTML/htmx-facing
+/// handlers.
+pub fn current_user(auth: &AuthSession<Backend>) -> Option<CurrentUser> {
+    auth.user.as_ref().map(|u| CurrentUser {
+        id: u.id,
+        name: u.name.clone(),
+        admin: u.admin,
+    })
+}
+
+pub fn get_user(user: Option<&CurrentUser>) -> Result<(i64, String, bool), CustomError> {
+    if let Some(u) = user {
+        Ok((u.id, u.name.clone(), u.admin))
     } else {
-        Err(CustomError(anyhow!("Not logged in")))
+        Err(CustomError::new(
+            anyhow!("Not logged in"),
+            StatusCode::UNAUTHORIZED,
+        ))
     }
 }
 
-pub fn get_admin(auth: &AuthSession<Backend>) -> Result<(i64, &str), CustomError> {
-    let (id, name, admin) = get_user(&auth)?;
+pub fn get_admin(user: Option<&CurrentUser>) -> Result<(i64, String), CustomError> {
+    let (id, name, admin) = get_user(user)?;
     if admin {
         Ok((id, name))
     } else {
-        Err(CustomError(anyhow!(
-            "User {} does not have administrator privileges",
-            id
-        )))
+        Err(CustomError::new(
+            anyhow!("User {} does not have administrator privileges", id),
+            StatusCode::FORBIDDEN,
+        ))
     }
 }

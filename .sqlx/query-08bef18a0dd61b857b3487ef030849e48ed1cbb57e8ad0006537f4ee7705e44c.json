@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select users.id, users.name, users.admin\n            from api_tokens\n            inner join users on users.id = api_tokens.user_id\n            where api_tokens.token = $1\n                and api_tokens.expires_at > $2\n                and users.deactivated = false\n                and users.logged_out = false\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "admin",
+        "ordinal": 2,
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "08bef18a0dd61b857b3487ef030849e48ed1cbb57e8ad0006537f4ee7705e44c"
+}

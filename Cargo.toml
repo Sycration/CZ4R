@@ -12,7 +12,7 @@ tower = "0.5"
 tower-http = {version = "0.6", features = ["trace"]}
 axum-login = {version = "0.18"}
 sqlx = { version = "0.8", features = [ "runtime-tokio-rustls" , "sqlite", "time",] }
-time = {version = "0.3", features = ["serde", "local-offset"]}
+time = {version = "0.3", features = ["serde", "serde-human-readable", "local-offset"]}
 futures = "0.3"
 rustls = "0.23"
 serde = { version = "1.0", features = ["derive"] }
@@ -39,6 +39,9 @@ mime_guess = "2.0.5"
 tower-sessions-sqlx-store = { version = "0.15", features = ["sqlite"] }
 rmp-serde = "1.3.1"
 git-version = "0.3.9"
+utoipa = { version = "5.5", features = ["axum_extras", "time"] }
+utoipa-axum = "0.2"
+utoipa-swagger-ui = { version = "9", features = ["axum"] }
 
 [profile.dev.package."*"]
 opt-level = 3

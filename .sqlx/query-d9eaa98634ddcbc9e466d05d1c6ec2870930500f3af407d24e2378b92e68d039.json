@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "insert into api_tokens (token, user_id, created_at, expires_at) values ($1, $2, $3, $4)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "d9eaa98634ddcbc9e466d05d1c6ec2870930500f3af407d24e2378b92e68d039"
+}
