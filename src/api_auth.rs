@@ -52,8 +52,7 @@ pub async fn issue_token(pool: &Pool<Sqlite>, user_id: i64) -> Result<String, Cu
     .await?;
 
     Ok(token)
-}
-
+} 
 /// Revoke a single bearer token (e.g. on logout). Revoking a token that
 /// doesn't exist (or already expired) is not an error.
 pub async fn revoke_token(pool: &Pool<Sqlite>, token: &str) -> Result<(), CustomError> {

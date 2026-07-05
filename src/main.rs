@@ -432,6 +432,7 @@ async fn app() {
         // api (JSON REST)
         .routes(routes!(login::login_api))
         .routes(routes!(login::logout_api))
+        .routes(routes!(login::refresh_token_api))
         .routes(routes!(change_pw::change_pw_api))
         .routes(routes!(checkinout::checkinout_api))
         .routes(routes!(checkinout::assignment_data_api))

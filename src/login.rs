@@ -368,3 +368,35 @@ pub(crate) async fn logout_api(
     debug!("user {} (id {}) revoked their api token", user.name, user.id);
     Ok(Json(LogoutOutput { logged_out: true }))
 }
+
+
+/// Refreshes the bearer token used to authenticate this very request, returning a new token. 
+/// The old token is revoked and can no longer be used.
+#[utoipa::path(
+    post,
+    path = "/api/v1/refresh-token",
+    responses((status = OK, body = LoginOutput)),
+    security(("bearer_auth" = [])),
+    tag = super::USER_TAG
+)]
+pub(crate) async fn refresh_token_api(
+    State(AppState { pool, .. }): State<AppState>,
+    ApiAuth { user, token }: ApiAuth,
+) -> Result<Json<LoginOutput>, ApiError> {
+    api_auth::revoke_token(&pool, &token)
+        .await
+        .map_err(ApiError::from)?;
+    let new_token = api_auth::issue_token(&pool, user.id)
+        .await
+        .map_err(ApiError::from)?;
+    debug!(
+        "user {} (id {}) refreshed their api token (old token revoked)",
+        user.name, user.id
+    );
+    Ok(Json(LoginOutput {
+        id: user.id,
+        username: user.name,
+        must_change_pw: false,
+        token: Some(new_token),
+    }))
+}
