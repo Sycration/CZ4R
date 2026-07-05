@@ -32,10 +32,10 @@ cargo update -p cz4r --precise "$NEW_VERSION" 2>/dev/null || true
 # (e.g. because the script was already run but the docker step failed)
 git add Cargo.toml Cargo.lock README.md
 if git status --porcelain | grep -q '^M'; then
-    echo "No changes to commit, skipping git commit/push."
-else
     git commit -m "Bump version to $NEW_VERSION"
     git push
+else
+    echo "No changes to commit, skipping git commit/push."
 fi
 
 # Build and push the docker image
