@@ -238,25 +238,25 @@ async fn joblist_core(
     }
 
     if let Some(site_name) = &form.site_name {
-        query_builder.push(" and jobs.sitename ilike concat('%', ");
+        query_builder.push(" and jobs.sitename like concat('%', ");
         query_builder.push_bind(site_name);
         query_builder.push(", '%') ");
     }
 
     if let Some(work_order) = &form.work_order {
-        query_builder.push("and jobs.workorder ilike concat('%', ");
+        query_builder.push("and jobs.workorder like concat('%', ");
         query_builder.push_bind(work_order);
         query_builder.push(", '%') ");
     }
 
     if let Some(address) = &form.address {
-        query_builder.push("and jobs.address ilike concat('%', ");
+        query_builder.push("and jobs.address like concat('%', ");
         query_builder.push_bind(address);
         query_builder.push(", '%') ");
     }
 
     if let Some(notes) = &form.notes {
-        query_builder.push("and jobworkers.notes ilike concat('%', ");
+        query_builder.push("and jobworkers.notes like concat('%', ");
         query_builder.push_bind(notes);
         query_builder.push(", '%') ");
     }
