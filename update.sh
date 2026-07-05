@@ -34,8 +34,8 @@ git commit -m "Bump version to $NEW_VERSION"
 git push
 
 # Build and push the docker image
-docker build -t "$DOCKER_REPO:$NEW_VERSION" -t "$DOCKER_REPO:latest" .
-docker push "$DOCKER_REPO:$NEW_VERSION"
-docker push "$DOCKER_REPO:latest"
+sudo docker build -t "$DOCKER_REPO:$NEW_VERSION" -t "$DOCKER_REPO:latest" .
+sudo docker push "$DOCKER_REPO:$NEW_VERSION"
+sudo docker push "$DOCKER_REPO:latest"
 
 echo "Successfully updated to version $NEW_VERSION and pushed docker image $DOCKER_REPO:$NEW_VERSION"
