@@ -285,6 +285,8 @@ async fn checkinout_core(
     let true_hours_driven = hoursdriven + (minutesdriven / 60.);
     let true_extra_exp = extraexp.to_i32().unwrap();
 
+    let worker_notes = input.notes.unwrap_or_default();
+    let query_notes = worker_notes.clone();
     query!(
         r#"
     update jobworkers
@@ -303,7 +305,7 @@ async fn checkinout_core(
         milesdriven,
         true_hours_driven,
         true_extra_exp,
-        input.notes,
+        query_notes,
         worker,
         input.job_id
     )
@@ -332,7 +334,7 @@ notes: {}",
         milesdriven,
         true_hours_driven,
         true_extra_exp,
-        input.notes.unwrap_or_default(),
+        &worker_notes,
     );
 
     Ok(CheckInOutOutput {

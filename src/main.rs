@@ -5,42 +5,32 @@
 use anyhow::{anyhow, bail};
 use async_trait::async_trait;
 use axum::{
-    debug_handler,
-    error_handling::HandleErrorLayer,
-    extract::{Extension, FromRef, Path, State},
-    http::StatusCode,
-    response::{Html, IntoResponse, Redirect},
-    routing::{get, post, put},
-    BoxError, Form, Router,
+    BoxError, Form, Router, body::Body, debug_handler, error_handling::HandleErrorLayer, extract::{Extension, FromRef, Path, Request, State}, http::{Response, StatusCode, Uri}, middleware::{self, Next}, response::{Html, IntoResponse, Redirect}, routing::{get, post, put},
 };
 use axum_login::tower_sessions::ExpiredDeletion;
-use axum_login::{tower_sessions::Expiry, AuthSession};
 use axum_login::{
-    tower_sessions::{SessionManagerLayer},
-    AuthManagerLayerBuilder, AuthUser, AuthnBackend, UserId,
+    AuthManagerLayerBuilder, AuthUser, AuthnBackend, UserId, tower_sessions::SessionManagerLayer,
 };
-use axum_template::{engine::Engine, Key, RenderHtml};
+use axum_login::{AuthSession, tower_sessions::Expiry};
+use axum_template::{Key, RenderHtml, engine::Engine};
 use config::Config;
 use errors::CustomError;
 use futures::join;
-use handlebars::{handlebars_helper, Handlebars};
-use login::{loginpage, LoginForm};
-use scrypt::{
-    password_hash::{
-        rand_core::OsRng,
-        PasswordHash, PasswordHasher, PasswordVerifier, SaltString, self
-    },
-    Scrypt
-};
-use r#static::static_handler;
+use handlebars::{Handlebars, handlebars_helper};
+use login::{LoginForm, loginpage};
 use rust_embed::RustEmbed;
-use serde::{de, Deserialize, Deserializer, Serialize};
+use scrypt::{
+    Scrypt,
+    password_hash::{
+        self, PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng,
+    },
+};
+use serde::{Deserialize, Deserializer, Serialize, de};
 use serde_json::Value;
 use shutdown::shutdown_signal;
+use sqlx::{Pool, Sqlite, query, query_as};
 use sqlx::{migrate::MigrateDatabase, types::time::Date};
-use sqlx::{query, query_as, Pool, Sqlite};
-use utoipa::OpenApi;
-use utoipa_axum::{router::OpenApiRouter, routes};
+use r#static::static_handler;
 use std::time::Instant;
 use std::{
     collections::{BTreeMap, HashMap},
@@ -55,11 +45,13 @@ use tokio::runtime::Builder;
 use tokio::sync::RwLock;
 use tower::ServiceBuilder;
 use tower_http::trace::{self, TraceLayer};
-use tower_sessions_sqlx_store::{sqlx::SqlitePool, SqliteStore};
+use tower_sessions_sqlx_store::{SqliteStore, sqlx::SqlitePool};
 use tracing::Level;
 use tracing::{debug, info, trace, warn};
-use tracing_subscriber::{filter, EnvFilter, Layer};
+use tracing_subscriber::{EnvFilter, Layer, filter};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use utoipa::OpenApi;
+use utoipa_axum::{router::OpenApiRouter, routes};
 use utoipa_swagger_ui::SwaggerUi;
 
 mod admin;
@@ -370,6 +362,14 @@ async fn app() {
 
     let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer.clone()).build();
 
+    async fn log_url_middleware(request: Request<Body>, next: Next) -> Response<Body> {
+        // Log the incoming URI
+        debug!("Incoming Request URL: {}", request.uri());
+
+        // Pass the request to the next handler/middleware
+        next.run(request).await
+    }
+
     // Every action below is split into two handlers that share the same
     // "core" business-logic function (see each module):
     //   - a `/web/v1/...` handler that takes an HTML form and returns HTML
@@ -447,10 +447,10 @@ async fn app() {
             engine: Engine::from(hbs),
             db_url: database_url,
         })
+        .layer(middleware::from_fn(log_url_middleware))
         .split_for_parts();
 
     let app = app.merge(SwaggerUi::new("/swagger-ui").url("/openapi.json", api));
-
 
     // run it
 

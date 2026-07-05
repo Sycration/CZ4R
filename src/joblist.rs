@@ -1,23 +1,23 @@
 use std::collections::BTreeMap;
 
 use crate::api_auth::ApiAuth;
-use crate::errors::{to_api, ApiError};
-use crate::{current_user, empty_string_as_none, errors::CustomError, now, AppState, TZ_OFFSET};
-use crate::{get_user, Backend};
+use crate::errors::{ApiError, to_api};
+use crate::{AppState, TZ_OFFSET, current_user, empty_string_as_none, errors::CustomError, now};
+use crate::{Backend, get_user};
 use axum::{
+    Form, Json,
     extract::{Query, State},
     response::{Html, IntoResponse},
-    Form, Json,
 };
-use axum_login::tower_sessions::Session;
 use axum_login::AuthSession;
+use axum_login::tower_sessions::Session;
 use axum_template::RenderHtml;
 use git_version::git_version;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use sqlx::Sqlite;
 use sqlx::{
-    query, query_as, query_builder, types::time::Date, Execute, FromRow, Pool, QueryBuilder,
+    Execute, FromRow, Pool, QueryBuilder, query, query_as, query_builder, types::time::Date,
 };
 use time::{Duration, OffsetDateTime, Time};
 use tracing::warn;
@@ -42,6 +42,15 @@ struct JobQueryOutput {
     extraexpcents: Option<i64>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum Status {
+    Assigned,
+    Started,
+    SignedOut,
+    OutNotIn,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow, ToSchema)]
 pub struct JobData {
     pub job_id: i64,
@@ -53,7 +62,7 @@ pub struct JobData {
     pub notes: String,
     pub work_order: String,
     pub service_code: String,
-    pub status: String,
+    pub status: Status,
 }
 
 impl JobData {
@@ -82,22 +91,22 @@ impl JobData {
                                 || j.extraexpcents.map(|x| x == 0) != Some(true)
                                 || j.workernotes.map(|x| x.is_empty()) != Some(true)
                             {
-                                "started".to_owned()
+                                Status::Started
                             } else {
-                                "assigned".to_owned()
+                                Status::Assigned
                             }
                         }
-                        (None, Some(_)) => "outnotin".to_owned(),
-                        (Some(_), None) => "started".to_owned(),
-                        (Some(_), Some(_)) => "signedout".to_owned(),
+                        (None, Some(_)) => Status::OutNotIn,
+                        (Some(_), None) => Status::Started,
+                        (Some(_), Some(_)) => Status::SignedOut,
                     }
                 },
             })
             .filter(|d| {
-                (assigned && d.status.starts_with('a'))
-                    || (started && d.status.starts_with("st"))
-                    || (completed && d.status.starts_with("si"))
-                    || d.status.starts_with('o')
+                (assigned && d.status == Status::Assigned)
+                    || (started && d.status == Status::Started)
+                    || (completed && d.status == Status::SignedOut)
+                    || d.status == Status::OutNotIn
             })
             .collect::<Vec<_>>()
     }
@@ -185,21 +194,9 @@ async fn joblist_core(
     .to_string();
 
     //testing form.order because that is always sent on form submit
-    let assigned = if form.order.is_some() {
-        form.assigned.unwrap_or(false)
-    } else {
-        true
-    };
-    let started = if form.order.is_some() {
-        form.started.unwrap_or(false)
-    } else {
-        true
-    };
-    let completed = if form.order.is_some() {
-        form.completed.unwrap_or(false)
-    } else {
-        true
-    };
+    let assigned = form.assigned.unwrap_or(true);
+    let started = form.started.unwrap_or(true);
+    let completed = form.completed.unwrap_or(true);
 
     let parsed_workers = if let Some(w) = &form.workers {
         w.split('-').filter_map(|x| x.parse::<i64>().ok()).collect()
@@ -235,9 +232,7 @@ async fn joblist_core(
         }
         query_builder.push(") ");
     } else if admin && form.workers.is_none() {
-  
-    }
-    else {
+    } else {
         query_builder.push(" and jobworkers.worker = ");
         query_builder.push_bind(id);
     }
@@ -387,6 +382,7 @@ pub(crate) async fn joblistpage(
 /// Date range is YYYY-MM-DD format, defaults to today through 15 days from now.
 /// Non-admins can only see their own jobs, and the workers parameter is ignored for them.
 /// Admins' view defaults to show all assignments for all workers, which is the recommended default.
+/// The three booleans default to true
 #[utoipa::path(
     get,
     path = "/api/v1/joblist",
