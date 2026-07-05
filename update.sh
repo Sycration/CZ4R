@@ -22,16 +22,21 @@ sed -i.bak -E "s|^version = \".*\"|version = \"$NEW_VERSION\"|" Cargo.toml
 rm -f Cargo.toml.bak
 
 # Update version in README.md
-sed -i.bak -E "s|$DOCKER_REPO:[0-9]+\.[0-9]+\.[0-9]+|$DOCKER_REPO:$NEW_VERSION|g" README.md
+sed -i.bak -E "s|[0-9]+\.[0-9]+\.[0-9]+|$NEW_VERSION|g" README.md
 rm -f README.md.bak
 
 # Update Cargo.lock to reflect the new version
 cargo update -p cz4r --precise "$NEW_VERSION" 2>/dev/null || true
 
-# Commit and push the changes
+# Commit and push the changes, unless there is nothing to commit
+# (e.g. because the script was already run but the docker step failed)
 git add Cargo.toml Cargo.lock README.md
-git commit -m "Bump version to $NEW_VERSION"
-git push
+if git status --porcelain | grep -q '^M'; then
+    echo "No changes to commit, skipping git commit/push."
+else
+    git commit -m "Bump version to $NEW_VERSION"
+    git push
+fi
 
 # Build and push the docker image
 sudo docker build -t "$DOCKER_REPO:$NEW_VERSION" -t "$DOCKER_REPO:latest" .
