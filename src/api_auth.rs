@@ -62,6 +62,14 @@ pub async fn revoke_token(pool: &Pool<Sqlite>, token: &str) -> Result<(), Custom
     Ok(())
 }
 
+/// Revoke all bearer tokens for a given user. Revoking tokens for a user that doesn't exist or has no tokens is not an error.
+pub async fn revoke_all_tokens(pool: &Pool<Sqlite>, user_id: i64) -> Result<(), CustomError> {
+    query!("delete from api_tokens where user_id = $1", user_id)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
 /// An axum extractor that authenticates a request via its
 /// `Authorization: Bearer <token>` header, for use by JSON API handlers in
 /// place of the cookie-based `AuthSession<Backend>` that the HTML/htmx UI
