@@ -1,9 +1,9 @@
+use crate::{AppState, Backend, Worker, current_user, now};
 use crate::{
     api_auth::ApiAuth,
-    errors::{to_api, ApiError, CustomError},
+    errors::{ApiError, CustomError, to_api},
     get_admin,
 };
-use crate::{current_user, now, AppState, Backend, Worker};
 use axum::extract::{Query, State};
 use axum::response::IntoResponse;
 use axum::{Form, Json};
@@ -11,10 +11,10 @@ use axum_login::AuthSession;
 use axum_template::RenderHtml;
 use git_version::git_version;
 use serde::{Deserialize, Serialize};
-use sqlx::types::time::Date;
 use sqlx::Pool;
-use time::format_description::well_known::Iso8601;
+use sqlx::types::time::Date;
 use time::Time;
+use time::format_description::well_known::Iso8601;
 use tracing::debug;
 use utoipa::ToSchema;
 
@@ -52,6 +52,10 @@ pub(crate) struct WorkerDataOutput {
 
 fn hours_worked(signin: Time, signout: Time) -> f32 {
     ((signout - signin).as_seconds_f32() / 3600.).max(1.0)
+}
+
+fn fix_neg_zero(val: f32) -> f32 {
+    val.abs().copysign(1.0)
 }
 
 async fn worker_data_core(
@@ -111,14 +115,15 @@ async fn worker_data_core(
             })
             .sum::<f32>();
 
-        let true_hours_worked_total = data
-            .iter()
-            .filter_map(|d| {
-                let signin = Time::parse(d.signin.as_ref()?, &Iso8601::TIME).ok()?;
-                let signout = Time::parse(d.signout.as_ref()?, &Iso8601::TIME).ok()?;
-                Some((signout - signin).as_seconds_f32() / 3600.)
-            })
-            .sum::<f32>();
+        let true_hours_worked_total = fix_neg_zero(
+            data.iter()
+                .filter_map(|d| {
+                    let signin = Time::parse(d.signin.as_ref()?, &Iso8601::TIME).ok()?;
+                    let signout = Time::parse(d.signout.as_ref()?, &Iso8601::TIME).ok()?;
+                    Some((signout - signin).as_seconds_f32() / 3600.)
+                })
+                .sum::<f32>(),
+        );
 
         let hours_driven_total = data
             .iter()
@@ -135,7 +140,9 @@ async fn worker_data_core(
             .filter(|d| d.signin.is_some() && d.signout.is_some())
             .fold(0, |acc, x| acc + x.extraexpcents);
 
-        let all_complete = data.iter().all(|x| x.signin.is_some() && x.signout.is_some());
+        let all_complete = data
+            .iter()
+            .all(|x| x.signin.is_some() && x.signout.is_some());
 
         let entries = data
             .into_iter()
@@ -159,7 +166,10 @@ async fn worker_data_core(
                     true_hours_worked: if completed {
                         let signin = Time::parse(&d.signin.unwrap(), &Iso8601::TIME).unwrap();
                         let signout = Time::parse(&d.signout.unwrap(), &Iso8601::TIME).unwrap();
-                        format!("{:.2}", (signout - signin).as_seconds_f32() / 3600.)
+                        format!(
+                            "{:.2}",
+                            fix_neg_zero((signout - signin).as_seconds_f32() / 3600.)
+                        )
                     } else {
                         String::from("N/A")
                     },
@@ -191,9 +201,7 @@ async fn worker_data_core(
             completed: all_complete,
         };
 
-        debug!(
-            "admin {my_name} (id {my_id}) retrieved data on user {id} from {from} to {to}"
-        );
+        debug!("admin {my_name} (id {my_id}) retrieved data on user {id} from {from} to {to}");
 
         (entries, totals)
     } else {
@@ -218,12 +226,9 @@ pub(crate) async fn workerdatapage(
     let user = current_user(&auth);
     let output = worker_data_core(&pool, user.as_ref(), &query).await?;
 
-    let users = sqlx::query_as!(
-        Worker,
-        "select * from users where deactivated = false;"
-    )
-    .fetch_all(&pool)
-    .await?;
+    let users = sqlx::query_as!(Worker, "select * from users where deactivated = false;")
+        .fetch_all(&pool)
+        .await?;
 
     let selectlist = users
         .iter()
