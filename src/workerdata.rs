@@ -51,7 +51,7 @@ pub(crate) struct WorkerDataOutput {
 }
 
 fn hours_worked(signin: Time, signout: Time) -> f32 {
-    ((signout - signin).as_seconds_f32() / 3600.).max(1.0)
+    fix_neg_zero(((signout - signin).as_seconds_f32() / 3600.).max(1.0))
 }
 
 fn fix_neg_zero(val: f32) -> f32 {
@@ -106,21 +106,21 @@ async fn worker_data_core(
         .fetch_all(pool)
         .await?;
 
-        let hours_worked_total = data
+        let hours_worked_total = fix_neg_zero(data
             .iter()
             .filter_map(|d| {
                 let signin = Time::parse(d.signin.as_ref()?, &Iso8601::TIME).ok()?;
                 let signout = Time::parse(d.signout.as_ref()?, &Iso8601::TIME).ok()?;
                 Some(hours_worked(signin, signout))
             })
-            .sum::<f32>();
+            .sum::<f32>());
 
         let true_hours_worked_total = fix_neg_zero(
             data.iter()
                 .filter_map(|d| {
                     let signin = Time::parse(d.signin.as_ref()?, &Iso8601::TIME).ok()?;
                     let signout = Time::parse(d.signout.as_ref()?, &Iso8601::TIME).ok()?;
-                    Some((signout - signin).as_seconds_f32() / 3600.)
+                    Some(fix_neg_zero((signout - signin).as_seconds_f32() / 3600.))
                 })
                 .sum::<f32>(),
         );
@@ -229,7 +229,7 @@ pub(crate) async fn workerdatapage(
     let users = sqlx::query_as!(Worker, "select * from users where deactivated = false;")
         .fetch_all(&pool)
         .await?;
-
+    dbg!(&output);
     let selectlist = users
         .iter()
         .map(|w| (w.id, w.name.as_str()))
