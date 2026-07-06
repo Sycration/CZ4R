@@ -1,81 +1,72 @@
-use axum::{
-    extract::State,
-    response::{Html, IntoResponse, Redirect},
-    Form,
+use crate::{
+    api_auth::ApiAuth,
+    errors::{to_api, ApiError, CustomError},
+    get_admin,
 };
-
+use crate::{current_user, now, AppState, Backend, Worker};
+use axum::extract::{Query, State};
+use axum::response::IntoResponse;
+use axum::{Form, Json};
+use axum_login::AuthSession;
 use axum_template::RenderHtml;
 use git_version::git_version;
 use serde::{Deserialize, Serialize};
 use sqlx::types::time::Date;
-use sqlx::{query, query_as, Pool};
-use time::{
-    format_description::well_known::Iso8601, macros::format_description, OffsetDateTime, Time,
-};
+use sqlx::Pool;
+use time::format_description::well_known::Iso8601;
+use time::Time;
 use tracing::debug;
+use utoipa::ToSchema;
 
-use crate::{
-    errors::{self, CustomError},
-    now, AppState, Worker,
-};
-use crate::{get_admin, Backend};
-use crate::current_user;
-use axum_login::AuthSession;
-#[derive(Deserialize)]
-pub(crate) struct WorkerDataForm {
-    worker: Option<i64>,
-    start_date: Option<Date>,
-    end_date: Option<Date>,
+#[derive(Debug, Deserialize, ToSchema, utoipa::IntoParams)]
+pub(crate) struct WorkerDataQuery {
+    pub worker: Option<i64>,
+    pub start_date: Option<Date>,
+    pub end_date: Option<Date>,
 }
 
-#[derive(Serialize, Default, Debug)]
-pub struct WDEntry {
-    pub JobId: i64,
-    pub WorkerId: i64,
-    pub Date: String,
-    pub Location: String,
-    pub FlatRate: bool,
-    pub HoursWorked: String,
-    pub TrueHoursWorked: String,
-    pub HoursDriven: String,
-    pub MilesDriven: String,
-    pub ExtraExpCents: String,
-    pub Completed: bool,
+#[derive(Debug, Default, Serialize, ToSchema)]
+#[serde(rename_all = "PascalCase")]
+pub(crate) struct WDEntry {
+    pub job_id: i64,
+    pub worker_id: i64,
+    pub date: String,
+    pub location: String,
+    pub flat_rate: bool,
+    pub hours_worked: String,
+    pub true_hours_worked: String,
+    pub hours_driven: String,
+    pub miles_driven: String,
+    pub extra_expenses_dollars: String,
+    pub completed: bool,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub(crate) struct WorkerDataOutput {
+    pub entries: Vec<WDEntry>,
+    pub totals: WDEntry,
+    pub num_jobs: usize,
+    pub from: String,
+    pub to: String,
 }
 
 fn hours_worked(signin: Time, signout: Time) -> f32 {
     ((signout - signin).as_seconds_f32() / 3600.).max(1.0)
 }
 
-pub(crate) async fn workerdatapage(
-    State(AppState { pool, engine, .. }): State<AppState>,
-    auth: AuthSession<Backend>,
-    Form(worker): Form<WorkerDataForm>,
-) -> Result<impl IntoResponse, CustomError> {
-    let (my_id, my_name) = get_admin(current_user(&auth).as_ref())?;
-
-    let users = sqlx::query_as!(
-        Worker,
-        "
-    select * from users
-        where deactivated = false;
-    "
-    )
-    .fetch_all(&pool)
-    .await?;
-
-    let selectlist = users
-        .iter()
-        .map(|w| (w.id, w.name.as_str()))
-        .collect::<Vec<_>>();
+async fn worker_data_core(
+    pool: &Pool<sqlx::Sqlite>,
+    user: Option<&crate::CurrentUser>,
+    query: &WorkerDataQuery,
+) -> Result<WorkerDataOutput, CustomError> {
+    let (my_id, my_name) = get_admin(user)?;
 
     let date = now().date();
-
     let mut from = String::new();
     let mut to = String::new();
 
-    let (entries, totals) = if let Some(id) = worker.worker {
-        let start_date = if let Some(d) = worker.start_date {
+    let (entries, totals) = if let Some(id) = query.worker {
+        let start_date = if let Some(d) = query.start_date {
             d
         } else if date.day() <= 15 {
             date.replace_day(1).unwrap()
@@ -83,7 +74,7 @@ pub(crate) async fn workerdatapage(
             date.replace_day(16).unwrap()
         };
 
-        let end_date = if let Some(d) = worker.end_date {
+        let end_date = if let Some(d) = query.end_date {
             d
         } else {
             date
@@ -108,107 +99,100 @@ pub(crate) async fn workerdatapage(
             start_date,
             end_date
         )
-        .fetch_all(&pool)
+        .fetch_all(pool)
         .await?;
 
         let hours_worked_total = data
             .iter()
-            .filter(|d| d.signin.is_some() && d.signout.is_some())
-            .map(|x| {
-                let signin = Some(Time::parse(&x.signin.clone().unwrap(), &Iso8601::TIME));
-                let signout = Some(Time::parse(&x.signout.clone().unwrap(), &Iso8601::TIME));
-                (signin, signout)
+            .filter_map(|d| {
+                let signin = Time::parse(d.signin.as_ref()?, &Iso8601::TIME).ok()?;
+                let signout = Time::parse(d.signout.as_ref()?, &Iso8601::TIME).ok()?;
+                Some(hours_worked(signin, signout))
             })
-            .filter(|(signin, signout)| signin.is_some() && signout.is_some())
-            .map(|(signin, signout)| (signin.unwrap(), signout.unwrap()))
-            .filter(|(signin, signout)| signin.is_ok() && signout.is_ok())
-            .map(|(signin, signout)| (signin.unwrap(), signout.unwrap()))
-            .fold(0.0, |acc, (signin, signout)| {
-                acc + hours_worked(signin, signout)
-            });
+            .sum::<f32>();
+
+        let true_hours_worked_total = data
+            .iter()
+            .filter_map(|d| {
+                let signin = Time::parse(d.signin.as_ref()?, &Iso8601::TIME).ok()?;
+                let signout = Time::parse(d.signout.as_ref()?, &Iso8601::TIME).ok()?;
+                Some((signout - signin).as_seconds_f32() / 3600.)
+            })
+            .sum::<f32>();
+
         let hours_driven_total = data
             .iter()
             .filter(|d| d.signin.is_some() && d.signout.is_some())
             .fold(0.0, |acc, x| acc + x.hours_driven);
+
         let miles_driven_total = data
             .iter()
             .filter(|d| d.signin.is_some() && d.signout.is_some())
             .fold(0.0, |acc, x| acc + x.miles_driven);
+
         let extra_exp_total = data
             .iter()
             .filter(|d| d.signin.is_some() && d.signout.is_some())
             .fold(0, |acc, x| acc + x.extraexpcents);
 
-        let all_complete = data.iter().fold(true, |acc, x| {
-            if acc {
-                x.signin.is_some() && x.signout.is_some()
-            } else {
-                false
-            }
-        });
+        let all_complete = data.iter().all(|x| x.signin.is_some() && x.signout.is_some());
 
         let entries = data
             .into_iter()
             .map(|d| {
-                let Completed = d.signin.is_some() && d.signout.is_some();
+                let completed = d.signin.is_some() && d.signout.is_some();
                 WDEntry {
-                    Date: d.date.unwrap(),
-                    Location: d.sitename,
-                    FlatRate: d.using_flat_rate,
-                    HoursWorked: {
-                        if Completed {
+                    date: d.date.unwrap(),
+                    location: d.sitename,
+                    flat_rate: d.using_flat_rate,
+                    hours_worked: {
+                        if completed {
                             let signin =
                                 Time::parse(&d.signin.clone().unwrap(), &Iso8601::TIME).unwrap();
                             let signout =
                                 Time::parse(&d.signout.clone().unwrap(), &Iso8601::TIME).unwrap();
-                            let val = hours_worked(signin, signout);
-                            format!("{:.2}", val)
+                            format!("{:.2}", hours_worked(signin, signout))
                         } else {
                             String::from("N/A")
                         }
                     },
-                    TrueHoursWorked: if Completed {
-                        {
-                            let signin = Time::parse(&d.signin.unwrap(), &Iso8601::TIME).unwrap();
-                            let signout = Time::parse(&d.signout.unwrap(), &Iso8601::TIME).unwrap();
-                            let val = (signout - signin).as_seconds_f32() / 3600.;
-                            format!("{:.2}", val)
-                        }
+                    true_hours_worked: if completed {
+                        let signin = Time::parse(&d.signin.unwrap(), &Iso8601::TIME).unwrap();
+                        let signout = Time::parse(&d.signout.unwrap(), &Iso8601::TIME).unwrap();
+                        format!("{:.2}", (signout - signin).as_seconds_f32() / 3600.)
                     } else {
                         String::from("N/A")
                     },
-                    HoursDriven: format!("{:.2}", d.hours_driven),
-                    MilesDriven: format!("{:.2}", d.miles_driven),
-                    ExtraExpCents: format!("{:.2}", (d.extraexpcents as f64 / 100.)),
-                    WorkerId: d.worker,
-                    JobId: d.job,
-                    Completed,
+                    hours_driven: format!("{:.2}", d.hours_driven),
+                    miles_driven: format!("{:.2}", d.miles_driven),
+                    extra_expenses_dollars: format!("{:.2}", (d.extraexpcents as f64 / 100.)),
+                    worker_id: d.worker,
+                    job_id: d.job,
+                    completed,
                 }
             })
             .collect::<Vec<_>>();
 
         let totals = WDEntry {
-            Date: String::new(),
-            Location: String::new(),
-            FlatRate: false,
-            HoursWorked: if all_complete {
+            date: String::new(),
+            location: String::new(),
+            flat_rate: false,
+            hours_worked: if all_complete {
                 format!("{:.2}", hours_worked_total)
             } else {
                 String::from("N/A")
             },
-            TrueHoursWorked: String::new(),
-            HoursDriven: format!("{:.2}", hours_driven_total),
-            MilesDriven: format!("{:.2}", miles_driven_total),
-            ExtraExpCents: format!("{:.2}", (extra_exp_total as f64 / 100.)),
-            JobId: -1,
-            WorkerId: -1,
-            Completed: all_complete,
+            true_hours_worked: format!("{:.2}", true_hours_worked_total),
+            hours_driven: format!("{:.2}", hours_driven_total),
+            miles_driven: format!("{:.2}", miles_driven_total),
+            extra_expenses_dollars: format!("{:.2}", (extra_exp_total as f64 / 100.)),
+            job_id: -1,
+            worker_id: -1,
+            completed: all_complete,
         };
 
-        let user = selectlist.iter().find(|u| u.0 == id).unwrap();
         debug!(
-            "admin {my_name} (id {my_id}) retrieved data on user {} (id {}) from {} to {}",
-            user.1, id, from, to
+            "admin {my_name} (id {my_id}) retrieved data on user {id} from {from} to {to}"
         );
 
         (entries, totals)
@@ -216,21 +200,72 @@ pub(crate) async fn workerdatapage(
         (vec![], WDEntry::default())
     };
 
+    Ok(WorkerDataOutput {
+        num_jobs: entries.len(),
+        entries,
+        totals,
+        from,
+        to,
+    })
+}
+
+/// `GET /admin/worker-data` — HTML-facing endpoint.
+pub(crate) async fn workerdatapage(
+    State(AppState { pool, engine, .. }): State<AppState>,
+    auth: AuthSession<Backend>,
+    Form(query): Form<WorkerDataQuery>,
+) -> Result<impl IntoResponse, CustomError> {
+    let user = current_user(&auth);
+    let output = worker_data_core(&pool, user.as_ref(), &query).await?;
+
+    let users = sqlx::query_as!(
+        Worker,
+        "select * from users where deactivated = false;"
+    )
+    .fetch_all(&pool)
+    .await?;
+
+    let selectlist = users
+        .iter()
+        .map(|w| (w.id, w.name.as_str()))
+        .collect::<Vec<_>>();
+
     let data = serde_json::json!({
-    "git_ver": git_version!(),
+        "git_ver": git_version!(),
         "title": "CZ4R Worker Data",
         "admin": true,
         "logged_in": true,
-        "selected": worker.worker,
+        "selected": query.worker,
         "workerlist": users,
         "selectlist": selectlist,
-        "num_jobs": entries.len(),
-        "entries": entries,
-        "totals": totals,
-        "from": &from,
-        "to": &to,
+        "num_jobs": output.num_jobs,
+        "entries": output.entries,
+        "totals": output.totals,
+        "from": output.from,
+        "to": output.to,
         "target": "worker-data"
     });
 
     Ok(RenderHtml("workerdata.hbs", engine, data))
+}
+
+/// Returns worker data entries for a given worker and date range.
+/// Numbers are strings because the server has specific logic for rounding and formatting them, and the client should not attempt to reformat them.
+/// TrueHoursWorked is the actual hours worked, while HoursWorked is the rounded up hours worked (minimum 1 hour).
+/// The total object is a WDEntry, but only the numerical fields and the completed field are filled in.
+/// The total completed field is true if all entries are completed, false if any entry is incomplete.
+#[utoipa::path(
+    get,
+    path = "/admin/api/v1/worker-data",
+    params(WorkerDataQuery),
+    responses((status = OK, body = WorkerDataOutput)),
+    security(("bearer_auth" = [])),
+    tag = super::ADMIN_TAG
+)]
+pub(crate) async fn workerdatapage_api(
+    State(AppState { pool, .. }): State<AppState>,
+    ApiAuth { user, .. }: ApiAuth,
+    Query(query): Query<WorkerDataQuery>,
+) -> Result<Json<WorkerDataOutput>, ApiError> {
+    to_api(worker_data_core(&pool, Some(&user), &query).await)
 }

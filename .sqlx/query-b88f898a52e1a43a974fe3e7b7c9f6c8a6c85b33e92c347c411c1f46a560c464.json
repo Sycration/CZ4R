@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n    select * from users\n        where deactivated = false;\n    ",
+  "query": "select * from users where deactivated = false;",
   "describe": {
     "columns": [
       {
@@ -100,5 +100,5 @@
       false
     ]
   },
-  "hash": "e77b2d2624f058d101ca451f938144f924063b0f926ddf5c66c93df79fbed65c"
+  "hash": "b88f898a52e1a43a974fe3e7b7c9f6c8a6c85b33e92c347c411c1f46a560c464"
 }

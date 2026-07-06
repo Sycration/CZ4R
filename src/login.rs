@@ -1,6 +1,6 @@
 use std::convert::Infallible;
 
-use crate::api_auth::{self, ApiAuth};
+use crate::api_auth::{self, ApiAuth, revoke_all_tokens};
 use crate::errors::{to_api, ApiError, CustomError};
 use crate::{current_user, get_admin};
 use crate::AppState;
@@ -281,13 +281,15 @@ pub struct LogoutUserOutput {
 /// Forcibly log another worker out, by flagging their account
 /// `logged_out`. This invalidates both their cookie session (checked by
 /// `Backend::get_user`) and any bearer tokens they hold (checked by
-/// [`crate::api_auth::ApiAuth`]) - one flag, one mechanism, both transports.
+/// [`crate::api_auth::ApiAuth`])
 async fn logout_user_core(
     pool: &Pool<Sqlite>,
     user: Option<&crate::CurrentUser>,
     input: LogoutForm,
 ) -> Result<LogoutUserOutput, CustomError> {
     get_admin(user)?;
+
+    revoke_all_tokens(pool, input.id).await?;
 
     query!(
         r#"

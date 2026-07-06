@@ -14,8 +14,6 @@ use axum::{
 use axum_login::AuthSession;
 use axum_template::RenderHtml;
 use git_version::git_version;
-use rust_decimal::Decimal;
-use rust_decimal::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{Pool, Sqlite, query, query_as};
@@ -153,7 +151,7 @@ pub(crate) async fn checkinoutpage(
         "miles": full_data.miles_driven,
         "hours": full_data.hours_driven.floor(),
         "minutes": full_data.minutes_driven,
-        "extra_exp_ct": format!("{:.2}", (full_data.extraexpcents as f64 / 100.)),
+        "extra_exp_ct": full_data.extraexpcents,
         "notes": full_data.worker_notes.as_str(),
         "jobnotes": full_data.job_notes.as_str(),
     });
@@ -186,14 +184,14 @@ pub(crate) struct CheckInOutInput {
     pub miles_driven: Option<f32>,
     pub hours_driven: Option<f32>,
     pub minutes_driven: Option<f32>,
-    pub extra_expenses: Option<String>,
+    pub extra_expenses_cents: Option<i64>,
     pub notes: Option<String>,
     pub job_id: i64,
     pub worker_id: i64,
 }
 
 /// The legacy, PascalCase-named form fields the HTML/htmx client posts.
-//?Signin=&Signout=&MilesDriven=2&ExtraExpenses=&Notes=
+//?Signin=&Signout=&MilesDriven=2&ExtraExpensesCents=&Notes=
 #[derive(Deserialize)]
 pub(crate) struct CheckInOutForm {
     Signin: Option<String>,
@@ -201,7 +199,7 @@ pub(crate) struct CheckInOutForm {
     MilesDriven: Option<f32>,
     HoursDriven: Option<f32>,
     MinutesDriven: Option<f32>,
-    ExtraExpenses: Option<String>,
+    ExtraExpensesCents: Option<i64>,
     Notes: Option<String>,
     JobId: i64,
     WorkerId: i64,
@@ -215,7 +213,7 @@ impl From<CheckInOutForm> for CheckInOutInput {
             miles_driven: form.MilesDriven,
             hours_driven: form.HoursDriven,
             minutes_driven: form.MinutesDriven,
-            extra_expenses: form.ExtraExpenses,
+            extra_expenses_cents: form.ExtraExpensesCents,
             notes: form.Notes,
             job_id: form.JobId,
             worker_id: form.WorkerId,
@@ -253,14 +251,11 @@ async fn checkinout_core(
     let milesdriven = input.miles_driven.unwrap_or_default();
     let hoursdriven = input.hours_driven.unwrap_or_default();
     let minutesdriven = input.minutes_driven.unwrap_or_default();
-    let extraexpenses = input.extra_expenses.unwrap_or_default();
-
-    let extraexp = Decimal::from_str_exact(&extraexpenses)? * Decimal::ONE_HUNDRED;
+    let extraexpensescents = input.extra_expenses_cents.unwrap_or_default();
 
     let signin = if signin.is_empty() {
         None
     } else {
-        
         Some(Time::parse(
             &signin,
             format_description!("[hour]:[minute]"),
@@ -283,8 +278,6 @@ async fn checkinout_core(
     };
 
     let true_hours_driven = hoursdriven + (minutesdriven / 60.);
-    let true_extra_exp = extraexp.to_i32().unwrap();
-
     let worker_notes = input.notes.unwrap_or_default();
     let query_notes = worker_notes.clone();
     query!(
@@ -304,7 +297,7 @@ async fn checkinout_core(
         signout,
         milesdriven,
         true_hours_driven,
-        true_extra_exp,
+        extraexpensescents,
         query_notes,
         worker,
         input.job_id
@@ -333,7 +326,7 @@ notes: {}",
             .unwrap_or("removed".to_string()),
         milesdriven,
         true_hours_driven,
-        true_extra_exp,
+        extraexpensescents,
         &worker_notes,
     );
 
@@ -356,6 +349,8 @@ pub(crate) async fn checkinout(
 }
 
 /// Sign in and sign out parameters accept full ISO8601 or simple HH:MM time strings.
+/// The extra expenses parameter is in cents, not dollars. The client is responsible for
+/// any conversions to/from dollars.
 #[utoipa::path(
     post,
     path = "/api/v1/checkinout",

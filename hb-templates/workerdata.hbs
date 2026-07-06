@@ -66,7 +66,7 @@
                         <td class="{{#if entry.Completed}} {{else}} bg-danger text-black {{/if}}">{{entry.HoursWorked}}</td>
                         <td class="{{#if entry.Completed}} {{else}} bg-danger text-black {{/if}}">{{entry.HoursDriven}}</td>
                         <td class="{{#if entry.Completed}} {{else}} bg-danger text-black {{/if}}">{{entry.MilesDriven}}</td>
-                        <td class="{{#if entry.Completed}} {{else}} bg-danger text-black {{/if}}">${{entry.ExtraExpCents}}</td>
+                        <td class="{{#if entry.Completed}} {{else}} bg-danger text-black {{/if}}">${{entry.ExtraExpDollars}}</td>
                       </tr>
 
                   {{/each}}
@@ -80,7 +80,7 @@
                     <td>{{totals.HoursWorked}}</td>
                     <td>{{totals.HoursDriven}}</td>
                     <td>{{totals.MilesDriven}}</td>
-                    <td>${{totals.ExtraExpCents}}</td>
+                    <td>${{totals.ExtraExpDollars}}</td>
                       
                       
                       {{else}} <td colspan="7"><b> Incomplete jobs! {{/if}}  </b>  </td>

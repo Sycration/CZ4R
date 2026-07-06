@@ -124,17 +124,17 @@
 
         <div class="input-group px-3 mb-3">
           <span class="input-group-text">Extra expenses $</span>
-          <label for="ExtraExpenses" class="form-label d-none">Extra expenses $</label>
+          <label for="ExtraExpensesDollars" class="form-label d-none">Extra expenses $</label>
           <input required
-            name="ExtraExpenses"
             type="number"
             class="form-control"
-            id="ExtraExpenses"
+            id="ExtraExpensesDollars"
             min="0" step="0.01"
             placeholder="0.00"
-            value="{{extra_exp_ct}}"
+            oninput="syncExtraExpensesCents()"
             onchange="setTwoNumberDecimal()"
           />
+          <input type="hidden" name="ExtraExpensesCents" id="ExtraExpensesCents" value="{{extra_exp_ct}}" />
         </div>
 
 
@@ -166,12 +166,21 @@
       </form>
         <script>
 
+      (function() {
+        var centsEl = document.getElementById("ExtraExpensesCents");
+        var dollarsEl = document.getElementById("ExtraExpensesDollars");
+        if (centsEl && dollarsEl) {
+          dollarsEl.value = (parseInt(centsEl.value) / 100).toFixed(2);
+        }
+      })();
 
-
-
-      var extraexpct = document.getElementById("ExtraExpenses");
-      extraexpct.value = parseFloat(parseFloat(extraexpct.value).toFixed(2));
-      
+      function syncExtraExpensesCents() {
+        var dollarsEl = document.getElementById("ExtraExpensesDollars");
+        var centsEl = document.getElementById("ExtraExpensesCents");
+        if (dollarsEl && centsEl) {
+          centsEl.value = Math.round(parseFloat(dollarsEl.value || 0) * 100);
+        }
+      }
 
       var HoursDriven = document.getElementById("HoursDriven");
       HoursDriven.value = parseFloat(parseFloat(HoursDriven.value).toFixed(2));
@@ -182,11 +191,11 @@
       var MilesDriven = document.getElementById("MilesDriven");
       MilesDriven.value = parseFloat(parseFloat(MilesDriven.value).toFixed(2));
 
-      
     function setTwoNumberDecimal(event) {
-      var extraexpct = document.getElementById("ExtraExpenses");
-      extraexpct.value = parseFloat(parseFloat(extraexpct.value).toFixed(2));
-      
+      syncExtraExpensesCents();
+
+      var dollarsEl = document.getElementById("ExtraExpensesDollars");
+      dollarsEl.value = parseFloat(parseFloat(dollarsEl.value).toFixed(2));
 
       var HoursDriven = document.getElementById("HoursDriven");
       HoursDriven.value = parseFloat(parseFloat(HoursDriven.value).toFixed(2));

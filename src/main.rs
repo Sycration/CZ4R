@@ -401,9 +401,11 @@ async fn app() {
         )
         .route("/admin/web/v1/restore-worker", post(restore::restore))
         .route("/admin/web/v1/reset-pw", post(reset_pw::reset_pw))
+        .route("/admin/web/v1/export-database.sql", get(export_db::export_db))
         // api (JSON REST)
-        .routes(routes!(export_db::export_db))
+        .routes(routes!(export_db::export_db_api))
         .routes(routes!(create_worker::create_worker_api))
+        .routes(routes!(workerdata::workerdatapage_api))
         .routes(routes!(jobedit::create_job_api))
         .routes(routes!(
             jobedit::jobeditpage_api,
