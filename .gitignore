@@ -5,3 +5,4 @@ tmp
 work-log.md
 database.db
 *.db
+/cz4r
