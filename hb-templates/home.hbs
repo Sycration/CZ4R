@@ -44,6 +44,179 @@
 
 
 
+    {{#if dash}}
+    <div id="dashboard" hx-get="/" hx-trigger="every 2m" hx-swap="outerHTML" hx-target="#dashboard"
+      hx-select="#dashboard" class="mt-5">
+
+      {{!-- Headline numbers --}}
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+          <div class="card h-100"><div class="card-body">
+            <div class="text-body-secondary small">On the clock now</div>
+            <div class="display-6">{{dash.kpis.on_the_clock}}</div>
+            <div class="small text-body-secondary">{{dash.kpis.jobs_today}} job(s) today</div>
+          </div></div>
+        </div>
+        <div class="col-6 col-lg-3">
+          <div class="card h-100"><div class="card-body">
+            <div class="text-body-secondary small">Jobs, next 7 days</div>
+            <div class="display-6">{{dash.kpis.jobs_next_7_days}}</div>
+            <div class="small text-body-secondary">{{dash.kpis.jobs_total}} total, {{dash.kpis.active_workers}} active workers</div>
+          </div></div>
+        </div>
+        <div class="col-6 col-lg-3">
+          <div class="card h-100"><div class="card-body">
+            <div class="text-body-secondary small">Hours this month</div>
+            <div class="display-6">{{dash.kpis.hours_this_month}}</div>
+            <div class="small text-body-secondary">last month: {{dash.kpis.hours_last_month}}</div>
+          </div></div>
+        </div>
+        <div class="col-6 col-lg-3">
+          <div class="card h-100"><div class="card-body">
+            <div class="text-body-secondary small">Jobs this month</div>
+            <div class="display-6">{{dash.kpis.jobs_this_month}}</div>
+            <div class="small text-body-secondary">last month: {{dash.kpis.jobs_last_month}}</div>
+          </div></div>
+        </div>
+        <div class="col-6 col-lg-3">
+          <div class="card h-100"><div class="card-body">
+            <div class="text-body-secondary small">Miles this month</div>
+            <div class="display-6">{{dash.kpis.miles_this_month}}</div>
+            <div class="small text-body-secondary">last month: {{dash.kpis.miles_last_month}}</div>
+          </div></div>
+        </div>
+        <div class="col-6 col-lg-3">
+          <div class="card h-100"><div class="card-body">
+            <div class="text-body-secondary small">Extra expenses this month</div>
+            <div class="display-6">${{dash.kpis.expenses_this_month_dollars}}</div>
+            <div class="small text-body-secondary">last month: ${{dash.kpis.expenses_last_month_dollars}}</div>
+          </div></div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="card h-100 {{#if dash.attention.unstaffed_count}}border-warning{{/if}}"><div class="card-body">
+            <div class="text-body-secondary small">Needs attention (last 60 days)</div>
+            <div class="d-flex gap-4 mt-1">
+              <div><span class="fs-3">{{dash.attention.unstaffed_count}}</span> <span class="small text-body-secondary">unstaffed</span></div>
+              <div><span class="fs-3">{{dash.attention.missing_signout_count}}</span> <span class="small text-body-secondary">no sign-out</span></div>
+              <div><span class="fs-3">{{dash.attention.no_show_count}}</span> <span class="small text-body-secondary">no sign-in</span></div>
+            </div>
+          </div></div>
+        </div>
+      </div>
+
+      {{!-- 30-day activity chart --}}
+      <div class="card mb-4">
+        <div class="card-body">
+          <h5 class="card-title">Jobs per day, last 30 days</h5>
+          <div class="d-flex align-items-end gap-1" style="height: 8rem;" role="img"
+            aria-label="Bar chart of jobs per day over the last 30 days">
+            {{#each dash.daily}}
+            <div class="flex-fill bg-primary rounded-top"
+              style="height: {{#if jobs}}{{jobs_pct}}%{{else}}2px{{/if}}; min-height: 2px; {{#unless jobs}}opacity:.25;{{/unless}}"
+              title="{{date}}: {{jobs}} job(s), {{hours}} h"></div>
+            {{/each}}
+          </div>
+          <div class="d-flex justify-content-between small text-body-secondary mt-1">
+            <span>{{dash.daily.0.date}}</span><span>{{dash.today}}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-4">
+        {{!-- On the clock --}}
+        <div class="col-lg-6">
+          <div class="card h-100"><div class="card-body">
+            <h5 class="card-title">On the clock now</h5>
+            {{#if dash.on_the_clock}}
+            <table class="table table-sm mb-0">
+              <thead><tr><th>Worker</th><th>Site</th><th>Since</th></tr></thead>
+              <tbody>
+                {{#each dash.on_the_clock}}
+                <tr>
+                  <td><a href="/admin/worker-data?worker={{worker_id}}">{{worker_name}}</a></td>
+                  <td><a href="/admin/jobedit?id={{job_id}}">{{sitename}}</a></td>
+                  <td>{{signin}}</td>
+                </tr>
+                {{/each}}
+              </tbody>
+            </table>
+            {{else}}<p class="text-body-secondary mb-0">Nobody is signed in right now.</p>{{/if}}
+          </div></div>
+        </div>
+
+        {{!-- Upcoming --}}
+        <div class="col-lg-6">
+          <div class="card h-100"><div class="card-body">
+            <h5 class="card-title">Upcoming jobs</h5>
+            {{#if dash.upcoming}}
+            <table class="table table-sm mb-0">
+              <thead><tr><th>Date</th><th>Site</th><th class="text-end">Workers</th></tr></thead>
+              <tbody>
+                {{#each dash.upcoming}}
+                <tr>
+                  <td>{{date}}</td>
+                  <td><a href="/admin/jobedit?id={{job_id}}">{{sitename}}</a></td>
+                  <td class="text-end">{{#if workers_assigned}}{{workers_assigned}}{{else}}<span class="badge text-bg-warning">none</span>{{/if}}</td>
+                </tr>
+                {{/each}}
+              </tbody>
+            </table>
+            {{else}}<p class="text-body-secondary mb-0">Nothing scheduled in the next 7 days.</p>{{/if}}
+          </div></div>
+        </div>
+      </div>
+
+      {{!-- Needs attention details --}}
+      <div class="row g-3 mb-4">
+        <div class="col-lg-4">
+          <div class="card h-100"><div class="card-body">
+            <h6 class="card-title">Unstaffed jobs ({{dash.attention.unstaffed_count}})</h6>
+            {{#each dash.attention.unstaffed_jobs}}
+            <div class="small"><a href="/admin/jobedit?id={{job_id}}">{{sitename}}</a> <span class="text-body-secondary">{{date}}</span></div>
+            {{else}}<p class="text-body-secondary small mb-0">None. 🎉</p>{{/each}}
+          </div></div>
+        </div>
+        <div class="col-lg-4">
+          <div class="card h-100"><div class="card-body">
+            <h6 class="card-title">Signed in, never signed out ({{dash.attention.missing_signout_count}})</h6>
+            {{#each dash.attention.missing_signout}}
+            <div class="small"><a href="/admin/worker-data?worker={{worker_id}}">{{worker_name}}</a>
+              <span class="text-body-secondary">{{sitename}}, {{date}}, in {{signin}}</span></div>
+            {{else}}<p class="text-body-secondary small mb-0">None.</p>{{/each}}
+          </div></div>
+        </div>
+        <div class="col-lg-4">
+          <div class="card h-100"><div class="card-body">
+            <h6 class="card-title">Never signed in ({{dash.attention.no_show_count}})</h6>
+            {{#each dash.attention.no_shows}}
+            <div class="small"><a href="/admin/worker-data?worker={{worker_id}}">{{worker_name}}</a>
+              <span class="text-body-secondary">{{sitename}}, {{date}}</span></div>
+            {{else}}<p class="text-body-secondary small mb-0">None.</p>{{/each}}
+          </div></div>
+        </div>
+      </div>
+
+      {{!-- Top workers --}}
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Top workers this month</h5>
+          {{#if dash.top_workers}}
+          <table class="table table-sm mb-0">
+            <thead><tr><th>Worker</th><th class="text-end">Jobs</th><th class="text-end">Hours</th><th class="text-end">Miles</th></tr></thead>
+            <tbody>
+              {{#each dash.top_workers}}
+              <tr>
+                <td><a href="/admin/worker-data?worker={{worker_id}}">{{name}}</a></td>
+                <td class="text-end">{{jobs}}</td><td class="text-end">{{hours}}</td><td class="text-end">{{miles}}</td>
+              </tr>
+              {{/each}}
+            </tbody>
+          </table>
+          {{else}}<p class="text-body-secondary mb-0">No completed assignments yet this month.</p>{{/if}}
+        </div>
+      </div>
+    </div>
+    {{else}}
     <div id="stats" hx-get="/" hx-trigger="every 2m" hx-swap="outerHTML" hx-target="#stats" hx-select="#stats"
       class="row container  justify-content-evenly mt-5">
       <div class="col-lg-4 ">
@@ -80,6 +253,7 @@
       </div>
     </div>
 
+    {{/if}}
   </div>
 
 

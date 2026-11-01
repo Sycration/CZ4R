@@ -50,7 +50,7 @@ pub(crate) struct WorkerDataOutput {
     pub to: String,
 }
 
-fn hours_worked(signin: Time, signout: Time) -> f32 {
+pub(crate) fn hours_worked(signin: Time, signout: Time) -> f32 {
     fix_neg_zero(((signout - signin).as_seconds_f32() / 3600.).max(1.0))
 }
 
