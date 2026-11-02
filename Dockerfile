@@ -1,20 +1,18 @@
-FROM rust:1.96-bullseye AS build
+FROM rust:1.96-bookworm AS build
 
 COPY . /code/
 
 WORKDIR /code
 
-RUN apt-get update
-RUN apt-get install cmake git -y
+RUN apt-get update && apt-get install -y --no-install-recommends cmake git && rm -rf /var/lib/apt/lists/*
 
 RUN cargo --version
 
 RUN cargo build --release
 
-FROM debian:bullseye-slim AS run
+FROM debian:bookworm-slim AS run
 
-RUN apt-get update
-RUN apt-get install ca-certificates sqlite3 -y
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates sqlite3 && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir /app
 
