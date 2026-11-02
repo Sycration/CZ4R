@@ -1046,6 +1046,7 @@ dependencies = [
  "secrecy",
  "serde",
  "serde_json",
+ "sha2 0.10.9",
  "sqlx",
  "thiserror 2.0.18",
  "time",
@@ -3741,8 +3742,10 @@ checksum = "4cfcf7e2740e6fc6d4d688b4ef00650406bb94adf4731e43c096c3a19fe40840"
 dependencies = [
  "bitflags",
  "bytes",
+ "futures-util",
  "http 1.4.2",
  "http-body 1.0.1",
+ "http-body-util",
  "pin-project-lite",
  "tower-layer",
  "tower-service",
